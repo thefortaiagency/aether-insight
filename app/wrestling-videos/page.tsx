@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import CloudflarePlayer from '@/components/cloudflare-player'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,9 +30,20 @@ export default function WrestlingVideosPage() {
       <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-[#D4AF38]">Aether Insight</h1>
-              <p className="text-gray-200">Wrestling Video Platform</p>
+            <div className="flex items-center gap-4">
+              {/* Aether Logo */}
+              <div className="relative w-16 h-16">
+                <Image 
+                  src="/aether-logo.png" 
+                  alt="Aether Logo" 
+                  fill
+                  className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
+                />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-[#D4AF38]">Aether Insight</h1>
+                <p className="text-gray-200">Wrestling Video Platform</p>
+              </div>
             </div>
             <Badge className="bg-green-600">Connected</Badge>
           </div>

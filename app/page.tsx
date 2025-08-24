@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Video, Users, Trophy, BarChart3, PlayCircle } from 'lucide-react'
@@ -11,8 +12,21 @@ export default function HomePage() {
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-5xl font-bold text-[#D4AF38] mb-2">Aether Insight</h1>
-          <p className="text-xl text-gray-400">Wrestling Analytics & Video Platform</p>
+          <div className="flex items-center gap-6">
+            {/* Aether Logo */}
+            <div className="relative w-24 h-24">
+              <Image 
+                src="/aether-logo.png" 
+                alt="Aether Logo" 
+                fill
+                className="object-contain drop-shadow-[0_0_20px_rgba(212,175,56,0.5)]"
+              />
+            </div>
+            <div>
+              <h1 className="text-5xl font-bold text-[#D4AF38] mb-2">Aether Insight</h1>
+              <p className="text-xl text-gray-200">Wrestling Analytics & Video Platform</p>
+            </div>
+          </div>
         </div>
       </div>
 

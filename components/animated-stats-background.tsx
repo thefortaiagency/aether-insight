@@ -54,8 +54,12 @@ const AnimatedStatsBackground = () => {
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      {/* Gradient overlay - MUCH BRIGHTER */}
+      {/* Multi-layer gradient overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 via-gray-700/30 to-gray-800/50" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
+      
+      {/* Radial glow effect */}
+      <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-gold/5 via-transparent to-transparent blur-3xl" />
       
       {/* Animated grid pattern - MORE VISIBLE */}
       <div className="absolute inset-0 opacity-20">
