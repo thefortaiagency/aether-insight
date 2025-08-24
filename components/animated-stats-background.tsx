@@ -14,7 +14,7 @@ interface FloatingStatProps {
 const FloatingStat = ({ label, value, x, y, delay, duration }: FloatingStatProps) => {
   return (
     <div
-      className="absolute text-gold/20 font-mono text-sm animate-float-slow pointer-events-none"
+      className="absolute text-gold/40 font-mono text-sm animate-float-slow pointer-events-none"
       style={{
         left: `${x}%`,
         top: `${y}%`,
@@ -22,9 +22,9 @@ const FloatingStat = ({ label, value, x, y, delay, duration }: FloatingStatProps
         animationDuration: `${duration}s`,
       }}
     >
-      <div className="bg-black/30 backdrop-blur-sm border border-gold/10 rounded-lg p-3">
-        <div className="text-xs text-gold/40 uppercase tracking-wider">{label}</div>
-        <div className="text-2xl font-bold text-gold/60">{value}</div>
+      <div className="bg-white/5 backdrop-blur-sm border border-gold/20 rounded-lg p-3">
+        <div className="text-xs text-gold/60 uppercase tracking-wider">{label}</div>
+        <div className="text-2xl font-bold text-gold/80">{value}</div>
       </div>
     </div>
   )
@@ -54,11 +54,11 @@ const AnimatedStatsBackground = () => {
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900/95 to-black" />
+      {/* Gradient overlay - MUCH BRIGHTER */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 via-gray-700/30 to-gray-800/50" />
       
-      {/* Animated grid pattern */}
-      <div className="absolute inset-0 opacity-10">
+      {/* Animated grid pattern - MORE VISIBLE */}
+      <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0" style={{
           backgroundImage: `linear-gradient(rgba(212, 175, 56, 0.1) 1px, transparent 1px),
                            linear-gradient(90deg, rgba(212, 175, 56, 0.1) 1px, transparent 1px)`,
@@ -72,20 +72,20 @@ const AnimatedStatsBackground = () => {
         <FloatingStat key={index} {...stat} />
       ))}
 
-      {/* Animated circles */}
-      <div className="absolute top-20 left-10 w-64 h-64 rounded-full border border-gold/10 animate-pulse-slow" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full border border-gold/5 animate-spin-slow" />
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-gold/10 animate-pulse" style={{ animationDuration: '4s' }} />
+      {/* Animated circles - BRIGHTER */}
+      <div className="absolute top-20 left-10 w-64 h-64 rounded-full border-2 border-gold/30 animate-pulse-slow" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full border-2 border-gold/20 animate-spin-slow" />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border-2 border-gold/25 animate-pulse" style={{ animationDuration: '4s' }} />
 
-      {/* Data visualization elements */}
-      <svg className="absolute top-1/3 right-20 w-48 h-48 opacity-20" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(212, 175, 56, 0.2)" strokeWidth="2" />
+      {/* Data visualization elements - BRIGHTER */}
+      <svg className="absolute top-1/3 right-20 w-48 h-48 opacity-40" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(212, 175, 56, 0.4)" strokeWidth="2" />
         <circle 
           cx="50" 
           cy="50" 
           r="40" 
           fill="none" 
-          stroke="rgba(212, 175, 56, 0.4)" 
+          stroke="rgba(212, 175, 56, 0.6)" 
           strokeWidth="2"
           strokeDasharray="251.2"
           strokeDashoffset="62.8"
@@ -94,12 +94,12 @@ const AnimatedStatsBackground = () => {
         />
       </svg>
 
-      {/* Bar chart visualization */}
-      <div className="absolute bottom-1/4 left-1/4 flex items-end gap-2 opacity-20">
+      {/* Bar chart visualization - BRIGHTER */}
+      <div className="absolute bottom-1/4 left-1/4 flex items-end gap-2 opacity-40">
         {[65, 45, 80, 55, 70, 40, 75].map((height, i) => (
           <div
             key={i}
-            className="w-3 bg-gradient-to-t from-gold/40 to-gold/10 rounded-t"
+            className="w-3 bg-gradient-to-t from-gold/60 to-gold/20 rounded-t"
             style={{
               height: `${height}px`,
               animation: `float ${20 + i * 2}s ease-in-out infinite`,

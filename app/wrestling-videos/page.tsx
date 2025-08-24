@@ -23,15 +23,15 @@ export default function WrestlingVideosPage() {
   const [selectedVideo, setSelectedVideo] = useState(WRESTLING_VIDEOS[0])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
       <AnimatedStatsBackground />
       {/* Header */}
-      <div className="glass-effect border-b border-gray-800 relative z-10">
+      <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-[#D4AF38]">Aether Insight</h1>
-              <p className="text-gray-400">Wrestling Video Platform</p>
+              <p className="text-gray-200">Wrestling Video Platform</p>
             </div>
             <Badge className="bg-green-600">Connected</Badge>
           </div>
@@ -43,7 +43,7 @@ export default function WrestlingVideosPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Video List */}
           <div className="lg:col-span-1">
-            <Card className="glass-effect border-gray-800">
+            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
               <CardHeader>
                 <CardTitle className="text-[#D4AF38]">Videos</CardTitle>
               </CardHeader>
@@ -72,7 +72,7 @@ export default function WrestlingVideosPage() {
 
           {/* Video Player */}
           <div className="lg:col-span-3 space-y-4">
-            <Card className="glass-effect border-gray-800">
+            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white">{selectedVideo.title}</CardTitle>
@@ -111,7 +111,7 @@ export default function WrestlingVideosPage() {
             </Card>
 
             {/* Video Details */}
-            <Card className="glass-effect border-gray-800">
+            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
               <CardHeader>
                 <CardTitle className="text-[#D4AF38]">Video Information</CardTitle>
               </CardHeader>
