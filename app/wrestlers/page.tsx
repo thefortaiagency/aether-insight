@@ -10,7 +10,7 @@ import {
   User, Trophy, TrendingUp, Target, Activity, 
   Plus, Search, Filter, Download, ChevronRight 
 } from 'lucide-react'
-import AnimatedStatsBackground from '@/components/animated-stats-background'
+import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 // Mock data for wrestlers
 const WRESTLERS = [
@@ -106,7 +106,7 @@ export default function WrestlersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
-      <AnimatedStatsBackground />
+      <WrestlingStatsBackground />
       
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">

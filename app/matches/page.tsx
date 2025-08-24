@@ -12,7 +12,7 @@ import {
   Plus, Search, Filter, PlayCircle, Users,
   TrendingUp, Target, Award, Activity
 } from 'lucide-react'
-import AnimatedStatsBackground from '@/components/animated-stats-background'
+import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 // Mock match data
 const RECENT_MATCHES = [
@@ -104,7 +104,7 @@ export default function MatchesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
-      <AnimatedStatsBackground />
+      <WrestlingStatsBackground />
       
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">

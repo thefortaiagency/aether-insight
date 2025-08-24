@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Download, ExternalLink, Play, Video } from 'lucide-react'
-import AnimatedStatsBackground from '@/components/animated-stats-background'
+import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 // Your actual video from Cloudflare
 const WRESTLING_VIDEOS = [
@@ -25,7 +25,7 @@ export default function WrestlingVideosPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
-      <AnimatedStatsBackground />
+      <WrestlingStatsBackground />
       {/* Header */}
       <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
         <div className="container mx-auto px-4 py-6">
