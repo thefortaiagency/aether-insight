@@ -83,11 +83,24 @@ module.exports = {
           "50%": { transform: "translateY(10px) translateX(-10px) scale(0.95)" },
           "75%": { transform: "translateY(-10px) translateX(5px) scale(1.02)" },
         },
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0) translateX(0)" },
+          "33%": { transform: "translateY(-30px) translateX(20px)" },
+          "66%": { transform: "translateY(20px) translateX(-20px)" },
+        },
         "float-delayed": {
           "0%, 100%": { transform: "translateY(0) translateX(0) scale(1)" },
           "25%": { transform: "translateY(20px) translateX(-15px) scale(0.98)" },
           "50%": { transform: "translateY(-15px) translateX(10px) scale(1.05)" },
           "75%": { transform: "translateY(10px) translateX(-5px) scale(0.97)" },
+        },
+        "pulse-slow": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.8" },
+        },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
         },
         scan: {
           "0%": { transform: "translateY(-100%)", opacity: "0" },
@@ -122,7 +135,10 @@ module.exports = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         float: "float 20s ease-in-out infinite",
+        "float-slow": "float-slow 30s ease-in-out infinite",
         "float-delayed": "float-delayed 25s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 4s ease-in-out infinite",
+        "spin-slow": "spin-slow 20s linear infinite",
         scan: "scan 8s linear infinite",
         shimmer: "shimmer 3s linear infinite",
         glow: "glow 3s ease-in-out infinite",
