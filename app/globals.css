@@ -230,10 +230,10 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   body {
-    @apply text-foreground;
+    color: var(--foreground);
   }
 }
 
