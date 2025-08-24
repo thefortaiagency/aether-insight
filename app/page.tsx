@@ -2,12 +2,14 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Video, Users, Trophy, BarChart3, PlayCircle } from 'lucide-react'
+import AnimatedStatsBackground from '@/components/animated-stats-background'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+      <AnimatedStatsBackground />
       {/* Header */}
-      <div className="glass-effect border-b border-gray-800">
+      <div className="glass-effect border-b border-gray-800 relative z-10">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-5xl font-bold text-[#D4AF38] mb-2">Aether Insight</h1>
           <p className="text-xl text-gray-400">Wrestling Analytics & Video Platform</p>
@@ -15,7 +17,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Wrestling Videos */}
           <Link href="/wrestling-videos">
