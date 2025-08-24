@@ -10,7 +10,7 @@ import {
   BarChart3, PieChart, Calendar, Clock, User, Home,
   ChevronUp, ChevronDown, Minus, Star
 } from 'lucide-react'
-import PageBackground from "@/components/background/page-background"
+// import PageBackground from "@/components/background/page-background"
 import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <PageBackground />
+      {/* <PageBackground /> */}
       <div className="p-4 md:p-6 relative">
         {/* Header */}
         <div className="mb-6 flex justify-between items-start">

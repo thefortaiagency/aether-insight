@@ -12,7 +12,7 @@ import {
   Users, Plus, Edit, Trash2, Shield, User, Mail, Phone, 
   Calendar, Award, Home, Search, Filter, UserPlus, Settings
 } from 'lucide-react'
-import PageBackground from "@/components/background/page-background"
+// import PageBackground from "@/components/background/page-background"
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -209,7 +209,7 @@ export default function TeamsPage() {
 
   return (
     <>
-      <PageBackground />
+      {/* <PageBackground /> */}
       <div className="p-4 md:p-6 relative">
         {/* Header */}
         <div className="mb-6 flex justify-between items-start">
