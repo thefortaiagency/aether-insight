@@ -294,7 +294,7 @@ export default function MatchesPage() {
                           <div key={index} className="bg-black/20 rounded p-2 text-sm">
                             <span className="text-[#D4AF38] font-medium">{highlight.wrestler}</span>
                             {highlight.weight && <span className="text-gray-400"> • {highlight.weight} lbs</span>}
-                            <div className="text-white">{highlight.result} {highlight.time || highlight.score}</div>
+                            <div className="text-white">{highlight.result} {('time' in highlight ? highlight.time : highlight.score)}</div>
                           </div>
                         ))}
                       </div>
