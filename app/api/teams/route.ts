@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Add wrestler count to each team
-    const teamsWithStats = data?.map(team => ({
+    const teamsWithStats = data?.map((team: any) => ({
       ...team,
       wrestler_count: team.wrestlers?.length || 0,
       active_wrestlers: team.wrestlers?.filter((w: any) => w.status === 'active').length || 0

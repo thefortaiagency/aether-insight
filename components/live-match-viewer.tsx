@@ -53,7 +53,7 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
           table: 'matches',
           filter: 'status=eq.in_progress'
         },
-        (payload) => {
+        (payload: any) => {
           handleRealtimeUpdate(payload)
         }
       )
@@ -81,7 +81,7 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
             table: 'matches',
             filter: `id=eq.${matchId}`
           },
-          (payload) => {
+          (payload: any) => {
             handleSpecificMatchUpdate(payload)
           }
         )
@@ -101,7 +101,7 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
       .order('created_at', { ascending: false })
 
     if (data && !error) {
-      setLiveMatches(data.map(match => ({
+      setLiveMatches(data.map((match: any) => ({
         id: match.id,
         wrestler1_name: match.wrestler_name || match.wrestler1_name || 'Wrestler 1',
         wrestler1_team: match.wrestler_team || match.wrestler1_team || '',

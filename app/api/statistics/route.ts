@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
         }>
       }
 
-      wrestlers?.forEach(wrestler => {
+      wrestlers?.forEach((wrestler: any) => {
         const record = wrestler.season_records[0]
         if (record) {
           teamStats.total_wins += record.wins
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
       team_points: 0
     }
 
-    matches?.forEach(match => {
+    matches?.forEach((match: any) => {
       const isWrestler1 = match.wrestler_id === wrestler_id
       const won = (isWrestler1 && match.result === 'win') || 
                   (!isWrestler1 && match.result === 'loss')
