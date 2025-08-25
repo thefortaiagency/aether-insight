@@ -524,25 +524,34 @@ export default function LiveScoringPage() {
     }
   }
 
-  // Save individual scoring event
+  // Save individual scoring event with video timestamp
   const saveMatchEvent = async (wrestler: string, action: string, points: number) => {
     if (!matchId) return
 
     const wrestlerName = wrestler === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
     const periodNumber = match.period === 'SV' ? 4 : match.period === 'TB' ? 5 : match.period === 'UTB' ? 6 : match.period
+    
+    // Calculate video timestamp based on when match started
+    // This assumes video recording starts when match is created
+    const matchStartTime = actionHistory.length > 0 ? actionHistory[0].timestamp : Date.now()
+    const videoTimestamp = Math.floor((Date.now() - matchStartTime) / 1000)
 
     await fetch('/api/matches/live/event', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         match_id: matchId,
+        timestamp: Date.now(), // Exact timestamp for syncing
+        video_timestamp: videoTimestamp, // Seconds from video start
         event_time: 120 - timeRemaining, // Time elapsed in period
         period: periodNumber,
         event_type: action,
         points: points,
+        wrestler_id: wrestler,
         wrestler_name: wrestlerName,
         move_name: action,
-        from_position: match.currentPosition
+        from_position: match.currentPosition,
+        description: `${wrestlerName} - ${action} +${points}`
       })
     })
   }

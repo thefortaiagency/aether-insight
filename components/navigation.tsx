@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { 
   Menu, X, Video, Users, Trophy, BarChart3, Home,
   Activity, Award, Settings, ChevronDown, Clock,
-  Calendar, FileText, PlusCircle
+  Calendar, FileText, PlusCircle, Play
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +57,11 @@ export default function Navigation() {
       name: 'Video Analysis', 
       href: '/matches/video-analysis', 
       icon: <Video className="w-4 h-4 text-gold" /> 
+    },
+    { 
+      name: 'Video Review', 
+      href: '/matches/video-review', 
+      icon: <Play className="w-4 h-4 text-green-500" /> 
     },
     { 
       name: 'Analytics', 
