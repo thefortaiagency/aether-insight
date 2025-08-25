@@ -17,7 +17,6 @@ export default function HomePage() {
   const [showVideo, setShowVideo] = useState(false)
   const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
-  const [showOldInterface, setShowOldInterface] = useState(false)
 
   // Countdown timer for launch
   useEffect(() => {
@@ -56,10 +55,10 @@ export default function HomePage() {
 
   // Killer stats that make coaches drool
   const KILLER_STATS = [
-    { value: '87%', label: 'Faster Than MatBoss', icon: <Zap className="w-6 h-6" /> },
+    { value: '87%', label: 'Faster Performance', icon: <Zap className="w-6 h-6" /> },
     { value: '342', label: 'Teams Already Waiting', icon: <Users className="w-6 h-6" /> },
-    { value: '50%', label: 'Less Than MatBoss Pricing', icon: <DollarSign className="w-6 h-6" /> },
-    { value: '5.1', label: 'Coach Rating (Perfect Score)', icon: <Star className="w-6 h-6" /> }
+    { value: '50%', label: 'Lower Cost', icon: <DollarSign className="w-6 h-6" /> },
+    { value: '5.0', label: 'Coach Rating', icon: <Star className="w-6 h-6" /> }
   ]
 
   // Testimonials from coaches who've seen the light
@@ -68,7 +67,7 @@ export default function HomePage() {
       name: "Coach Mike Johnson",
       title: "State Champion Coach",
       team: "Lincoln High Wrestling",
-      quote: "Switched from MatBoss and never looked back. Aether saves us 3 hours per tournament.",
+      quote: "Switched from our old system and never looked back. Aether saves us 3 hours per tournament.",
       rating: 5
     },
     {
@@ -82,21 +81,21 @@ export default function HomePage() {
       name: "Tom Rodriguez",
       title: "Tournament Director",
       team: "Indiana State Wrestling",
-      quote: "87% faster than MatBoss. My staff can actually enjoy tournaments now.",
+      quote: "87% faster than traditional software. My staff can actually enjoy tournaments now.",
       rating: 5
     }
   ]
 
-  // Feature comparison that destroys MatBoss
+  // Feature comparison showing our superiority
   const featureComparison = [
-    { feature: "Live Match Scoring", aether: true, matboss: true },
-    { feature: "AI Video Analysis", aether: true, matboss: false },
-    { feature: "Real-time Stats", aether: true, matboss: false },
-    { feature: "Mobile First Design", aether: true, matboss: false },
-    { feature: "Cloudflare Video", aether: true, matboss: false },
-    { feature: "AI Move Detection", aether: true, matboss: false },
-    { feature: "Setup Time", aether: "2 min", matboss: "30 min" },
-    { feature: "Price", aether: "$49/mo", matboss: "$99/mo" }
+    { feature: "Live Match Scoring", aether: true, others: true },
+    { feature: "AI Video Analysis", aether: true, others: false },
+    { feature: "Real-time Stats", aether: true, others: false },
+    { feature: "Mobile First Design", aether: true, others: false },
+    { feature: "Cloudflare Video", aether: true, others: false },
+    { feature: "AI Move Detection", aether: true, others: false },
+    { feature: "Setup Time", aether: "2 min", others: "30+ min" },
+    { feature: "Price", aether: "$49/mo", others: "$99+/mo" }
   ]
 
   return (
@@ -140,17 +139,18 @@ export default function HomePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gold">Aether Insight</h1>
-                <p className="text-xs text-gray-400">The MatBoss Killer</p>
+                <p className="text-xs text-gray-400">Next-Gen Wrestling Analytics</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                className="text-gray-300 hover:text-gold hidden md:inline-flex"
-                onClick={() => setShowOldInterface(true)}
-              >
-                Dashboard
-              </Button>
+              <Link href="/wrestling-videos">
+                <Button 
+                  variant="ghost" 
+                  className="text-gray-300 hover:text-gold hidden md:inline-flex"
+                >
+                  Dashboard
+                </Button>
+              </Link>
               <Button className="bg-gold hover:bg-gold/90 text-black font-bold">
                 Get Early Access
               </Button>
@@ -173,7 +173,7 @@ export default function HomePage() {
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6">
             <span className="text-white">The </span>
-            <span className="text-gold">MatBoss Killer</span>
+            <span className="text-gold">Future of Wrestling</span>
             <br />
             <span className="text-white">Has Finally Arrived</span>
           </h1>
@@ -181,7 +181,7 @@ export default function HomePage() {
           <p className="text-xl md:text-2xl text-gray-300 mb-8">
             87% faster. 50% cheaper. 100% wrestler-focused.
             <br />
-            <span className="text-gold">Built by coaches who got tired of MatBoss BS.</span>
+            <span className="text-gold">Built by coaches who demanded better.</span>
           </p>
 
           {/* Countdown Timer */}
@@ -248,13 +248,13 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl font-bold text-center mb-12">
-              <span className="text-red-500">MatBoss is Holding You Back</span>
+              <span className="text-red-500">Traditional Software is Holding You Back</span>
             </h2>
             
             <div className="grid md:grid-cols-2 gap-8">
-              {/* MatBoss Problems */}
+              {/* Traditional Software Problems */}
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-red-400 mb-4">MatBoss Reality 💀</h3>
+                <h3 className="text-2xl font-bold text-red-400 mb-4">Current Reality 😞</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
                     <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -317,7 +317,7 @@ export default function HomePage() {
             <span className="text-white">Features That </span>
             <span className="text-gold">Actually Matter</span>
           </h2>
-          <p className="text-center text-gray-400 mb-12">Built by coaches, for coaches. Not by some Silicon Valley nerds.</p>
+          <p className="text-center text-gray-400 mb-12">Built by coaches, for coaches. Real wrestling experience matters.</p>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <Card className="bg-black/40 backdrop-blur border border-gold/20 hover:border-gold transition-all">
@@ -326,7 +326,7 @@ export default function HomePage() {
                   <Zap className="w-6 h-6 text-gold" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Lightning Fast Scoring</h3>
-                <p className="text-gray-400">Score matches in real-time. No lag, no crashes, no BS.</p>
+                <p className="text-gray-400">Score matches in real-time. No lag, no crashes, just results.</p>
               </CardContent>
             </Card>
 
@@ -426,7 +426,7 @@ export default function HomePage() {
               <div className="grid grid-cols-3 bg-gold/10 border-b border-gold/20">
                 <div className="p-4 font-bold text-white">Feature</div>
                 <div className="p-4 font-bold text-gold text-center">Aether</div>
-                <div className="p-4 font-bold text-gray-400 text-center">MatBoss</div>
+                <div className="p-4 font-bold text-gray-400 text-center">Others</div>
               </div>
               {featureComparison.map((item, index) => (
                 <div key={index} className="grid grid-cols-3 border-b border-gold/10 hover:bg-gold/5">
@@ -443,14 +443,14 @@ export default function HomePage() {
                     )}
                   </div>
                   <div className="p-4 text-center">
-                    {typeof item.matboss === 'boolean' ? (
-                      item.matboss ? (
+                    {typeof item.others === 'boolean' ? (
+                      item.others ? (
                         <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
                       ) : (
                         <X className="w-5 h-5 text-red-500 mx-auto" />
                       )
                     ) : (
-                      <span className="text-gray-400">{item.matboss}</span>
+                      <span className="text-gray-400">{item.others}</span>
                     )}
                   </div>
                 </div>
@@ -467,7 +467,7 @@ export default function HomePage() {
             <span className="text-white">Pricing That </span>
             <span className="text-gold">Makes Sense</span>
           </h2>
-          <p className="text-center text-gray-400 mb-12">No hidden fees. No setup costs. No BS.</p>
+          <p className="text-center text-gray-400 mb-12">No hidden fees. No setup costs. Just value.</p>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <Card className="bg-black/60 border border-gray-700">
@@ -654,12 +654,9 @@ export default function HomePage() {
             <div className="text-center md:text-right text-sm text-gray-400">
               <p>© 2025 Aether Insight. All rights reserved.</p>
               <p className="mt-1">
-                <button 
-                  onClick={() => setShowOldInterface(true)}
-                  className="hover:text-gold transition-colors"
-                >
+                <Link href="/wrestling-videos" className="hover:text-gold transition-colors">
                   Access Dashboard →
-                </button>
+                </Link>
               </p>
             </div>
           </div>
