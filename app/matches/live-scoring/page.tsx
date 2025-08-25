@@ -23,6 +23,8 @@ import { useRouter } from 'next/navigation'
 import { offlineStorage } from '@/lib/offline-storage'
 import { offlineQueue } from '@/lib/offline-queue'
 import { OfflineStatus } from '@/components/offline-status'
+import { SyncManager } from '@/components/sync-manager'
+import { MatchComplete } from '@/components/match-complete'
 
 interface Wrestler {
   name: string
@@ -740,10 +742,46 @@ export default function LiveScoringPage() {
     )
   }
 
+  // Show match complete screen when match has ended
+  if (matchEnded && match.winner) {
+    return (
+      <MatchComplete
+        match={match}
+        timeElapsed={formatTime(120 - timeRemaining)}
+        hasVideo={!!recordedVideoId || recordedVideoId !== null}
+        videoSaved={true} // Videos are always saved locally now
+        onSaveMatch={() => {
+          saveMatchToDatabase()
+          // Could navigate to match details or stay here
+        }}
+        onNewMatch={() => {
+          setShowSetup(true)
+          setMatchEnded(false)
+          setMatch({
+            ...match,
+            wrestler1: { ...match.wrestler1, score: 0 },
+            wrestler2: { ...match.wrestler2, score: 0 },
+            winner: undefined,
+            winType: undefined,
+            isRunning: false
+          })
+          setMatchId(null)
+          setTimeRemaining(120)
+        }}
+        onGoHome={() => router.push('/matches')}
+        onUploadVideo={() => {
+          // This would trigger the sync manager upload
+          console.log('Upload video from match complete')
+        }}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
       <OfflineStatus />
+      <SyncManager matchId={matchId} />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
         {/* Video Recorder Section - Always visible */}
@@ -751,9 +789,9 @@ export default function LiveScoringPage() {
           <VideoRecorder
             matchId={matchId || `temp-${Date.now()}`}
             autoStart={match.isRunning} // Auto-start when match is running
-            autoUpload={true} // Enable auto-upload for chunks
-            chunkDuration={30} // Upload every 30 seconds
-            maxFileSize={3} // Upload when chunk reaches 3MB (Vercel limit is ~4.5MB)
+            autoUpload={false} // Disable auto-upload - store locally only
+            chunkDuration={300} // Save chunks every 5 minutes locally
+            maxFileSize={50} // Max chunk size for local storage
             onRecordingComplete={(blob, url) => {
               console.log('Recording complete', { size: blob.size, url })
             }}
