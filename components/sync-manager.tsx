@@ -118,7 +118,7 @@ export function SyncManager({ matchId }: { matchId?: string }) {
     }
   }
 
-  // Manual video upload (one at a time due to size)
+  // Manual video upload using proper FormData approach
   const uploadVideos = async () => {
     if (!syncStatus.online) {
       setSyncMessage('Cannot upload videos while offline')
@@ -143,47 +143,51 @@ export function SyncManager({ matchId }: { matchId?: string }) {
         setSyncProgress((i / videos.length) * 100)
         setSyncMessage(`Uploading video ${i + 1} of ${videos.length}...`)
         
-        // Split large videos into smaller chunks for upload
-        const CHUNK_SIZE = 2 * 1024 * 1024 // 2MB chunks
-        const chunks = Math.ceil(video.blob.size / CHUNK_SIZE)
-        
-        for (let j = 0; j < chunks; j++) {
-          const start = j * CHUNK_SIZE
-          const end = Math.min(start + CHUNK_SIZE, video.blob.size)
-          const chunk = video.blob.slice(start, end)
+        try {
+          // Create a File object from the blob
+          const file = new File([video.blob], `match-${video.matchId}.webm`, {
+            type: 'video/webm'
+          })
           
+          // Check file size - if over 3MB, skip with warning
+          const sizeMB = file.size / (1024 * 1024)
+          if (sizeMB > 3) {
+            setSyncMessage(`Video ${i + 1} too large (${sizeMB.toFixed(1)}MB) - skipping`)
+            continue
+          }
+          
+          // Use FormData for proper file upload
           const formData = new FormData()
-          formData.append('file', chunk, `match-${video.matchId}-part-${j}.webm`)
+          formData.append('file', file)
           formData.append('meta', JSON.stringify({
             matchId: video.matchId,
-            partNumber: j,
-            totalParts: chunks,
-            videoId: video.id
+            timestamp: new Date().toISOString()
           }))
           
-          try {
-            const response = await fetch('/api/videos/upload-part', {
-              method: 'POST',
-              body: formData
-            })
-            
-            if (!response.ok) {
-              throw new Error(`Upload failed: ${response.status}`)
-            }
-          } catch (error) {
-            console.error('Chunk upload error:', error)
-            setSyncMessage(`Failed to upload video ${i + 1}`)
-            throw error
+          const response = await fetch('/api/videos/upload', {
+            method: 'POST',
+            body: formData
+          })
+          
+          if (!response.ok) {
+            const error = await response.text()
+            console.error(`Upload failed: ${response.status} - ${error}`)
+            setSyncMessage(`Failed to upload video ${i + 1} - ${response.status === 413 ? 'too large' : 'error'}`)
+            continue // Skip to next video
           }
+          
+          // Mark video as synced
+          await offlineStorage.markVideoSynced(video.id)
+          setSyncMessage(`Uploaded video ${i + 1} of ${videos.length}`)
+        } catch (error) {
+          console.error('Video upload error:', error)
+          setSyncMessage(`Failed to upload video ${i + 1}`)
+          // Continue with next video instead of stopping
         }
-        
-        // Mark video as synced
-        await offlineStorage.markVideoSynced(video.id)
-        setSyncMessage(`Uploaded video ${i + 1} of ${videos.length}`)
       }
       
       setSyncProgress(100)
-      setSyncMessage('All videos uploaded successfully!')
+      setSyncMessage('Video upload complete')
       await checkStatus()
     } catch (error) {
       console.error('Video upload error:', error)

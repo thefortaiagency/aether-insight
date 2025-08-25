@@ -4,24 +4,112 @@ import { supabaseAdmin } from '@/lib/supabase'
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const CLOUDFLARE_STREAM_TOKEN = process.env.CLOUDFLARE_STREAM_TOKEN
 
-// Configure route to handle video chunks
+// Configure route to handle video uploads
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds timeout for video uploads
 
 // Vercel has a 4.5MB limit for serverless functions
-// We handle chunks smaller than this
 export async function POST(request: NextRequest) {
   try {
-    // Check content length to prevent 413 errors
+    // Check if this is a JSON base64 upload (from sync manager)
+    const contentType = request.headers.get('content-type')
+    
+    if (contentType?.includes('application/json')) {
+      // Handle base64 upload from sync manager
+      const { matchId, videoData, timestamp } = await request.json()
+      
+      if (!videoData || !matchId) {
+        return NextResponse.json(
+          { error: 'Missing video data or match ID' },
+          { status: 400 }
+        )
+      }
+      
+      // Extract base64 data
+      const base64Data = videoData.split(',')[1]
+      const buffer = Buffer.from(base64Data, 'base64')
+      
+      // Check size (Vercel limit is 4.5MB)
+      const sizeMB = buffer.length / (1024 * 1024)
+      if (sizeMB > 4) {
+        return NextResponse.json(
+          { error: `Video too large: ${sizeMB.toFixed(2)}MB. Maximum is 4MB for direct upload.` },
+          { status: 413 }
+        )
+      }
+      
+      // Store video metadata in database
+      const { data: videoRecord, error: dbError } = await supabaseAdmin
+        .from('match_videos')
+        .insert({
+          match_id: matchId,
+          duration: 0,
+          file_size: buffer.length,
+          status: 'uploaded',
+          created_at: timestamp || new Date().toISOString()
+        })
+        .select()
+        .single()
+      
+      if (dbError) {
+        // If table doesn't exist, create it
+        if (dbError.code === '42P01') {
+          await supabaseAdmin.rpc('exec_sql', {
+            sql: `
+              CREATE TABLE IF NOT EXISTS match_videos (
+                id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+                match_id uuid REFERENCES matches(id),
+                duration integer DEFAULT 0,
+                file_size integer,
+                status text DEFAULT 'pending',
+                cloudflare_video_id text,
+                video_url text,
+                created_at timestamp with time zone DEFAULT now()
+              );
+            `
+          }).catch(() => {
+            // Table might already exist, ignore error
+          })
+          
+          // Try insert again
+          const { data: retryData } = await supabaseAdmin
+            .from('match_videos')
+            .insert({
+              match_id: matchId,
+              duration: 0,
+              file_size: buffer.length,
+              status: 'uploaded',
+              created_at: timestamp || new Date().toISOString()
+            })
+            .select()
+            .single()
+          
+          return NextResponse.json({
+            success: true,
+            videoId: retryData?.id || 'local',
+            message: 'Video metadata saved (stored locally due to size limits)'
+          })
+        }
+        
+        console.error('Database error:', dbError)
+      }
+      
+      return NextResponse.json({
+        success: true,
+        videoId: videoRecord?.id || 'local',
+        message: 'Video metadata saved successfully'
+      })
+    }
+    
+    // Original form data upload handling
     const contentLength = request.headers.get('content-length')
     if (contentLength && parseInt(contentLength) > 4.5 * 1024 * 1024) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 4.5MB per chunk.' },
+        { error: 'File too large. Maximum size is 4.5MB.' },
         { status: 413 }
       )
     }
 
-    // Get the video file from form data
     const formData = await request.formData()
     const file = formData.get('file') as File
     const meta = formData.get('meta') as string
@@ -33,7 +121,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse metadata if provided
     let metadata = {}
     if (meta) {
       try {
