@@ -438,7 +438,7 @@ export default function LiveScoringPage() {
                       wrestler1: { ...prev.wrestler1, takedowns: prev.wrestler1.takedowns + 1 }
                     }))
                   }}
-                  className="bg-green-600 hover:bg-green-500 text-white"
+                  className="bg-green-700 hover:bg-green-800 text-white font-bold"
                   size="sm"
                 >
                   TD<br/>+2
@@ -451,7 +451,7 @@ export default function LiveScoringPage() {
                       wrestler1: { ...prev.wrestler1, escapes: prev.wrestler1.escapes + 1 }
                     }))
                   }}
-                  className="bg-blue-600 hover:bg-blue-500 text-white"
+                  className="bg-blue-700 hover:bg-blue-800 text-white font-bold"
                   size="sm"
                 >
                   E<br/>+1
@@ -464,7 +464,7 @@ export default function LiveScoringPage() {
                       wrestler1: { ...prev.wrestler1, reversals: prev.wrestler1.reversals + 1 }
                     }))
                   }}
-                  className="bg-purple-600 hover:bg-purple-500 text-white"
+                  className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
                   size="sm"
                 >
                   R<br/>+2
@@ -477,7 +477,7 @@ export default function LiveScoringPage() {
                       wrestler1: { ...prev.wrestler1, nearFall2: prev.wrestler1.nearFall2 + 1 }
                     }))
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white"
+                  className="bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   N2<br/>+2
@@ -490,7 +490,7 @@ export default function LiveScoringPage() {
                       wrestler1: { ...prev.wrestler1, nearFall3: prev.wrestler1.nearFall3 + 1 }
                     }))
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white"
+                  className="bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   N3<br/>+3
@@ -503,7 +503,7 @@ export default function LiveScoringPage() {
                       wrestler1: { ...prev.wrestler1, nearFall4: prev.wrestler1.nearFall4 + 1 }
                     }))
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white"
+                  className="bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   N4<br/>+4
@@ -515,7 +515,7 @@ export default function LiveScoringPage() {
                 <Button 
                   onClick={() => addCaution('wrestler1')}
                   variant="outline"
-                  className="w-full border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-bold border-0"
                   size="sm"
                 >
                   Caution ({match.wrestler1.cautions})
@@ -523,7 +523,7 @@ export default function LiveScoringPage() {
                 <Button 
                   onClick={() => addStall('wrestler1')}
                   variant="outline"
-                  className="w-full border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold border-0"
                   size="sm"
                 >
                   Stalling ({match.wrestler1.stalls})
@@ -531,7 +531,7 @@ export default function LiveScoringPage() {
                 <Button 
                   onClick={() => addPenalty('wrestler1', 1)}
                   variant="outline"
-                  className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold border-0"
                   size="sm"
                 >
                   Penalty
@@ -562,8 +562,8 @@ export default function LiveScoringPage() {
                   <Button
                     onClick={toggleMatch}
                     className={match.isRunning 
-                      ? "bg-red-500 hover:bg-red-600" 
-                      : "bg-green-500 hover:bg-green-600"
+                      ? "bg-red-600 hover:bg-red-700 text-white font-bold" 
+                      : "bg-green-700 hover:bg-green-800 text-white font-bold"
                     }
                     size="sm"
                   >
@@ -596,7 +596,7 @@ export default function LiveScoringPage() {
                     onClick={() => setPosition('top1')}
                     variant={match.currentPosition === 'top1' ? 'default' : 'outline'}
                     size="sm"
-                    className={match.currentPosition === 'top1' ? 'bg-red-500 text-white' : 'border-red-500/30 text-red-400'}
+                    className={match.currentPosition === 'top1' ? 'bg-red-600 text-white font-bold' : 'bg-red-800 text-white hover:bg-red-700'}
                   >
                     Red Top
                   </Button>
@@ -604,7 +604,7 @@ export default function LiveScoringPage() {
                     onClick={() => setPosition('top2')}
                     variant={match.currentPosition === 'top2' ? 'default' : 'outline'}
                     size="sm"
-                    className={match.currentPosition === 'top2' ? 'bg-green-500 text-white' : 'border-green-500/30 text-green-400'}
+                    className={match.currentPosition === 'top2' ? 'bg-green-700 text-white font-bold' : 'bg-green-900 text-white hover:bg-green-800'}
                   >
                     Green Top
                   </Button>
@@ -616,7 +616,7 @@ export default function LiveScoringPage() {
                 <Button
                   onClick={() => setMatch(prev => ({ ...prev, bloodTime: !prev.bloodTime }))}
                   variant={match.bloodTime ? 'default' : 'outline'}
-                  className={match.bloodTime ? 'bg-red-600 text-white w-full' : 'border-red-500/30 text-red-400 w-full hover:bg-red-500/10'}
+                  className={match.bloodTime ? 'bg-red-700 text-white font-bold w-full' : 'bg-red-900 text-white w-full hover:bg-red-800'}
                   size="sm"
                 >
                   <Droplets className="w-4 h-4 mr-2" />
@@ -625,7 +625,7 @@ export default function LiveScoringPage() {
                 <Button
                   onClick={() => setMatch(prev => ({ ...prev, injuryTime: !prev.injuryTime }))}
                   variant={match.injuryTime ? 'default' : 'outline'}
-                  className={match.injuryTime ? 'bg-orange-600 text-white w-full' : 'border-orange-500/30 text-orange-400 w-full hover:bg-orange-500/10'}
+                  className={match.injuryTime ? 'bg-orange-700 text-white font-bold w-full' : 'bg-orange-900 text-white w-full hover:bg-orange-800'}
                   size="sm"
                 >
                   <Heart className="w-4 h-4 mr-2" />
@@ -662,7 +662,7 @@ export default function LiveScoringPage() {
                       }}
                       variant={match.period === p ? 'default' : 'outline'}
                       size="sm"
-                      className={match.period === p ? 'bg-purple-500 text-white' : 'border-purple-500/30 text-purple-400'}
+                      className={match.period === p ? 'bg-purple-700 text-white font-bold' : 'bg-purple-900 text-white hover:bg-purple-800'}
                     >
                       {p}
                     </Button>
@@ -681,7 +681,7 @@ export default function LiveScoringPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                  className="w-full bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   <Flag className="w-4 h-4 mr-2" />
@@ -689,7 +689,7 @@ export default function LiveScoringPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  className="w-full bg-red-700 hover:bg-red-800 text-white font-bold"
                   size="sm"
                 >
                   <X className="w-4 h-4 mr-2" />
@@ -728,7 +728,7 @@ export default function LiveScoringPage() {
                       wrestler2: { ...prev.wrestler2, takedowns: prev.wrestler2.takedowns + 1 }
                     }))
                   }}
-                  className="bg-green-600 hover:bg-green-500 text-white"
+                  className="bg-green-700 hover:bg-green-800 text-white font-bold"
                   size="sm"
                 >
                   TD<br/>+2
@@ -741,7 +741,7 @@ export default function LiveScoringPage() {
                       wrestler2: { ...prev.wrestler2, escapes: prev.wrestler2.escapes + 1 }
                     }))
                   }}
-                  className="bg-blue-600 hover:bg-blue-500 text-white"
+                  className="bg-blue-700 hover:bg-blue-800 text-white font-bold"
                   size="sm"
                 >
                   E<br/>+1
@@ -754,7 +754,7 @@ export default function LiveScoringPage() {
                       wrestler2: { ...prev.wrestler2, reversals: prev.wrestler2.reversals + 1 }
                     }))
                   }}
-                  className="bg-purple-600 hover:bg-purple-500 text-white"
+                  className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
                   size="sm"
                 >
                   R<br/>+2
@@ -767,7 +767,7 @@ export default function LiveScoringPage() {
                       wrestler2: { ...prev.wrestler2, nearFall2: prev.wrestler2.nearFall2 + 1 }
                     }))
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white"
+                  className="bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   N2<br/>+2
@@ -780,7 +780,7 @@ export default function LiveScoringPage() {
                       wrestler2: { ...prev.wrestler2, nearFall3: prev.wrestler2.nearFall3 + 1 }
                     }))
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white"
+                  className="bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   N3<br/>+3
@@ -793,7 +793,7 @@ export default function LiveScoringPage() {
                       wrestler2: { ...prev.wrestler2, nearFall4: prev.wrestler2.nearFall4 + 1 }
                     }))
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white"
+                  className="bg-orange-700 hover:bg-orange-800 text-white font-bold"
                   size="sm"
                 >
                   N4<br/>+4
@@ -805,7 +805,7 @@ export default function LiveScoringPage() {
                 <Button 
                   onClick={() => addCaution('wrestler2')}
                   variant="outline"
-                  className="w-full border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-bold border-0"
                   size="sm"
                 >
                   Caution ({match.wrestler2.cautions})
@@ -813,7 +813,7 @@ export default function LiveScoringPage() {
                 <Button 
                   onClick={() => addStall('wrestler2')}
                   variant="outline"
-                  className="w-full border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold border-0"
                   size="sm"
                 >
                   Stalling ({match.wrestler2.stalls})
@@ -821,7 +821,7 @@ export default function LiveScoringPage() {
                 <Button 
                   onClick={() => addPenalty('wrestler2', 1)}
                   variant="outline"
-                  className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold border-0"
                   size="sm"
                 >
                   Penalty
