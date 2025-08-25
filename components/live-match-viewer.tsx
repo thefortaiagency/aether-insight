@@ -42,7 +42,7 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
     // Fetch initial live matches
     fetchLiveMatches()
 
-    // Set up real-time subscription
+    // Set up real-time subscription for matches table only
     const channel = supabase
       .channel('live-matches')
       .on(
@@ -55,17 +55,6 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
         },
         (payload) => {
           handleRealtimeUpdate(payload)
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'match_updates'
-        },
-        (payload) => {
-          handleMatchUpdate(payload)
         }
       )
       .subscribe()
@@ -87,10 +76,10 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'UPDATE',
             schema: 'public',
-            table: 'match_updates',
-            filter: `match_id=eq.${matchId}`
+            table: 'matches',
+            filter: `id=eq.${matchId}`
           },
           (payload) => {
             handleSpecificMatchUpdate(payload)
@@ -172,41 +161,20 @@ export default function LiveMatchViewer({ matchId, onSelectMatch }: LiveMatchVie
   }
 
   const handleMatchUpdate = (payload: any) => {
-    const updateData = payload.new.data
-    
-    setLiveMatches(prev => prev.map(match => {
-      if (match.id === payload.new.match_id) {
-        return {
-          ...match,
-          wrestler1_score: updateData.wrestler1_score || match.wrestler1_score,
-          wrestler2_score: updateData.wrestler2_score || match.wrestler2_score,
-          period: updateData.period || match.period,
-          match_time: updateData.match_time || match.match_time,
-          lastUpdate: updateData.action || match.lastUpdate
-        }
-      }
-      return match
-    }))
-
-    // Update selected match if it's the one being updated
-    if (selectedMatch && selectedMatch.id === payload.new.match_id) {
-      setSelectedMatch(prev => ({
-        ...prev!,
-        wrestler1_score: updateData.wrestler1_score || prev!.wrestler1_score,
-        wrestler2_score: updateData.wrestler2_score || prev!.wrestler2_score,
-        period: updateData.period || prev!.period,
-        match_time: updateData.match_time || prev!.match_time,
-        lastUpdate: updateData.action || prev!.lastUpdate
-      }))
-    }
+    // This function is no longer needed since we're not using match_updates table
+    // Updates will come through handleRealtimeUpdate instead for the matches table
   }
 
   const handleSpecificMatchUpdate = (payload: any) => {
     if (selectedMatch && selectedMatch.id === matchId) {
-      const updateData = payload.new.data
+      // Update selected match with new data from matches table
+      const newData = payload.new
       setSelectedMatch(prev => ({
         ...prev!,
-        ...updateData
+        wrestler1_score: newData.final_score_for || prev!.wrestler1_score,
+        wrestler2_score: newData.final_score_against || prev!.wrestler2_score,
+        status: newData.status || prev!.status,
+        lastUpdate: new Date().toISOString()
       }))
     }
   }
