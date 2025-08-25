@@ -11,7 +11,7 @@ const WrestlingStatsBackground = () => {
           src="/wrestling-stats-bg.png"
           alt="Wrestling Statistics Background"
           fill
-          className="object-cover opacity-40"
+          className="object-cover opacity-60"
           priority
           quality={100}
         />
