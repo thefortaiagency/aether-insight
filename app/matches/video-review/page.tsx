@@ -9,8 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Play, Pause, SkipBack, SkipForward, Clock, Activity,
   Trophy, Flag, AlertCircle, ChevronLeft, ChevronRight,
-  Video, List, BarChart3, Loader2
+  Video, List, BarChart3, Loader2, ExternalLink
 } from 'lucide-react'
+import Link from 'next/link'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
 
@@ -296,6 +297,14 @@ export default function VideoReviewPage() {
                           {formatVideoTime(currentTime)} / {matchVideo.duration}
                         </div>
                       </div>
+                      
+                      {/* Full Breakdown Link */}
+                      <Link href={`/matches/scoring-breakdown/${matchVideo.matchId}`}>
+                        <Button className="w-full mt-3 bg-gold hover:bg-gold/90 text-black">
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View Full Scoring Breakdown
+                        </Button>
+                      </Link>
                     </CardContent>
                   </Card>
 

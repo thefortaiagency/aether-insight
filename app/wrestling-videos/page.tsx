@@ -16,7 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Download, ExternalLink, Play, Video, Loader2, RefreshCw, AlertCircle, Trash2, Droplets } from 'lucide-react'
+import { Download, ExternalLink, Play, Video, Loader2, RefreshCw, AlertCircle, Trash2, Droplets, BarChart3 } from 'lucide-react'
+import Link from 'next/link'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 interface VideoData {
@@ -279,6 +280,19 @@ export default function WrestlingVideosPage() {
                       
                       {/* Action Buttons */}
                       <div className="grid grid-cols-2 gap-3 mt-4">
+                        {/* Scoring Breakdown - Show if video has match ID */}
+                        {selectedVideo.meta?.matchId && (
+                          <Link 
+                            href={`/matches/scoring-breakdown/${selectedVideo.meta.matchId}`}
+                            className="col-span-2"
+                          >
+                            <Button className="w-full bg-gold hover:bg-gold/90 text-black">
+                              <BarChart3 className="h-4 w-4 mr-2" />
+                              View Scoring Breakdown
+                            </Button>
+                          </Link>
+                        )}
+                        
                         <a
                           href={`https://customer-gozi8qaaq1gycqie.cloudflarestream.com/${selectedVideo.id}/watch`}
                           target="_blank"

@@ -118,12 +118,41 @@ export async function POST(request: NextRequest) {
           .eq('id', (metadata as any).matchId)
     }
 
+    // Automatically apply watermark
+    try {
+      const watermarkResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream/${videoId}/watermarks`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${CLOUDFLARE_STREAM_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            file: 'https://insight.aethervtc.ai/aether-logo.png',
+            position: 'top-right',
+            opacity: 0.8,
+            scale: 0.15
+          })
+        }
+      )
+
+      if (!watermarkResponse.ok) {
+        console.log('Watermark application failed, but video uploaded successfully')
+      } else {
+        console.log('Watermark applied successfully to video:', videoId)
+      }
+    } catch (watermarkError) {
+      console.error('Error applying watermark:', watermarkError)
+      // Don't fail the upload if watermarking fails
+    }
+
     return NextResponse.json({
       success: true,
       videoId,
       playbackUrl,
       thumbnailUrl,
-      message: 'Video uploaded successfully'
+      message: 'Video uploaded and watermarked successfully'
     })
 
   } catch (error) {
