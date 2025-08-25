@@ -212,11 +212,6 @@ export default function VideoRecorderTestPage() {
               Match Active
             </Badge>
           )}
-          {matchCreated && (
-            <Badge className="bg-green-900/50 text-green-400 border-green-600">
-              Score: {wrestlerScore} - {opponentScore}
-            </Badge>
-          )}
           {uploadedVideos.length > 0 && (
             <Badge className="bg-purple-900/50 text-purple-400 border-purple-600">
               {uploadedVideos.length} Videos Uploaded
@@ -287,7 +282,7 @@ export default function VideoRecorderTestPage() {
                   <Badge className="bg-blue-900/50 text-blue-400">
                     Period {currentPeriod} - {formatTime(periodTime)}
                   </Badge>
-                  <Badge className="bg-green-900/50 text-green-400">
+                  <Badge className="bg-gray-700/50 text-gray-300">
                     {wrestlerScore} - {opponentScore}
                   </Badge>
                 </div>
