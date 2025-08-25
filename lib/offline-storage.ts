@@ -94,14 +94,22 @@ class OfflineStorage {
     if (!this.db) await this.init()
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['matches'], 'readonly')
-      const store = transaction.objectStore('matches')
-      const index = store.index('synced')
-      // Use IDBKeyRange to query for false values
-      const request = index.getAll(IDBKeyRange.only(false))
+      try {
+        const transaction = this.db!.transaction(['matches'], 'readonly')
+        const store = transaction.objectStore('matches')
+        const request = store.getAll()
 
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          // Filter for unsynced matches manually
+          const allMatches = request.result || []
+          const unsyncedMatches = allMatches.filter(match => match.synced === false)
+          resolve(unsyncedMatches)
+        }
+        request.onerror = () => reject(request.error)
+      } catch (error) {
+        console.error('Error in getAllUnsyncedMatches:', error)
+        resolve([]) // Return empty array on error
+      }
     })
   }
 
@@ -197,14 +205,22 @@ class OfflineStorage {
     if (!this.db) await this.init()
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['videos'], 'readonly')
-      const store = transaction.objectStore('videos')
-      const index = store.index('synced')
-      // Use IDBKeyRange to query for false values
-      const request = index.getAll(IDBKeyRange.only(false))
+      try {
+        const transaction = this.db!.transaction(['videos'], 'readonly')
+        const store = transaction.objectStore('videos')
+        const request = store.getAll()
 
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          // Filter for unsynced videos manually
+          const allVideos = request.result || []
+          const unsyncedVideos = allVideos.filter(video => video.synced === false)
+          resolve(unsyncedVideos)
+        }
+        request.onerror = () => reject(request.error)
+      } catch (error) {
+        console.error('Error in getAllUnsyncedVideos:', error)
+        resolve([]) // Return empty array on error
+      }
     })
   }
 
@@ -306,20 +322,32 @@ class OfflineStorage {
     videoCount: number
     totalSize: number
   }> {
-    if (!this.db) await this.init()
+    try {
+      if (!this.db) await this.init()
 
-    const matches = await this.getAllUnsyncedMatches()
-    const videos = await this.getAllUnsyncedVideos()
-    
-    let totalSize = 0
-    for (const video of videos) {
-      totalSize += video.blob.size
-    }
+      const matches = await this.getAllUnsyncedMatches()
+      const videos = await this.getAllUnsyncedVideos()
+      
+      let totalSize = 0
+      for (const video of videos) {
+        if (video.blob && video.blob.size) {
+          totalSize += video.blob.size
+        }
+      }
 
-    return {
-      matchCount: matches.length,
-      videoCount: videos.length,
-      totalSize
+      return {
+        matchCount: matches.length,
+        videoCount: videos.length,
+        totalSize
+      }
+    } catch (error) {
+      console.error('Error getting storage info:', error)
+      // Return default values on error
+      return {
+        matchCount: 0,
+        videoCount: 0,
+        totalSize: 0
+      }
     }
   }
 
@@ -327,30 +355,38 @@ class OfflineStorage {
   async clearSyncedData(): Promise<void> {
     if (!this.db) await this.init()
 
-    const transaction = this.db!.transaction(['matches', 'videos'], 'readwrite')
-    
-    // Clear synced matches
-    const matchStore = transaction.objectStore('matches')
-    const matchIndex = matchStore.index('synced')
-    const syncedMatches = await new Promise<OfflineMatch[]>((resolve) => {
-      const request = matchIndex.getAll(IDBKeyRange.only(true))
-      request.onsuccess = () => resolve(request.result)
-    })
-    
-    for (const match of syncedMatches) {
-      matchStore.delete(match.id)
-    }
+    try {
+      const transaction = this.db!.transaction(['matches', 'videos'], 'readwrite')
+      
+      // Clear synced matches
+      const matchStore = transaction.objectStore('matches')
+      const syncedMatches = await new Promise<OfflineMatch[]>((resolve) => {
+        const request = matchStore.getAll()
+        request.onsuccess = () => {
+          const allMatches = request.result || []
+          resolve(allMatches.filter(match => match.synced === true))
+        }
+      })
+      
+      for (const match of syncedMatches) {
+        matchStore.delete(match.id)
+      }
 
-    // Clear synced videos
-    const videoStore = transaction.objectStore('videos')
-    const videoIndex = videoStore.index('synced')
-    const syncedVideos = await new Promise<OfflineVideo[]>((resolve) => {
-      const request = videoIndex.getAll(IDBKeyRange.only(true))
-      request.onsuccess = () => resolve(request.result)
-    })
-    
-    for (const video of syncedVideos) {
-      videoStore.delete(video.id)
+      // Clear synced videos
+      const videoStore = transaction.objectStore('videos')
+      const syncedVideos = await new Promise<OfflineVideo[]>((resolve) => {
+        const request = videoStore.getAll()
+        request.onsuccess = () => {
+          const allVideos = request.result || []
+          resolve(allVideos.filter(video => video.synced === true))
+        }
+      })
+      
+      for (const video of syncedVideos) {
+        videoStore.delete(video.id)
+      }
+    } catch (error) {
+      console.error('Error clearing synced data:', error)
     }
   }
 }
