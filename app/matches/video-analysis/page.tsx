@@ -106,14 +106,11 @@ export default function VideoAnalysisPage() {
                     className="hidden"
                     id="video-upload"
                   />
-                  <label htmlFor="video-upload">
-                    <Button
-                      as="div"
-                      className="w-full bg-gold hover:bg-gold/90 text-black cursor-pointer"
-                    >
+                  <label htmlFor="video-upload" className="block">
+                    <div className="w-full bg-gold hover:bg-gold/90 text-black cursor-pointer px-4 py-2 rounded-md font-medium flex items-center justify-center">
                       <Upload className="w-4 h-4 mr-2" />
                       Upload Video
-                    </Button>
+                    </div>
                   </label>
                 </div>
                 <div className="flex-1">
