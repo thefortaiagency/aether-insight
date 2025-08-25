@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { 
   Video, Users, Trophy, BarChart3, PlayCircle, Zap, Clock, Shield, 
   TrendingUp, CheckCircle, Star, ArrowRight, Play, Smartphone, Monitor, 
@@ -94,8 +95,8 @@ export default function HomePage() {
     { feature: "Mobile First Design", aether: true, others: false },
     { feature: "Cloudflare Video", aether: true, others: false },
     { feature: "AI Move Detection", aether: true, others: false },
-    { feature: "Setup Time", aether: "2 min", others: "30+ min" },
-    { feature: "Price", aether: "$49/mo", others: "$99+/mo" }
+    { feature: "AetherVTC Integration", aether: true, others: false },
+    { feature: "Setup Time", aether: "2 min", others: "30+ min" }
   ]
 
   return (
@@ -143,7 +144,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/wrestling-videos">
+              <Link href="/dashboard">
                 <Button 
                   variant="ghost" 
                   className="text-gray-300 hover:text-gold hidden md:inline-flex"
@@ -151,9 +152,11 @@ export default function HomePage() {
                   Dashboard
                 </Button>
               </Link>
-              <Button className="bg-gold hover:bg-gold/90 text-black font-bold">
-                Get Early Access
-              </Button>
+              <Link href="/contact">
+                <Button className="bg-gold hover:bg-gold/90 text-black font-bold">
+                  Get Early Access
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -220,7 +223,7 @@ export default function HomePage() {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-gold text-gold hover:bg-gold hover:text-black font-bold text-lg px-8"
+              className="bg-black/80 border-gold text-gold hover:bg-gold hover:text-black font-bold text-lg px-8"
               onClick={() => setShowVideo(true)}
             >
               <Play className="w-5 h-5 mr-2" />
@@ -270,7 +273,7 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">$99/month for outdated software</span>
+                    <span className="text-gray-300">Outdated software with no integration</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -297,11 +300,97 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">$49/month with 10x more features</span>
+                    <span className="text-gray-300">Integrated with revolutionary AetherVTC platform</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Works on any device, anywhere</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AetherVTC Integration Section */}
+      <section className="relative z-10 py-16 bg-gradient-to-r from-gold/10 to-transparent">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge className="bg-gold/20 text-gold border-gold px-4 py-2 mb-4">
+                EXCLUSIVE INTEGRATION
+              </Badge>
+              <h2 className="text-4xl font-bold mb-4">
+                <span className="text-white">Powered by </span>
+                <span className="text-gold">AetherVTC Platform</span>
+              </h2>
+              <p className="text-xl text-gray-300">
+                The only wrestling analytics platform integrated with the revolutionary AetherVTC communication system
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-gold/20 rounded-full p-3">
+                    <Video className="w-6 h-6 text-gold" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Seamless Video Conferencing</h3>
+                    <p className="text-gray-400">
+                      Host virtual team meetings, remote coaching sessions, and parent conferences directly from your wrestling platform
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="bg-gold/20 rounded-full p-3">
+                    <Users className="w-6 h-6 text-gold" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Team Communication Hub</h3>
+                    <p className="text-gray-400">
+                      Built-in chat, announcements, and real-time updates keep your entire program connected
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="bg-gold/20 rounded-full p-3">
+                    <Shield className="w-6 h-6 text-gold" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Enterprise-Grade Security</h3>
+                    <p className="text-gray-400">
+                      Military-grade encryption and FERPA compliance built into every feature
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-black/60 rounded-xl p-8 border border-gold/30">
+                <h3 className="text-2xl font-bold text-gold mb-4">One Platform. Everything Connected.</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-white">Live match streaming to parents</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-white">Virtual coaching during away matches</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-white">Team announcements & scheduling</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-white">Parent-coach communication portal</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-white">Recruiting video conferences</span>
                   </li>
                 </ul>
               </div>
