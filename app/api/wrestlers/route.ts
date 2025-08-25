@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    const { data: wrestler, error: wrestlerError } = await supabase
+    const { data: wrestler, error: wrestlerError } = await supabaseAdmin
       .from('wrestlers')
       .insert({
         team_id: body.team_id || null,
