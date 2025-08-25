@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { clearOldVideoStorage } from '@/utils/clear-old-storage'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -219,6 +220,11 @@ export default function LiveScoringPage() {
       alert(`Error creating match: ${error}`)
     }
   }
+
+  // Clear old video storage on component mount
+  useEffect(() => {
+    clearOldVideoStorage()
+  }, [])
 
   // Timer Effect
   useEffect(() => {

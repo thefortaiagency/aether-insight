@@ -84,22 +84,50 @@ export function SimpleVideoRecorder({
       }
 
       // Handle recording stop
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'video/webm' })
         const url = URL.createObjectURL(blob)
         setRecordedBlob(blob)
         setRecordedUrl(url)
         
-        // Save to localStorage as base64 (for small videos)
-        // For larger videos, you'd use IndexedDB
-        if (matchId && blob.size < 50 * 1024 * 1024) { // Less than 50MB
-          const reader = new FileReader()
-          reader.onloadend = () => {
-            const base64 = reader.result as string
-            localStorage.setItem(`video-${matchId}`, base64)
-            console.log('Video saved locally')
+        // Save to IndexedDB instead of localStorage (no size limits!)
+        if (matchId) {
+          try {
+            // Open IndexedDB
+            const request = indexedDB.open('AetherVideos', 1)
+            
+            request.onupgradeneeded = (event) => {
+              const db = (event.target as IDBOpenDBRequest).result
+              if (!db.objectStoreNames.contains('videos')) {
+                db.createObjectStore('videos', { keyPath: 'matchId' })
+              }
+            }
+            
+            request.onsuccess = (event) => {
+              const db = (event.target as IDBOpenDBRequest).result
+              const transaction = db.transaction(['videos'], 'readwrite')
+              const store = transaction.objectStore('videos')
+              
+              // Store video blob directly in IndexedDB
+              store.put({
+                matchId: matchId,
+                blob: blob,
+                timestamp: new Date().toISOString(),
+                size: blob.size
+              })
+              
+              transaction.oncomplete = () => {
+                console.log(`Video saved to IndexedDB (${(blob.size / 1024 / 1024).toFixed(1)}MB)`)
+                db.close()
+              }
+            }
+            
+            request.onerror = () => {
+              console.error('Failed to save video to IndexedDB')
+            }
+          } catch (err) {
+            console.error('IndexedDB error:', err)
           }
-          reader.readAsDataURL(blob)
         }
         
         if (onRecordingComplete) {
