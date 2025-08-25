@@ -7,6 +7,7 @@ import {
   X
 } from 'lucide-react'
 import Link from 'next/link'
+import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 interface Wrestler {
   id: string
@@ -197,7 +198,10 @@ export default function TeamsPage() {
   const grades = ['9', '10', '11', '12']
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+      <WrestlingStatsBackground />
+      
+      <div className="relative z-10 p-4 md:p-6">
       {/* Header */}
       <div className="mb-6 flex justify-between items-start">
         <div>
@@ -504,6 +508,7 @@ export default function TeamsPage() {
             View Matches
           </button>
         </Link>
+      </div>
       </div>
     </div>
   )

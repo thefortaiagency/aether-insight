@@ -7,6 +7,7 @@ import {
   ChevronUp, ChevronDown, Minus, Star
 } from 'lucide-react'
 import Link from 'next/link'
+import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 interface WrestlerStats {
   name: string
@@ -206,7 +207,10 @@ export default function AnalyticsPage() {
   const weights = ['106', '113', '120', '126', '132', '138', '145', '152', '160', '170', '182', '195', '220', '285', 'all']
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+      <WrestlingStatsBackground />
+      
+      <div className="relative z-10 p-4 md:p-6">
       {/* Header */}
       <div className="mb-6 flex justify-between items-start">
         <div>
@@ -569,6 +573,7 @@ export default function AnalyticsPage() {
             Team Stats
           </button>
         </Link>
+      </div>
       </div>
     </div>
   )
