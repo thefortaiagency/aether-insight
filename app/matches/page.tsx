@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -161,7 +162,15 @@ export default function MatchesPage() {
               <CardHeader className="border-b border-gold/20">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[#D4AF38]">LIVE MATCH - {LIVE_MATCH.weightClass} lbs</CardTitle>
-                  <Badge className="bg-red-600 animate-pulse">LIVE</Badge>
+                  <div className="flex gap-2">
+                    <Link href="/matches/live-scoring">
+                      <Button className="bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black">
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Advanced Scoring
+                      </Button>
+                    </Link>
+                    <Badge className="bg-red-600 animate-pulse">LIVE</Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
