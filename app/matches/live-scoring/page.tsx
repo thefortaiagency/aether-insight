@@ -57,6 +57,8 @@ interface LiveMatch {
   result?: 'win' | 'loss' | 'draw'
   win_type?: 'pin' | 'tech_fall' | 'major_decision' | 'decision' | 'forfeit'
   pin_time?: string
+  winner?: string
+  winType?: string
 }
 
 const PERIODS = {
