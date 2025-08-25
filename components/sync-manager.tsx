@@ -172,12 +172,14 @@ export function SyncManager({ matchId }: { matchId?: string }) {
             type: 'video/webm'
           })
           
+          // Cloudflare direct upload expects FormData
+          const formData = new FormData()
+          formData.append('file', file)
+          
           const uploadResponse = await fetch(uploadURL, {
             method: 'POST',
-            body: file,
-            headers: {
-              'Content-Type': 'video/webm'
-            }
+            body: formData
+            // Don't set Content-Type header - let browser set it with boundary
           })
           
           if (!uploadResponse.ok) {
