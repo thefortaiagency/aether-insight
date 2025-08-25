@@ -86,7 +86,7 @@ export default function TeamsPage() {
             weight: 160,
             role: 'captain',
             joinedDate: '2021-09-01',
-            record: { wins: 28, losses: 4 },
+            record: { wins: 28, losses: 4, pins: 12 },
             status: 'active'
           },
           {
@@ -98,7 +98,7 @@ export default function TeamsPage() {
             weight: 145,
             role: 'wrestler',
             joinedDate: '2022-09-01',
-            record: { wins: 22, losses: 8 },
+            record: { wins: 22, losses: 8, pins: 8 },
             status: 'active'
           },
           {
@@ -110,7 +110,7 @@ export default function TeamsPage() {
             weight: 132,
             role: 'wrestler',
             joinedDate: '2023-09-01',
-            record: { wins: 18, losses: 5 },
+            record: { wins: 18, losses: 5, pins: 6 },
             status: 'active'
           },
           {
@@ -122,7 +122,7 @@ export default function TeamsPage() {
             weight: 170,
             role: 'captain',
             joinedDate: '2021-09-01',
-            record: { wins: 25, losses: 7 },
+            record: { wins: 25, losses: 7, pins: 10 },
             status: 'active'
           },
           {
@@ -134,7 +134,7 @@ export default function TeamsPage() {
             weight: 152,
             role: 'wrestler',
             joinedDate: '2022-09-01',
-            record: { wins: 15, losses: 10 },
+            record: { wins: 15, losses: 10, pins: 4 },
             status: 'injured'
           }
         ],
@@ -168,7 +168,7 @@ export default function TeamsPage() {
       weight: newWrestler.weight || 106,
       role: newWrestler.role || 'wrestler',
       joinedDate: new Date().toISOString().split('T')[0],
-      record: { wins: 0, losses: 0 },
+      record: { wins: 0, losses: 0, pins: 0 },
       status: newWrestler.status || 'active'
     }
 
