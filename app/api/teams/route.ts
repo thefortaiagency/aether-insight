@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/teams - Get all teams or filter by query params
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('teams')
       .select(`
         *,
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    const { data: team, error: teamError } = await supabase
+    const { data: team, error: teamError } = await supabaseAdmin
       .from('teams')
       .insert({
         name: body.name,
@@ -111,7 +111,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
     
-    const { data: team, error: teamError } = await supabase
+    const { data: team, error: teamError } = await supabaseAdmin
       .from('teams')
       .update({
         name: body.name,
@@ -159,7 +159,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if team has wrestlers
-    const { data: wrestlers } = await supabase
+    const { data: wrestlers } = await supabaseAdmin
       .from('wrestlers')
       .select('id')
       .eq('team_id', teamId)
@@ -171,7 +171,7 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('teams')
       .delete()
       .eq('id', teamId)

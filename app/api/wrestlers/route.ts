@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/wrestlers - Get all wrestlers or filter by query params
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const limit = parseInt(searchParams.get('limit') || '100')
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('wrestlers')
       .select(`
         *,
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Create initial season record if season provided
     if (body.season) {
-      const { error: seasonError } = await supabase
+      const { error: seasonError } = await supabaseAdmin
         .from('season_records')
         .insert({
           wrestler_id: wrestler.id,
@@ -134,7 +134,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     for (const wrestlerData of body.wrestlers) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('wrestlers')
         .insert({
           team_id: wrestlerData.team_id || body.team_id || null,
@@ -161,7 +161,7 @@ export async function PATCH(request: NextRequest) {
         
         // Create season record if provided
         if (body.season) {
-          await supabase
+          await supabaseAdmin
             .from('season_records')
             .insert({
               wrestler_id: data.id,
