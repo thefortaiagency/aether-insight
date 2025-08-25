@@ -57,12 +57,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Return the upload URL and video ID
+    // Cloudflare Stream URLs don't require the account ID in the URL
+    const videoId = data.result.uid
+    const streamURL = `https://cloudflarestream.com/${videoId}/manifest/video.m3u8`
+    const thumbnailURL = `https://cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`
+    
     return NextResponse.json({
       success: true,
       uploadURL: data.result.uploadURL,
-      videoId: data.result.uid,
-      // Stream URL will be available after upload completes
-      streamURL: `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_CUSTOMER_SUBDOMAIN}.cloudflarestream.com/${data.result.uid}/manifest/video.m3u8`
+      videoId: videoId,
+      streamURL: streamURL,  // HLS URL for video playback
+      thumbnailURL: thumbnailURL
     })
     
   } catch (error) {
@@ -74,4 +79,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
