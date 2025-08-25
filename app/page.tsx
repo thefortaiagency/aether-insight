@@ -147,7 +147,7 @@ export default function HomePage() {
               <Link href="/dashboard">
                 <Button 
                   variant="ghost" 
-                  className="text-gray-300 hover:text-gold hidden md:inline-flex"
+                  className="text-gray-300 hover:text-gold"
                 >
                   Dashboard
                 </Button>
