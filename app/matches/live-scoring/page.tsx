@@ -781,7 +781,7 @@ export default function LiveScoringPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
       <OfflineStatus />
-      <SyncManager matchId={matchId} />
+      <SyncManager matchId={matchId || undefined} />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
         {/* Video Recorder Section - Always visible */}
