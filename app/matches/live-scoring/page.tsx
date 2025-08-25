@@ -12,11 +12,12 @@ import {
   TrendingUp, Shield, Zap, Flag, Circle, Square,
   Timer, Heart, Droplets, AlertTriangle, X, Check,
   ArrowUp, ArrowDown, RefreshCw, User, Settings, Save,
-  Undo2, Redo2, History, Printer
+  Undo2, Redo2, History, Printer, CheckCircle
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import MatchSetup from '@/components/match-setup'
 import { BoutSheet } from '@/components/bout-sheet'
+import { MatchEndDialog } from '@/components/match-end-dialog'
 import { useRouter } from 'next/navigation'
 
 interface Wrestler {
@@ -86,6 +87,8 @@ export default function LiveScoringPage() {
   const [redoStack, setRedoStack] = useState<MatchAction[]>([])
   const [showBoutSheet, setShowBoutSheet] = useState(false)
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
+  const [showEndDialog, setShowEndDialog] = useState(false)
+  const [matchEnded, setMatchEnded] = useState(false)
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
     wrestler1: {
@@ -328,6 +331,58 @@ export default function LiveScoringPage() {
     }
   }
 
+  // Check for automatic match end conditions
+  const checkMatchEnd = () => {
+    const scoreDiff = Math.abs(match.wrestler1.score - match.wrestler2.score)
+    
+    // Tech Fall: 15+ point lead
+    if (scoreDiff >= 15 && !matchEnded) {
+      setMatch(prev => ({ ...prev, isRunning: false }))
+      const leader = match.wrestler1.score > match.wrestler2.score ? 'wrestler1' : 'wrestler2'
+      const leaderName = leader === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
+      
+      // Auto-show end dialog for tech fall
+      recordAction('match_end', `Technical Fall - ${leaderName} leads by ${scoreDiff}`, match)
+      setShowEndDialog(true)
+    }
+  }
+
+  // Handle PIN button
+  const handlePin = (wrestler: 'wrestler1' | 'wrestler2') => {
+    setMatch(prev => ({ ...prev, isRunning: false }))
+    const winnerName = wrestler === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
+    recordAction('match_end', `PIN by ${winnerName}`, match)
+    setMatch(prev => ({
+      ...prev,
+      winner: winnerName,
+      winType: 'pin'
+    }))
+    setShowEndDialog(true)
+  }
+
+  // Handle match end confirmation
+  const handleMatchEnd = (endType: string, winner: string, time?: string) => {
+    const winnerName = winner === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
+    const finalScore = `${match.wrestler1.score}-${match.wrestler2.score}`
+    
+    setMatch(prev => ({
+      ...prev,
+      isRunning: false,
+      winner: winnerName,
+      winType: endType,
+      pin_time: time
+    }))
+    
+    setMatchEnded(true)
+    setShowEndDialog(false)
+    
+    // Save final match state
+    saveMatchToDatabase()
+    
+    // Record in history
+    recordAction('match_end', `Match ended - ${endType} by ${winnerName} (${finalScore})`, match)
+  }
+
   const addScore = (wrestler: 'wrestler1' | 'wrestler2', points: number, action: string) => {
     const newState = {
       ...match,
@@ -359,6 +414,9 @@ export default function LiveScoringPage() {
     if (matchId) {
       saveMatchEvent(wrestler, action, points)
     }
+    
+    // Check for tech fall
+    checkMatchEnd()
   }
 
   // Save match to database
@@ -764,6 +822,17 @@ export default function LiveScoringPage() {
                 >
                   Penalty
                 </Button>
+                
+                {/* PIN Button */}
+                <Button 
+                  onClick={() => handlePin('wrestler1')}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold border-2 border-green-400"
+                  size="sm"
+                  disabled={matchEnded}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  PIN / FALL
+                </Button>
               </div>
 
               {/* Riding Time */}
@@ -844,6 +913,16 @@ export default function LiveScoringPage() {
                     <Save className="w-4 h-4 mr-1" />
                     {isSaving ? 'Saving...' : 'Save Match'}
                   </Button>
+                  {!matchEnded && (
+                    <Button
+                      onClick={() => setShowEndDialog(true)}
+                      className="bg-red-700 hover:bg-red-600 text-white font-bold"
+                      size="sm"
+                    >
+                      <Trophy className="w-4 h-4 mr-1" />
+                      End Match
+                    </Button>
+                  )}
                   <label className="flex items-center gap-2 text-white text-sm">
                     <input
                       type="checkbox"
@@ -1187,6 +1266,17 @@ export default function LiveScoringPage() {
                 >
                   Penalty
                 </Button>
+                
+                {/* PIN Button */}
+                <Button 
+                  onClick={() => handlePin('wrestler2')}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold border-2 border-green-400"
+                  size="sm"
+                  disabled={matchEnded}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  PIN / FALL
+                </Button>
               </div>
 
               {/* Riding Time */}
@@ -1298,6 +1388,17 @@ export default function LiveScoringPage() {
           </div>
         </div>
       )}
+      
+      {/* Match End Dialog */}
+      <MatchEndDialog
+        isOpen={showEndDialog}
+        onClose={() => setShowEndDialog(false)}
+        onConfirm={handleMatchEnd}
+        wrestler1={match.wrestler1}
+        wrestler2={match.wrestler2}
+        period={match.period}
+        currentTime={formatTime(timeRemaining)}
+      />
     </div>
   )
 }
