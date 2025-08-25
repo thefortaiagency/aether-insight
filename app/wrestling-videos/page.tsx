@@ -1,7 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import CloudflarePlayer from '@/components/cloudflare-player'
+import dynamic from 'next/dynamic'
+
+// Following Cloudflare Stream best practices - disable SSR for video player
+const CloudflarePlayer = dynamic(() => import('@/components/cloudflare-player'), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full aspect-video bg-black rounded-lg flex items-center justify-center">
+      <p className="text-gray-400">Loading player...</p>
+    </div>
+  )
+})
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
