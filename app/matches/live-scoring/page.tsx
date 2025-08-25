@@ -134,13 +134,16 @@ export default function LiveScoringPage() {
 
         // Update riding time
         if (match.ridingTimeActive) {
-          setMatch(prev => ({
-            ...prev,
-            [match.ridingTimeActive]: {
-              ...prev[match.ridingTimeActive as keyof typeof prev],
-              ridingTime: (prev[match.ridingTimeActive as keyof typeof prev] as Wrestler).ridingTime + 1
+          setMatch(prev => {
+            const activeWrestler = match.ridingTimeActive as 'wrestler1' | 'wrestler2'
+            return {
+              ...prev,
+              [activeWrestler]: {
+                ...prev[activeWrestler],
+                ridingTime: prev[activeWrestler].ridingTime + 1
+              }
             }
-          }))
+          })
         }
       }, 1000)
     }
