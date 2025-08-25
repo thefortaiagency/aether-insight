@@ -79,9 +79,9 @@ export default function Navigation() {
                 className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
               />
             </div>
-            <div className="flex flex-col justify-center">
-              <h1 className="text-xl font-bold text-gold leading-tight">Aether Insight</h1>
-              <p className="text-xs text-gray-400 hidden md:block leading-tight">Wrestling Analytics Platform</p>
+            <div>
+              <h1 className="text-xl font-bold text-gold leading-none">Aether Insight</h1>
+              <p className="text-xs text-gray-400 hidden md:block leading-none mt-0.5">Wrestling Analytics Platform</p>
             </div>
           </Link>
 
