@@ -54,6 +54,11 @@ export default function Navigation() {
       icon: <Video className="w-4 h-4" /> 
     },
     { 
+      name: 'Video Analysis', 
+      href: '/matches/video-analysis', 
+      icon: <Video className="w-4 h-4 text-gold" /> 
+    },
+    { 
       name: 'Analytics', 
       href: '/analytics', 
       icon: <Award className="w-4 h-4" /> 
