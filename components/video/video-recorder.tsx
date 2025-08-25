@@ -139,6 +139,9 @@ export function VideoRecorder({
 
   // Process and upload chunk
   const processChunk = async () => {
+    // Disabled - no automatic uploads
+    return;
+    
     if (isProcessingChunk || chunksRef.current.length === 0) return
     
     setIsProcessingChunk(true)
@@ -261,42 +264,25 @@ export function VideoRecorder({
       }
 
       mediaRecorder.onstop = async () => {
-        // Process final chunk if auto-upload is enabled
-        if (autoUpload && chunksRef.current.length > 0) {
-          await processChunk()
-          
-          // If we have uploaded chunks, merge them
-          if (uploadedChunks.length > 0 && matchId) {
-            try {
-              const response = await fetch('/api/videos/merge-chunks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  matchId,
-                  chunkIds: uploadedChunks
-                })
-              })
-              
-              if (response.ok) {
-                console.log('Video chunks merged successfully')
-                if (onUploadComplete && uploadedChunks[0]) {
-                  onUploadComplete(uploadedChunks[0])
-                }
-              }
-            } catch (err) {
-              console.error('Error merging chunks:', err)
-            }
+        // Always save locally, never auto-upload
+        const blob = new Blob(chunksRef.current, { type: mimeType })
+        const url = URL.createObjectURL(blob)
+        setRecordedBlob(blob)
+        setRecordedUrl(url)
+        
+        // Save to offline storage
+        if (matchId) {
+          try {
+            console.log('Saving video to offline storage...')
+            await offlineStorage.saveVideo(matchId, blob)
+            console.log('Video saved locally, size:', blob.size)
+          } catch (err) {
+            console.error('Error saving video locally:', err)
           }
-        } else {
-          // Normal completion for non-chunked recording
-          const blob = new Blob(chunksRef.current, { type: mimeType })
-          const url = URL.createObjectURL(blob)
-          setRecordedBlob(blob)
-          setRecordedUrl(url)
-          
-          if (onRecordingComplete) {
-            onRecordingComplete(blob, url)
-          }
+        }
+        
+        if (onRecordingComplete) {
+          onRecordingComplete(blob, url)
         }
       }
 
@@ -313,12 +299,7 @@ export function VideoRecorder({
         setRecordingTime(prev => prev + 1)
       }, 1000)
 
-      // Start chunk processing timer if auto-upload is enabled
-      if (autoUpload) {
-        chunkTimerRef.current = setInterval(() => {
-          processChunk()
-        }, chunkDuration * 1000) // Process chunk every chunkDuration seconds
-      }
+      // Don't start chunk processing timer - we're saving locally only
 
     } catch (err) {
       console.error('Error starting recording:', err)
