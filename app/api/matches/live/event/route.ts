@@ -5,22 +5,23 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    // Insert into match_events table
+    // Insert into match_events table (using actual schema)
     const { data: eventData, error } = await supabaseAdmin
       .from('match_events')
       .insert({
         match_id: data.match_id,
-        timestamp: data.timestamp || Date.now(),
-        video_timestamp: data.video_timestamp || 0,
+        event_time: data.event_time || '00:00:00', // Required field - format as HH:MM:SS
         event_type: data.event_type,
-        wrestler_id: data.wrestler_id,
-        wrestler_name: data.wrestler_name,
-        points: data.points || 0,
-        description: data.description,
-        period: data.period || 1,
-        event_time: data.event_time,
+        points_scored: data.points || 0,
+        wrestler_id: data.wrestler_id || null,
+        period: data.period || null,
         move_name: data.move_name || data.event_type,
-        from_position: data.from_position
+        from_position: data.from_position || null,
+        to_position: null,
+        video_timestamp: data.video_timestamp || null,
+        success: true,
+        ai_detected: false,
+        notes: data.wrestler_name ? `${data.wrestler_name} - ${data.event_type}` : null
       })
       .select()
       .single()

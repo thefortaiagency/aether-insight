@@ -178,6 +178,7 @@ export default function LiveScoringPage() {
   
   const createMatch = async (setupData: any) => {
     try {
+      console.log('Creating match with data:', setupData)
       const response = await fetch('/api/matches/live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,10 +199,21 @@ export default function LiveScoringPage() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Match created successfully:', data)
         setMatchId(data.data.id)
+        // Show success message
+        setMatch(prev => ({
+          ...prev,
+          lastAction: `Match created - ID: ${data.data.id}`
+        }))
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to create match:', errorData)
+        alert(`Failed to create match: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Error creating match:', error)
+      console.error('❌ Error creating match:', error)
+      alert(`Error creating match: ${error}`)
     }
   }
 
@@ -439,6 +451,8 @@ export default function LiveScoringPage() {
         match_type: match.matchType
       }
 
+      console.log('Creating new match (no ID yet):', matchData)
+
       // Check if online
       if (navigator.onLine) {
         try {
@@ -450,9 +464,12 @@ export default function LiveScoringPage() {
           
           if (response.ok) {
             const data = await response.json()
+            console.log('✅ Match created via saveMatchToDatabase:', data)
             setMatchId(data.data.id)
           } else {
-            throw new Error('Failed to save online')
+            const errorData = await response.json()
+            console.error('❌ Failed to create match:', errorData)
+            throw new Error(errorData.error || 'Failed to save online')
           }
         } catch (error) {
           // Save offline if online save fails
@@ -468,6 +485,7 @@ export default function LiveScoringPage() {
       }
     } else {
       // Update existing match
+      console.log('Updating match:', matchId)
       setIsSaving(true)
       
       const periodScores: any = {}
@@ -479,46 +497,58 @@ export default function LiveScoringPage() {
         periodScores.period3 = { wrestler1: match.wrestler1.score, wrestler2: match.wrestler2.score }
       }
 
-      await fetch('/api/matches/live', {
+      const updateData = {
+        match_id: matchId,
+        wrestler1_score: match.wrestler1.score,
+        wrestler2_score: match.wrestler2.score,
+        wrestler1_name: match.wrestler1.name,
+        wrestler2_name: match.wrestler2.name,
+        wrestler1_stats: {
+          takedowns: match.wrestler1.takedowns,
+          escapes: match.wrestler1.escapes,
+          reversals: match.wrestler1.reversals,
+          near_fall_2: match.wrestler1.nearFall2,
+          near_fall_3: match.wrestler1.nearFall3,
+          near_fall_4: match.wrestler1.nearFall4,
+          stalls: match.wrestler1.stalls,
+          cautions: match.wrestler1.cautions,
+          warnings: match.wrestler1.warnings,
+          riding_time: match.wrestler1.ridingTime
+        },
+        wrestler2_stats: {
+          takedowns: match.wrestler2.takedowns,
+          escapes: match.wrestler2.escapes,
+          reversals: match.wrestler2.reversals,
+          near_fall_2: match.wrestler2.nearFall2,
+          near_fall_3: match.wrestler2.nearFall3,
+          near_fall_4: match.wrestler2.nearFall4,
+          stalls: match.wrestler2.stalls,
+          cautions: match.wrestler2.cautions,
+          warnings: match.wrestler2.warnings,
+          riding_time: match.wrestler2.ridingTime
+        },
+        current_period: match.period,
+        match_time: timeRemaining,
+        period_scores: periodScores,
+        wrestler1_riding_time: match.wrestler1.ridingTime,
+        wrestler2_riding_time: match.wrestler2.ridingTime
+      }
+
+      console.log('Updating match with data:', updateData)
+
+      const response = await fetch('/api/matches/live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_id: matchId,
-          wrestler1_score: match.wrestler1.score,
-          wrestler2_score: match.wrestler2.score,
-          wrestler1_name: match.wrestler1.name,
-          wrestler2_name: match.wrestler2.name,
-          wrestler1_stats: {
-            takedowns: match.wrestler1.takedowns,
-            escapes: match.wrestler1.escapes,
-            reversals: match.wrestler1.reversals,
-            near_fall_2: match.wrestler1.nearFall2,
-            near_fall_3: match.wrestler1.nearFall3,
-            near_fall_4: match.wrestler1.nearFall4,
-            stalls: match.wrestler1.stalls,
-            cautions: match.wrestler1.cautions,
-            warnings: match.wrestler1.warnings,
-            riding_time: match.wrestler1.ridingTime
-          },
-          wrestler2_stats: {
-            takedowns: match.wrestler2.takedowns,
-            escapes: match.wrestler2.escapes,
-            reversals: match.wrestler2.reversals,
-            near_fall_2: match.wrestler2.nearFall2,
-            near_fall_3: match.wrestler2.nearFall3,
-            near_fall_4: match.wrestler2.nearFall4,
-            stalls: match.wrestler2.stalls,
-            cautions: match.wrestler2.cautions,
-            warnings: match.wrestler2.warnings,
-            riding_time: match.wrestler2.ridingTime
-          },
-          current_period: match.period,
-          match_time: timeRemaining,
-          period_scores: periodScores,
-          wrestler1_riding_time: match.wrestler1.ridingTime,
-          wrestler2_riding_time: match.wrestler2.ridingTime
-        })
+        body: JSON.stringify(updateData)
       })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Match updated successfully:', data)
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to update match:', errorData)
+      }
       
       setIsSaving(false)
     }
@@ -526,7 +556,10 @@ export default function LiveScoringPage() {
 
   // Save individual scoring event with video timestamp
   const saveMatchEvent = async (wrestler: string, action: string, points: number) => {
-    if (!matchId) return
+    if (!matchId) {
+      console.warn('Cannot save event - no match ID yet')
+      return
+    }
 
     const wrestlerName = wrestler === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
     const periodNumber = match.period === 'SV' ? 4 : match.period === 'TB' ? 5 : match.period === 'UTB' ? 6 : match.period
@@ -536,24 +569,44 @@ export default function LiveScoringPage() {
     const matchStartTime = actionHistory.length > 0 ? actionHistory[0].timestamp : Date.now()
     const videoTimestamp = Math.floor((Date.now() - matchStartTime) / 1000)
 
-    await fetch('/api/matches/live/event', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        match_id: matchId,
-        timestamp: Date.now(), // Exact timestamp for syncing
-        video_timestamp: videoTimestamp, // Seconds from video start
-        event_time: 120 - timeRemaining, // Time elapsed in period
-        period: periodNumber,
-        event_type: action,
-        points: points,
-        wrestler_id: wrestler,
-        wrestler_name: wrestlerName,
-        move_name: action,
-        from_position: match.currentPosition,
-        description: `${wrestlerName} - ${action} +${points}`
+    // Format event_time as HH:MM:SS for the database
+    const elapsedSeconds = 120 - timeRemaining
+    const minutes = Math.floor(elapsedSeconds / 60)
+    const seconds = elapsedSeconds % 60
+    const formattedEventTime = `00:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+
+    const eventData = {
+      match_id: matchId,
+      event_time: formattedEventTime, // Format as HH:MM:SS
+      video_timestamp: videoTimestamp, // Seconds from video start
+      period: periodNumber,
+      event_type: action,
+      points: points,
+      wrestler_id: wrestler,
+      wrestler_name: wrestlerName,
+      move_name: action,
+      from_position: match.currentPosition
+    }
+
+    console.log('Saving match event:', eventData)
+
+    try {
+      const response = await fetch('/api/matches/live/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData)
       })
-    })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Event saved successfully:', data)
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to save event:', errorData)
+      }
+    } catch (error) {
+      console.error('❌ Error saving event:', error)
+    }
   }
 
   const addStall = (wrestler: 'wrestler1' | 'wrestler2') => {

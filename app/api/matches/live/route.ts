@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // POST /api/matches/live - Create or update a live match
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('API: Received match data:', body)
     
     // If match_id exists, update; otherwise create
     if (body.match_id) {
       // Update existing match
-      const { data: match, error: matchError } = await supabase
+      const { data: match, error: matchError } = await supabaseAdmin
         .from('matches')
         .update({
           final_score_for: body.wrestler1_score,
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Broadcast update via Supabase Realtime
-      await supabase
+      await supabaseAdmin
         .from('match_updates')
         .insert({
           match_id: body.match_id,
@@ -68,32 +69,33 @@ export async function POST(request: NextRequest) {
       })
     } else {
       // Create new match
-      const { data: match, error: matchError } = await supabase
+      // Note: The matches table only has opponent_name, not wrestler_name
+      // We'll store wrestler1 as the main wrestler (for) and wrestler2 as opponent (against)
+      const { data: match, error: matchError } = await supabaseAdmin
         .from('matches')
         .insert({
           wrestler_id: body.wrestler1_id || null,
           opponent_wrestler_id: body.wrestler2_id || null,
-          wrestler_name: body.wrestler1_name,
-          opponent_name: body.wrestler2_name,
-          wrestler_team: body.wrestler1_team,
+          opponent_name: body.wrestler2_name, // Only opponent_name exists in schema
           opponent_team: body.wrestler2_team,
-          match_date: new Date().toISOString(),
+          match_date: new Date().toISOString().split('T')[0], // Date only, not datetime
           match_type: body.match_type || 'dual',
           weight_class: body.weight_class,
           mat_number: body.mat_number,
           referee_name: body.referee_name,
           final_score_for: 0,
-          final_score_against: 0,
-          status: 'in_progress'
+          final_score_against: 0
         })
         .select()
         .single()
 
       if (matchError) {
         console.error('Error creating live match:', matchError)
+        console.error('Full error details:', JSON.stringify(matchError, null, 2))
         return NextResponse.json({ error: matchError.message }, { status: 500 })
       }
 
+      console.log('✅ Match created successfully:', match)
       return NextResponse.json({ 
         success: true, 
         data: match,
@@ -114,7 +116,7 @@ async function updateMatchStatistics(
   stats: any
 ) {
   // Check if statistics exist
-  const { data: existingStats } = await supabase
+  const { data: existingStats } = await supabaseAdmin
     .from('match_statistics')
     .select('id')
     .eq('match_id', matchId)
@@ -142,12 +144,12 @@ async function updateMatchStatistics(
   }
 
   if (existingStats) {
-    await supabase
+    await supabaseAdmin
       .from('match_statistics')
       .update(statsData)
       .eq('id', existingStats.id)
   } else {
-    await supabase
+    await supabaseAdmin
       .from('match_statistics')
       .insert(statsData)
   }
