@@ -18,7 +18,7 @@ export async function GET(
       .from('match_events')
       .select('*')
       .eq('match_id', matchId)
-      .order('timestamp', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error('Error fetching events:', error)

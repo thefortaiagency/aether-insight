@@ -150,7 +150,7 @@ export default function VideoReviewPage() {
       .from('match_events')
       .select('*')
       .eq('match_id', match.id)
-      .order('timestamp', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error('Error fetching match events:', error)

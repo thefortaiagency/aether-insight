@@ -76,11 +76,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all events for a match
+    // Note: match_events uses 'created_at' not 'timestamp'
     const { data, error } = await supabaseAdmin
       .from('match_events')
       .select('*')
       .eq('match_id', matchId)
-      .order('timestamp', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error) {
       // If table doesn't exist, return empty array
