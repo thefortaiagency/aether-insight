@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Download, ExternalLink, Play, Video, Loader2, RefreshCw, AlertCircle } from 'lucide-react'
+import { Download, ExternalLink, Play, Video, Loader2, RefreshCw, AlertCircle, Trash2, Droplets } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 interface VideoData {
@@ -37,6 +37,9 @@ export default function WrestlingVideosPage() {
   const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deletingVideo, setDeletingVideo] = useState<string | null>(null)
+  const [downloadingVideo, setDownloadingVideo] = useState<string | null>(null)
+  const [applyingWatermark, setApplyingWatermark] = useState<string | null>(null)
 
   const fetchVideos = async () => {
     setLoading(true)
@@ -63,6 +66,92 @@ export default function WrestlingVideosPage() {
   useEffect(() => {
     fetchVideos()
   }, [])
+
+  const handleDelete = async (videoId: string) => {
+    if (!confirm('Are you sure you want to delete this video? This cannot be undone.')) {
+      return
+    }
+
+    setDeletingVideo(videoId)
+    try {
+      const response = await fetch(`/api/videos/delete?id=${videoId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) throw new Error('Failed to delete video')
+
+      // Remove from local state
+      setVideos(videos.filter(v => v.id !== videoId))
+      if (selectedVideo?.id === videoId) {
+        setSelectedVideo(null)
+      }
+
+      // Show success (you could add a toast here)
+      alert('Video deleted successfully')
+    } catch (err) {
+      console.error('Error deleting video:', err)
+      alert('Failed to delete video')
+    } finally {
+      setDeletingVideo(null)
+    }
+  }
+
+  const handleDownload = async (video: VideoData) => {
+    setDownloadingVideo(video.id)
+    try {
+      const response = await fetch('/api/videos/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: video.id })
+      })
+
+      if (!response.ok) throw new Error('Failed to get download URL')
+
+      const data = await response.json()
+      
+      // Create a temporary link and click it to start download
+      const link = document.createElement('a')
+      link.href = data.downloadUrl
+      link.download = `${video.title || 'video'}.mp4`
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      console.error('Error downloading video:', err)
+      alert('Failed to download video. The video may still be processing.')
+    } finally {
+      setDownloadingVideo(null)
+    }
+  }
+
+  const handleWatermark = async (videoId: string) => {
+    setApplyingWatermark(videoId)
+    try {
+      const response = await fetch('/api/videos/watermark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId })
+      })
+
+      if (!response.ok) throw new Error('Failed to apply watermark')
+
+      const data = await response.json()
+      
+      if (data.warning) {
+        alert(data.warning)
+      } else {
+        alert('Watermark applied successfully! The video will be re-processed.')
+        // Refresh the video list to see updated status
+        await fetchVideos()
+      }
+    } catch (err) {
+      console.error('Error applying watermark:', err)
+      alert('Failed to apply watermark. This feature may require a Cloudflare Stream paid plan.')
+    } finally {
+      setApplyingWatermark(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
@@ -144,6 +233,26 @@ export default function WrestlingVideosPage() {
                       {video.description && (
                         <p className="text-xs text-gray-500 mt-1 truncate">{video.description}</p>
                       )}
+                      {/* Delete button */}
+                      <div className="mt-2 flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="w-full text-red-500 hover:bg-red-500/20"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(video.id)
+                          }}
+                          disabled={deletingVideo === video.id}
+                        >
+                          {deletingVideo === video.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                          <span className="ml-1 text-xs">Delete</span>
+                        </Button>
+                      </div>
                     </button>
                   ))
                 )}
@@ -169,29 +278,56 @@ export default function WrestlingVideosPage() {
                       <CloudflarePlayer videoId={selectedVideo.id} />
                       
                       {/* Action Buttons */}
-                      <div className="flex gap-3 mt-4">
+                      <div className="grid grid-cols-2 gap-3 mt-4">
                         <a
                           href={`https://customer-gozi8qaaq1gycqie.cloudflarestream.com/${selectedVideo.id}/watch`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1"
                         >
                           <Button className="w-full bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black">
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Open Full Player
+                            Full Player
                           </Button>
                         </a>
-                        <a
-                          href={`https://customer-gozi8qaaq1gycqie.cloudflarestream.com/${selectedVideo.id}/downloads/default.mp4`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1"
+                        <Button 
+                          onClick={() => handleDownload(selectedVideo)}
+                          disabled={downloadingVideo === selectedVideo.id}
+                          variant="outline"
+                          className="w-full border-blue-600 text-blue-600 hover:bg-blue-600/10"
                         >
-                          <Button variant="outline" className="w-full border-blue-600 text-blue-600">
+                          {downloadingVideo === selectedVideo.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
                             <Download className="h-4 w-4 mr-2" />
-                            Download MP4
-                          </Button>
-                        </a>
+                          )}
+                          Download MP4
+                        </Button>
+                        <Button 
+                          onClick={() => handleWatermark(selectedVideo.id)}
+                          disabled={applyingWatermark === selectedVideo.id}
+                          variant="outline"
+                          className="w-full border-[#D4AF38] text-[#D4AF38] hover:bg-[#D4AF38]/10"
+                        >
+                          {applyingWatermark === selectedVideo.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Droplets className="h-4 w-4 mr-2" />
+                          )}
+                          Add Watermark
+                        </Button>
+                        <Button 
+                          onClick={() => handleDelete(selectedVideo.id)}
+                          disabled={deletingVideo === selectedVideo.id}
+                          variant="outline"
+                          className="w-full border-red-600 text-red-600 hover:bg-red-600/10"
+                        >
+                          {deletingVideo === selectedVideo.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 mr-2" />
+                          )}
+                          Delete Video
+                        </Button>
                       </div>
                     </>
                   ) : (
