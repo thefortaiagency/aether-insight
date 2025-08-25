@@ -47,7 +47,9 @@ interface MatchVideo {
 
 export default function VideoReviewPage() {
   const [matches, setMatches] = useState<any[]>([])
+  const [unmatchedVideos, setUnmatchedVideos] = useState<any[]>([])
   const [selectedMatch, setSelectedMatch] = useState<any>(null)
+  const [selectedVideo, setSelectedVideo] = useState<any>(null)
   const [matchVideo, setMatchVideo] = useState<MatchVideo | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
@@ -101,6 +103,17 @@ export default function VideoReviewPage() {
       }).filter((m: any) => m.hasVideo || m.has_video) // Show matches with videos
 
       setMatches(matchesWithVideos || [])
+      
+      // Also get unmatched videos from Cloudflare
+      const unmatchedVideos = videosData.videos?.filter((video: any) => {
+        // Check if this video is not linked to any match
+        const isMatched = matchesWithVideos?.some((m: any) => 
+          m.videoId === video.id || m.video_id === video.id
+        )
+        return !isMatched
+      }) || []
+      
+      setUnmatchedVideos(unmatchedVideos)
     } catch (error) {
       console.error('Error fetching matches:', error)
     } finally {
@@ -112,9 +125,24 @@ export default function VideoReviewPage() {
     fetchMatches()
   }, [])
 
+  // Load unmatched video directly
+  const loadUnmatchedVideo = (video: any) => {
+    setSelectedVideo(video)
+    setSelectedMatch(null)
+    setMatchVideo({
+      id: video.id,
+      matchId: '',
+      videoId: video.id,
+      startTime: Date.now(),
+      duration: video.duration || 0,
+      events: [] // No events for unmatched videos
+    })
+  }
+
   // Load match video and scoring data
   const loadMatchVideo = async (match: any) => {
     setSelectedMatch(match)
+    setSelectedVideo(null)
     console.log('Loading match video for:', match)
     
     // Get match events from database
@@ -228,9 +256,11 @@ export default function VideoReviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
-                  {matches.length === 0 ? (
-                    <p className="text-gray-400 text-center py-4">No matches with video found</p>
+                  {matches.length === 0 && unmatchedVideos.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">No videos found</p>
                   ) : (
+                    <>
+                  {matches.length > 0 && (
                     matches.map(match => (
                       <button
                         key={match.id}
@@ -261,6 +291,48 @@ export default function VideoReviewPage() {
                         </div>
                       </button>
                     ))
+                  )}
+                  
+                  {/* Unmatched Videos Section */}
+                  {unmatchedVideos.length > 0 && (
+                    <>
+                      {matches.length > 0 && (
+                        <div className="my-3 border-t border-gray-700 pt-3">
+                          <p className="text-xs text-gray-400 mb-2">Unmatched Videos</p>
+                        </div>
+                      )}
+                      {unmatchedVideos.map(video => (
+                        <button
+                          key={video.id}
+                          onClick={() => loadUnmatchedVideo(video)}
+                          className={`w-full p-3 rounded-lg text-left transition-all ${
+                            selectedVideo?.id === video.id
+                              ? 'bg-gold/20 border border-gold'
+                              : 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <Badge className="bg-blue-600 text-xs">Video Only</Badge>
+                            <span className="text-xs text-gray-400">
+                              {video.duration ? `${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}` : 'Unknown'}
+                            </span>
+                          </div>
+                          <p className="text-white font-medium">
+                            {video.meta?.name || video.title || 'Untitled Video'}
+                          </p>
+                          <p className="text-gray-400 text-xs mt-1">
+                            ID: {video.id.substring(0, 8)}...
+                          </p>
+                          {video.created && (
+                            <p className="text-gray-500 text-xs mt-1">
+                              {new Date(video.created).toLocaleDateString()}
+                            </p>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  </>
                   )}
                 </CardContent>
               </Card>

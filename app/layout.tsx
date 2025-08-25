@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Aether Insight - Wrestling Analytics Platform",
-  description: "Advanced wrestling analytics, live scoring, video analysis, and team management platform. The MatBoss killer.",
+  description: "Advanced wrestling analytics, live scoring, video analysis, and team management platform.",
 };
 
 export default function RootLayout({

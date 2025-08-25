@@ -22,7 +22,7 @@ import {
 export default function VideoRecorderTestPage() {
   const [recordingMode, setRecordingMode] = useState<'manual' | 'auto'>('manual')
   const [autoStart, setAutoStart] = useState(false)
-  const [autoUpload, setAutoUpload] = useState(true)
+  const [autoUpload, setAutoUpload] = useState(false)
   const [chunkDuration, setChunkDuration] = useState(300) // 5 minutes
   const [maxFileSize, setMaxFileSize] = useState(50) // 50MB
   const [uploadedVideos, setUploadedVideos] = useState<string[]>([])
@@ -108,8 +108,8 @@ export default function VideoRecorderTestPage() {
       setShowMatchForm(false)
       setShowScoring(true)
       
-      // Start recording automatically
-      setAutoStart(true)
+      // Don't start recording automatically - keep it manual
+      // setAutoStart(true)
       
       console.log('Test match created:', matchData)
     } catch (error) {
@@ -267,7 +267,7 @@ export default function VideoRecorderTestPage() {
                   className="w-full bg-green-600 hover:bg-green-700"
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Start Match & Recording
+                  Create Match (Manual Recording)
                 </Button>
               </CardContent>
             )}
@@ -471,11 +471,13 @@ export default function VideoRecorderTestPage() {
                       variant={recordingMode === 'auto' ? 'default' : 'outline'}
                       onClick={() => {
                         setRecordingMode('auto')
-                        setAutoStart(true)
+                        // Keep auto-start disabled
+                        // setAutoStart(true)
                       }}
                       className={recordingMode === 'auto' ? 'bg-gold text-black' : ''}
+                      disabled
                     >
-                      Auto
+                      Auto (Disabled)
                     </Button>
                   </div>
                 </div>

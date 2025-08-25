@@ -72,53 +72,51 @@ export function VideoRecorder({
   const chunkTimerRef = useRef<NodeJS.Timeout | null>(null)
   const autoStartedRef = useRef(false)
 
-  // Get available devices
-  useEffect(() => {
-    const getDevices = async () => {
-      try {
-        // Request permissions first to get device labels
-        await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        const videoDevices = devices.filter(d => d.kind === 'videoinput')
-        const audioDevices = devices.filter(d => d.kind === 'audioinput')
-        const audioOutputDevices = devices.filter(d => d.kind === 'audiooutput')
-        
-        setDevices(devices)
-        
-        if (videoDevices.length > 0 && !selectedCamera) {
-          setSelectedCamera(videoDevices[0].deviceId)
-        }
-        if (audioDevices.length > 0 && !selectedMicrophone) {
-          setSelectedMicrophone(audioDevices[0].deviceId)
-        }
-        if (audioOutputDevices.length > 0 && !selectedSpeaker) {
-          setSelectedSpeaker(audioOutputDevices[0].deviceId || 'default')
-        }
-      } catch (err) {
-        console.error('Error getting devices:', err)
+  // Function to get available devices (called manually)
+  const getDevices = async () => {
+    try {
+      // Request permissions first to get device labels
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter(d => d.kind === 'videoinput')
+      const audioDevices = devices.filter(d => d.kind === 'audioinput')
+      const audioOutputDevices = devices.filter(d => d.kind === 'audiooutput')
+      
+      setDevices(devices)
+      
+      if (videoDevices.length > 0 && !selectedCamera) {
+        setSelectedCamera(videoDevices[0].deviceId)
       }
+      if (audioDevices.length > 0 && !selectedMicrophone) {
+        setSelectedMicrophone(audioDevices[0].deviceId)
+      }
+      if (audioOutputDevices.length > 0 && !selectedSpeaker) {
+        setSelectedSpeaker(audioOutputDevices[0].deviceId || 'default')
+      }
+    } catch (err) {
+      console.error('Error getting devices:', err)
+      setError('Failed to access camera/microphone. Please check permissions.')
     }
-    
-    getDevices()
-    
-    // Listen for device changes
-    navigator.mediaDevices.addEventListener('devicechange', getDevices)
-    return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', getDevices)
-    }
-  }, [])
+  }
 
-  // Auto-start recording when component mounts if enabled
+  // Only get devices when settings are opened (manual activation)
   useEffect(() => {
-    if (autoStart && !autoStartedRef.current && selectedCamera && selectedMicrophone) {
-      autoStartedRef.current = true
-      // Small delay to ensure devices are ready
-      setTimeout(() => {
-        startRecording()
-      }, 1000)
+    if (showSettings && devices.length === 0) {
+      getDevices()
     }
-  }, [autoStart, selectedCamera, selectedMicrophone])
+  }, [showSettings])
+
+  // Auto-start recording disabled - requires manual start
+  // useEffect(() => {
+  //   if (autoStart && !autoStartedRef.current && selectedCamera && selectedMicrophone) {
+  //     autoStartedRef.current = true
+  //     // Small delay to ensure devices are ready
+  //     setTimeout(() => {
+  //       startRecording()
+  //     }, 1000)
+  //   }
+  // }, [autoStart, selectedCamera, selectedMicrophone])
 
   // Format time display
   const formatTime = (seconds: number): string => {

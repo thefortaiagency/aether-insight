@@ -1,104 +1,72 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import React, { useState, useEffect } from 'react'
 import { 
   Menu, X, Video, Users, Trophy, BarChart3, Home,
   Activity, Award, Settings, ChevronDown, Clock,
   Calendar, FileText, PlusCircle, Play
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+
+// A utility function for combining class names, often found in projects using Tailwind CSS.
+const cn = (...classes) => {
+  return classes.filter(Boolean).join(' ')
+}
+
+// A simple Button component to replace the one from a UI library.
+const Button = ({ children, className, ...props }) => {
+  return (
+    <button className={cn("px-4 py-2 rounded-md font-semibold transition-colors", className)} {...props}>
+      {children}
+    </button>
+  )
+}
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [showQuickActions, setShowQuickActions] = useState(false)
-  const pathname = usePathname()
+  // Use window.location.pathname for standard React apps instead of Next.js's usePathname
+  const [pathname, setPathname] = useState('')
+
+  useEffect(() => {
+    // Set the pathname on the client-side
+    setPathname(window.location.pathname)
+  }, [])
+
 
   const navItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/dashboard', 
-      icon: <Home className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Live Scoring', 
-      href: '/matches/live-scoring', 
-      icon: <Activity className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Live Matches', 
-      href: '/matches/live', 
-      icon: <Activity className="w-4 h-4 text-red-500" /> 
-    },
-    { 
-      name: 'Matches', 
-      href: '/matches', 
-      icon: <Trophy className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Teams', 
-      href: '/teams', 
-      icon: <Users className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Team Stats', 
-      href: '/team-stats', 
-      icon: <BarChart3 className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Videos', 
-      href: '/wrestling-videos', 
-      icon: <Video className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Video Analysis', 
-      href: '/matches/video-analysis', 
-      icon: <Video className="w-4 h-4 text-gold" /> 
-    },
-    { 
-      name: 'Video Review', 
-      href: '/matches/video-review', 
-      icon: <Play className="w-4 h-4 text-green-500" /> 
-    },
-    { 
-      name: 'Analytics', 
-      href: '/analytics', 
-      icon: <Award className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Wrestlers', 
-      href: '/wrestlers', 
-      icon: <Users className="w-4 h-4" /> 
-    },
-    { 
-      name: 'Test Recorder', 
-      href: '/test/video-recorder', 
-      icon: <Settings className="w-4 h-4 text-orange-500" /> 
-    }
+    { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
+    { name: 'Live Scoring', href: '/matches/live-scoring', icon: <Activity className="w-4 h-4" /> },
+    { name: 'Live Matches', href: '/matches/live', icon: <Activity className="w-4 h-4 text-red-500" /> },
+    { name: 'Matches', href: '/matches', icon: <Trophy className="w-4 h-4" /> },
+    { name: 'Teams', href: '/teams', icon: <Users className="w-4 h-4" /> },
+    { name: 'Team Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
+    { name: 'Videos', href: '/wrestling-videos', icon: <Video className="w-4 h-4" /> },
+    { name: 'Video Analysis', href: '/matches/video-analysis', icon: <Video className="w-4 h-4 text-gold" /> },
+    { name: 'Video Review', href: '/matches/video-review', icon: <Play className="w-4 h-4 text-green-500" /> },
+    { name: 'Analytics', href: '/analytics', icon: <Award className="w-4 h-4" /> },
+    { name: 'Wrestlers', href: '/wrestlers', icon: <Users className="w-4 h-4" /> },
+    { name: 'Test Recorder', href: '/test/video-recorder', icon: <Settings className="w-4 h-4 text-orange-500" /> }
   ]
 
   return (
     <nav className="relative z-50 bg-black/60 backdrop-blur-lg border-b border-gold/20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 h-10">
+          {/* Logo - Replaced Next's Link with a standard <a> tag and Next's Image with <img> */}
+          <a href="/" className="flex items-center gap-3 h-10 flex-shrink-0">
             <div className="relative w-10 h-10 flex-shrink-0">
-              <Image 
+              <img 
                 src="/aether-logo.png" 
                 alt="Aether Logo" 
-                fill
-                className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
+                className="object-contain w-full h-full drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
+                onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/000000/d4af37?text=AI'; }}
               />
             </div>
             <div className="flex flex-col justify-center h-full">
               <h1 className="text-xl font-bold text-gold leading-none">Aether Insight</h1>
               <p className="text-xs text-gray-400 hidden md:block leading-none">Wrestling Analytics Platform</p>
             </div>
-          </Link>
+          </a>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
@@ -107,7 +75,7 @@ export default function Navigation() {
                              (item.href !== '/' && pathname.startsWith(item.href))
               
               return (
-                <Link
+                <a
                   key={item.name}
                   href={item.href}
                   className={cn(
@@ -119,7 +87,7 @@ export default function Navigation() {
                 >
                   {item.icon}
                   <span className="text-sm font-medium">{item.name}</span>
-                </Link>
+                </a>
               )
             })}
           </div>
@@ -142,51 +110,51 @@ export default function Navigation() {
               
               {showQuickActions && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-black/95 backdrop-blur-lg border border-gold/20 rounded-lg shadow-xl overflow-hidden">
-                  <Link 
+                  <a 
                     href="/matches/live-scoring"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
                     <Activity className="w-4 h-4" />
                     <span>Start Live Scoring</span>
-                  </Link>
-                  <Link 
+                  </a>
+                  <a 
                     href="/matches/new"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
                     <Trophy className="w-4 h-4" />
                     <span>Schedule Match</span>
-                  </Link>
-                  <Link 
+                  </a>
+                  <a 
                     href="/teams/new"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
                     <Users className="w-4 h-4" />
                     <span>Add Team</span>
-                  </Link>
-                  <Link 
+                  </a>
+                  <a 
                     href="/wrestlers/new"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
                     <Award className="w-4 h-4" />
                     <span>Add Wrestler</span>
-                  </Link>
-                  <Link 
+                  </a>
+                  <a 
                     href="/wrestling-videos/upload"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
                     <Video className="w-4 h-4" />
                     <span>Upload Video</span>
-                  </Link>
+                  </a>
                 </div>
               )}
             </div>
             
-            <Link href="/matches/live-scoring">
+            <a href="/matches/live-scoring">
               <Button 
                 size="sm" 
                 className="bg-green-600 hover:bg-green-500 text-white font-semibold"
@@ -194,7 +162,7 @@ export default function Navigation() {
                 <Clock className="w-4 h-4 mr-2" />
                 Live Score
               </Button>
-            </Link>
+            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -217,7 +185,7 @@ export default function Navigation() {
                                (item.href !== '/' && pathname.startsWith(item.href))
                 
                 return (
-                  <Link
+                  <a
                     key={item.name}
                     href={item.href}
                     onClick={() => setIsOpen(false)}
@@ -230,20 +198,20 @@ export default function Navigation() {
                   >
                     {item.icon}
                     <span className="font-medium">{item.name}</span>
-                  </Link>
+                  </a>
                 )
               })}
               <div className="pt-3 mt-3 border-t border-gold/20 space-y-2">
-                <Link href="/matches/live-scoring" onClick={() => setIsOpen(false)}>
+                <a href="/matches/live-scoring" onClick={() => setIsOpen(false)}>
                   <Button 
                     className="w-full bg-gold hover:bg-gold/90 text-black font-bold flex items-center justify-center gap-2"
                   >
                     <Clock className="w-4 h-4" />
                     Start Live Scoring
                   </Button>
-                </Link>
+                </a>
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/teams/new" onClick={() => setIsOpen(false)}>
+                  <a href="/teams/new" onClick={() => setIsOpen(false)}>
                     <Button 
                       size="sm"
                       variant="outline"
@@ -252,8 +220,8 @@ export default function Navigation() {
                       <Users className="w-4 h-4 mr-1" />
                       Add Team
                     </Button>
-                  </Link>
-                  <Link href="/wrestlers/new" onClick={() => setIsOpen(false)}>
+                  </a>
+                  <a href="/wrestlers/new" onClick={() => setIsOpen(false)}>
                     <Button 
                       size="sm"
                       variant="outline"
@@ -262,7 +230,7 @@ export default function Navigation() {
                       <Award className="w-4 h-4 mr-1" />
                       Add Wrestler
                     </Button>
-                  </Link>
+                  </a>
                 </div>
               </div>
             </div>
