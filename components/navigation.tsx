@@ -153,16 +153,6 @@ export default function Navigation() {
                 </div>
               )}
             </div>
-            
-            <a href="/matches/live-scoring">
-              <Button 
-                size="sm" 
-                className="bg-green-600 hover:bg-green-500 text-white font-semibold"
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                Live Score
-              </Button>
-            </a>
           </div>
 
           {/* Mobile Menu Button */}
