@@ -11,9 +11,10 @@ import {
   ChevronUp, ChevronDown, Users, Activity, Award,
   TrendingUp, Shield, Zap, Flag, Circle, Square,
   Timer, Heart, Droplets, AlertTriangle, X, Check,
-  ArrowUp, ArrowDown, RefreshCw, User, Settings
+  ArrowUp, ArrowDown, RefreshCw, User, Settings, Save
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
+import { useRouter } from 'next/navigation'
 
 interface Wrestler {
   name: string
@@ -50,6 +51,9 @@ interface LiveMatch {
   matchType: 'dual' | 'tournament' | 'exhibition'
   referee: string
   mat: string
+  result?: 'win' | 'loss' | 'draw'
+  win_type?: 'pin' | 'tech_fall' | 'major_decision' | 'decision' | 'forfeit'
+  pin_time?: string
 }
 
 const PERIODS = {
@@ -62,6 +66,10 @@ const PERIODS = {
 }
 
 export default function LiveScoringPage() {
+  const router = useRouter()
+  const [matchId, setMatchId] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [autoSave, setAutoSave] = useState(true)
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
     wrestler1: {
@@ -197,6 +205,120 @@ export default function LiveScoringPage() {
       },
       lastAction: `${prev[wrestler].name} - ${action} +${points}`
     }))
+    
+    // Auto-save if enabled
+    if (autoSave && matchId) {
+      saveMatchToDatabase()
+    }
+    
+    // Save scoring event
+    if (matchId) {
+      saveMatchEvent(wrestler, action, points)
+    }
+  }
+
+  // Save match to database
+  const saveMatchToDatabase = async () => {
+    if (!matchId) {
+      // Create new match
+      const response = await fetch('/api/matches/live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wrestler1_name: match.wrestler1.name,
+          wrestler1_team: match.wrestler1.team,
+          wrestler2_name: match.wrestler2.name,
+          wrestler2_team: match.wrestler2.team,
+          weight_class: match.weightClass,
+          mat_number: match.mat,
+          referee_name: match.referee,
+          match_type: match.matchType
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setMatchId(data.data.id)
+      }
+    } else {
+      // Update existing match
+      setIsSaving(true)
+      
+      const periodScores: any = {}
+      if (match.period === 1) {
+        periodScores.period1 = { wrestler1: match.wrestler1.score, wrestler2: match.wrestler2.score }
+      } else if (match.period === 2) {
+        periodScores.period2 = { wrestler1: match.wrestler1.score, wrestler2: match.wrestler2.score }
+      } else if (match.period === 3) {
+        periodScores.period3 = { wrestler1: match.wrestler1.score, wrestler2: match.wrestler2.score }
+      }
+
+      await fetch('/api/matches/live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          match_id: matchId,
+          wrestler1_score: match.wrestler1.score,
+          wrestler2_score: match.wrestler2.score,
+          wrestler1_name: match.wrestler1.name,
+          wrestler2_name: match.wrestler2.name,
+          wrestler1_stats: {
+            takedowns: match.wrestler1.takedowns,
+            escapes: match.wrestler1.escapes,
+            reversals: match.wrestler1.reversals,
+            near_fall_2: match.wrestler1.nearFall2,
+            near_fall_3: match.wrestler1.nearFall3,
+            near_fall_4: match.wrestler1.nearFall4,
+            stalls: match.wrestler1.stalls,
+            cautions: match.wrestler1.cautions,
+            warnings: match.wrestler1.warnings,
+            riding_time: match.wrestler1.ridingTime
+          },
+          wrestler2_stats: {
+            takedowns: match.wrestler2.takedowns,
+            escapes: match.wrestler2.escapes,
+            reversals: match.wrestler2.reversals,
+            near_fall_2: match.wrestler2.nearFall2,
+            near_fall_3: match.wrestler2.nearFall3,
+            near_fall_4: match.wrestler2.nearFall4,
+            stalls: match.wrestler2.stalls,
+            cautions: match.wrestler2.cautions,
+            warnings: match.wrestler2.warnings,
+            riding_time: match.wrestler2.ridingTime
+          },
+          current_period: match.period,
+          match_time: timeRemaining,
+          period_scores: periodScores,
+          wrestler1_riding_time: match.wrestler1.ridingTime,
+          wrestler2_riding_time: match.wrestler2.ridingTime
+        })
+      })
+      
+      setIsSaving(false)
+    }
+  }
+
+  // Save individual scoring event
+  const saveMatchEvent = async (wrestler: string, action: string, points: number) => {
+    if (!matchId) return
+
+    const wrestlerName = wrestler === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
+    const periodNumber = match.period === 'SV' ? 4 : match.period === 'TB' ? 5 : match.period === 'UTB' ? 6 : match.period
+
+    await fetch('/api/matches/live/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        match_id: matchId,
+        event_time: 120 - timeRemaining, // Time elapsed in period
+        period: periodNumber,
+        event_type: action,
+        points: points,
+        wrestler_name: wrestlerName,
+        move_name: action,
+        from_position: match.currentPosition
+      })
+    })
   }
 
   const addStall = (wrestler: 'wrestler1' | 'wrestler2') => {
@@ -508,6 +630,25 @@ export default function LiveScoringPage() {
                 >
                   N4<br/>+4
                 </Button>
+                <Button 
+                  onClick={() => {
+                    setMatch(prev => ({
+                      ...prev,
+                      result: 'win',
+                      win_type: 'pin',
+                      pin_time: `${Math.floor((120 - timeRemaining) / 60)}:${String((120 - timeRemaining) % 60).padStart(2, '0')}`,
+                      lastAction: `${match.wrestler1.name} - PIN!`,
+                      isRunning: false
+                    }))
+                    if (matchId) {
+                      saveMatchToDatabase()
+                    }
+                  }}
+                  className="bg-red-900 hover:bg-red-950 text-white font-bold"
+                  size="sm"
+                >
+                  PIN
+                </Button>
               </div>
 
               {/* Penalties */}
@@ -578,6 +719,33 @@ export default function LiveScoringPage() {
                     <RotateCcw className="w-4 h-4" />
                   </Button>
                 </div>
+                
+                {/* Save Controls */}
+                <div className="flex justify-center gap-2 mt-4">
+                  <Button
+                    onClick={saveMatchToDatabase}
+                    disabled={isSaving}
+                    className="bg-[#D4AF38] hover:bg-[#B8941C] text-black font-bold"
+                    size="sm"
+                  >
+                    <Save className="w-4 h-4 mr-1" />
+                    {isSaving ? 'Saving...' : 'Save Match'}
+                  </Button>
+                  <label className="flex items-center gap-2 text-white text-sm">
+                    <input
+                      type="checkbox"
+                      checked={autoSave}
+                      onChange={(e) => setAutoSave(e.target.checked)}
+                      className="rounded"
+                    />
+                    Auto-save
+                  </label>
+                </div>
+                {matchId && (
+                  <div className="text-center text-xs text-gray-400 mt-2">
+                    Match ID: {matchId}
+                  </div>
+                )}
               </div>
 
               {/* Position Control */}
@@ -797,6 +965,25 @@ export default function LiveScoringPage() {
                   size="sm"
                 >
                   N4<br/>+4
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setMatch(prev => ({
+                      ...prev,
+                      result: 'loss',
+                      win_type: 'pin',
+                      pin_time: `${Math.floor((120 - timeRemaining) / 60)}:${String((120 - timeRemaining) % 60).padStart(2, '0')}`,
+                      lastAction: `${match.wrestler2.name} - PIN!`,
+                      isRunning: false
+                    }))
+                    if (matchId) {
+                      saveMatchToDatabase()
+                    }
+                  }}
+                  className="bg-red-900 hover:bg-red-950 text-white font-bold"
+                  size="sm"
+                >
+                  PIN
                 </Button>
               </div>
 
