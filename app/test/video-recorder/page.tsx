@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { VideoRecorder } from '@/components/video/video-recorder'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,12 +21,17 @@ export default function VideoRecorderTestPage() {
   const [maxFileSize, setMaxFileSize] = useState(50) // 50MB
   const [uploadedVideos, setUploadedVideos] = useState<string[]>([])
   const [testMatchId] = useState(`test-${Date.now()}`)
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true)
 
   // Monitor online status
-  useState(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
+    
+    // Set initial state
+    setIsOnline(navigator.onLine)
     
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
@@ -35,7 +40,7 @@ export default function VideoRecorderTestPage() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  })
+  }, [])
 
   const handleUploadComplete = (videoId: string) => {
     console.log('Video uploaded:', videoId)
