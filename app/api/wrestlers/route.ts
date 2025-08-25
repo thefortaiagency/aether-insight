@@ -12,24 +12,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from('wrestlers')
-      .select(`
-        *,
-        team:teams (
-          id,
-          name,
-          school,
-          division
-        ),
-        season_records (
-          season,
-          wins,
-          losses,
-          pins,
-          tech_falls,
-          major_decisions,
-          team_points
-        )
-      `)
+      .select('*')
       .order('last_name', { ascending: true })
       .limit(limit)
 

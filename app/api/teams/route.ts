@@ -12,16 +12,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from('teams')
-      .select(`
-        *,
-        wrestlers (
-          id,
-          first_name,
-          last_name,
-          weight_class,
-          status
-        )
-      `)
+      .select('*')
       .order('name', { ascending: true })
       .limit(limit)
 
@@ -44,11 +35,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Add wrestler count to each team
+    // Return teams without wrestler count for now
     const teamsWithStats = data?.map((team: any) => ({
       ...team,
-      wrestler_count: team.wrestlers?.length || 0,
-      active_wrestlers: team.wrestlers?.filter((w: any) => w.status === 'active').length || 0
+      wrestler_count: 0,
+      active_wrestlers: 0
     }))
 
     return NextResponse.json({ data: teamsWithStats })
