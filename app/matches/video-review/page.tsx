@@ -74,8 +74,20 @@ export default function VideoReviewPage() {
       const videosResponse = await fetch('/api/videos/list')
       const videosData = await videosResponse.json()
 
-      // Match videos with matches by matchId
+      // Match videos with matches by matchId or video_id field
       const matchesWithVideos = matchesData?.map((match: any) => {
+        // First check if match has video_id field
+        if (match.video_id) {
+          const video = videosData.videos?.find((v: any) => v.id === match.video_id)
+          return {
+            ...match,
+            hasVideo: true,
+            videoId: match.video_id,
+            videoDuration: video?.duration || 0
+          }
+        }
+        
+        // Otherwise try to match by metadata
         const video = videosData.videos?.find((v: any) => 
           v.meta?.matchId === match.id || 
           v.title?.includes(match.id)
@@ -86,7 +98,7 @@ export default function VideoReviewPage() {
           videoId: video?.id,
           videoDuration: video?.duration
         }
-      }).filter((m: any) => m.hasVideo) // Only show matches with videos
+      }).filter((m: any) => m.hasVideo || m.has_video) // Show matches with videos
 
       setMatches(matchesWithVideos || [])
     } catch (error) {
@@ -103,6 +115,7 @@ export default function VideoReviewPage() {
   // Load match video and scoring data
   const loadMatchVideo = async (match: any) => {
     setSelectedMatch(match)
+    console.log('Loading match video for:', match)
     
     // Get match events from database
     const { data: events, error } = await supabase
@@ -115,6 +128,8 @@ export default function VideoReviewPage() {
       console.error('Error fetching match events:', error)
       return
     }
+    
+    console.log('Found events:', events?.length || 0, events)
 
     // Convert events to scoring timeline
     const scoringEvents: ScoringEvent[] = events?.map((event: any, index: number) => {
@@ -137,7 +152,7 @@ export default function VideoReviewPage() {
     setMatchVideo({
       id: match.id,
       matchId: match.id,
-      videoId: match.videoId,
+      videoId: match.videoId || match.video_id,
       startTime: match.created_at,
       duration: parseInt(match.videoDuration) || 0,
       events: scoringEvents
@@ -346,6 +361,16 @@ export default function VideoReviewPage() {
                           ))}
                         </div>
                       </div>
+                      
+                      {/* Debug Info */}
+                      {matchVideo.events.length === 0 && (
+                        <Alert className="mt-4 bg-yellow-900/20 border-yellow-600/50">
+                          <AlertCircle className="h-4 w-4 text-yellow-400" />
+                          <AlertDescription className="text-yellow-300">
+                            No scoring events found for this match. Events may not have been recorded during the match.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </CardContent>
                   </Card>
                 </div>

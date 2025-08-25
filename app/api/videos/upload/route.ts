@@ -109,13 +109,27 @@ export async function POST(request: NextRequest) {
 
     // If this is linked to a match, update the match record
     if ((metadata as any).matchId) {
+      // Update matches table
       await supabaseAdmin
           .from('matches')
           .update({ 
             video_id: videoId,
-            video_url: playbackUrl 
+            video_url: playbackUrl,
+            has_video: true
           })
           .eq('id', (metadata as any).matchId)
+      
+      // Also save to match_videos table for video-scoring sync
+      await supabaseAdmin
+          .from('match_videos')
+          .insert({
+            match_id: (metadata as any).matchId,
+            cloudflare_video_id: videoId,
+            video_url: playbackUrl,
+            duration: cloudflareData.result.duration || 0,
+            recording_started_at: new Date().toISOString(),
+            processed: true
+          })
     }
 
     // Automatically apply watermark
