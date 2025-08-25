@@ -119,7 +119,7 @@ export default function WrestlersPage() {
               <Plus className="h-4 w-4 mr-2" />
               Add Wrestler
             </Button>
-            <Button variant="outline" className="border-gold/30 text-gold hover:bg-gold/10">
+            <Button variant="outline" className="border-[#D4AF38]/30 text-gold hover:bg-gold/10">
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -127,14 +127,14 @@ export default function WrestlersPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white/10 backdrop-blur-md border border-gold/30 rounded-lg p-4 mb-6">
+        <div className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30 rounded-lg p-4 mb-6">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[300px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gold/60 h-4 w-4" />
                 <Input 
                   placeholder="Search wrestlers..." 
-                  className="pl-10 bg-black/20 border-gold/30 text-white placeholder:text-gray-400"
+                  className="pl-10 bg-black/80 border-[#D4AF38]/30 text-white placeholder:text-gray-400"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -173,7 +173,7 @@ export default function WrestlersPage() {
 
         {/* Team Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -184,7 +184,7 @@ export default function WrestlersPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -195,7 +195,7 @@ export default function WrestlersPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -206,7 +206,7 @@ export default function WrestlersPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -222,7 +222,7 @@ export default function WrestlersPage() {
         {/* Wrestlers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredWrestlers.map((wrestler) => (
-            <Card key={wrestler.id} className="bg-white/10 backdrop-blur-md border border-gold/30 hover:bg-white/15 transition-all cursor-pointer">
+            <Card key={wrestler.id} className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30 hover:bg-black/70 transition-all cursor-pointer">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">

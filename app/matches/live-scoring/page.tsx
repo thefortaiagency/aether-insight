@@ -258,7 +258,7 @@ export default function LiveScoringPage() {
         </div>
 
         {/* Weight Class & Timer */}
-        <Card className="mb-6 bg-black/40 backdrop-blur-xl border-gold/20">
+        <Card className="mb-6 bg-black/80 backdrop-blur-sm border-[#D4AF38]/30">
           <div className="p-6 text-center">
             <Badge className="bg-gold/20 text-gold border-gold mb-4 text-lg px-4 py-2">
               {match.weightClass} lbs
@@ -542,7 +542,7 @@ export default function LiveScoringPage() {
         </Card>
 
         {/* Period Score Breakdown */}
-        <Card className="mt-6 bg-black/40 backdrop-blur-xl border-gold/20">
+        <Card className="mt-6 bg-black/80 backdrop-blur-sm border-[#D4AF38]/30">
           <div className="p-6">
             <h3 className="text-xl font-bold text-gold mb-4">Period Breakdown</h3>
             <div className="grid grid-cols-3 gap-4">

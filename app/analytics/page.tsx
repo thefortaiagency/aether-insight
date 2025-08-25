@@ -395,7 +395,7 @@ export default function AnalyticsPage() {
                   {['106', '113', '120', '126', '132', '138', '145', '152', '160', '170', '182', '195', '220', '285'].map(weight => {
                     const hasWrestler = Math.random() > 0.3 // Mock data
                     return (
-                      <div key={weight} className="flex items-center justify-between p-2 bg-gray-900/50 rounded">
+                      <div key={weight} className="flex items-center justify-between p-2 bg-black/80 rounded">
                         <span className="text-gray-400">{weight} lbs</span>
                         <span className={`px-2 py-1 rounded text-xs ${
                           hasWrestler ? 'bg-green-600' : 'bg-red-600'
@@ -412,7 +412,7 @@ export default function AnalyticsPage() {
                 <h3 className="text-[#D4AF38] text-lg font-bold mb-4">Top Performers</h3>
                 <div className="space-y-4">
                   {teamStats?.topPerformers.map((wrestler, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="text-[#D4AF38] font-bold text-lg">#{index + 1}</div>
                         <div>
@@ -444,7 +444,7 @@ export default function AnalyticsPage() {
                   {['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'].map(month => (
                     <div key={month} className="text-center">
                       <p className="text-xs text-gray-400 mb-1">{month}</p>
-                      <div className="bg-gray-900/50 rounded p-2">
+                      <div className="bg-black/80 rounded p-2">
                         <p className="text-green-500 font-bold">{Math.floor(Math.random() * 10) + 5}</p>
                         <p className="text-red-500 text-sm">{Math.floor(Math.random() * 5)}</p>
                       </div>
@@ -492,23 +492,23 @@ export default function AnalyticsPage() {
               <div>
                 <h3 className="text-[#D4AF38] text-lg font-bold mb-4">Scoring Methods</h3>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded">
+                  <div className="flex justify-between items-center p-3 bg-black/80 rounded">
                     <span className="text-gray-400">Takedowns</span>
                     <span className="text-white font-bold">342</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded">
+                  <div className="flex justify-between items-center p-3 bg-black/80 rounded">
                     <span className="text-gray-400">Reversals</span>
                     <span className="text-white font-bold">89</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded">
+                  <div className="flex justify-between items-center p-3 bg-black/80 rounded">
                     <span className="text-gray-400">Escapes</span>
                     <span className="text-white font-bold">156</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded">
+                  <div className="flex justify-between items-center p-3 bg-black/80 rounded">
                     <span className="text-gray-400">Near Falls (2pt)</span>
                     <span className="text-white font-bold">67</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded">
+                  <div className="flex justify-between items-center p-3 bg-black/80 rounded">
                     <span className="text-gray-400">Near Falls (3pt)</span>
                     <span className="text-white font-bold">45</span>
                   </div>

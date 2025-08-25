@@ -113,7 +113,7 @@ export default function MatchesPage() {
           <p className="text-gray-200">Live Scoring & Match Management</p>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-black/40 border border-gold/30">
+          <TabsList className="bg-black/80 border border-[#D4AF38]/30">
             <TabsTrigger value="live" className="data-[state=active]:bg-[#D4AF38] data-[state=active]:text-black">
               Live Scoring
             </TabsTrigger>
@@ -130,7 +130,7 @@ export default function MatchesPage() {
 
           {/* Live Scoring Tab */}
           <TabsContent value="live" className="space-y-6">
-            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+            <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
               <CardHeader className="border-b border-gold/20">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[#D4AF38]">LIVE MATCH - {LIVE_MATCH.weightClass} lbs</CardTitle>
@@ -155,7 +155,7 @@ export default function MatchesPage() {
                   </div>
                   <div className="text-center">
                     <p className="text-gray-400 text-sm mb-2">PERIOD {LIVE_MATCH.period}</p>
-                    <div className="text-3xl font-mono text-white bg-black/40 rounded-lg py-2">
+                    <div className="text-3xl font-mono text-white bg-black/80 rounded-lg py-2">
                       {LIVE_MATCH.time}
                     </div>
                     <p className="text-gray-400 text-sm mt-2">Riding Time: +0:45</p>
@@ -187,7 +187,7 @@ export default function MatchesPage() {
                 </div>
 
                 {/* Move Log */}
-                <div className="bg-black/20 rounded-lg p-4">
+                <div className="bg-black/80 rounded-lg p-4">
                   <h3 className="text-[#D4AF38] font-semibold mb-3">Move Log</h3>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {LIVE_MATCH.moves.map((move, index) => (
@@ -205,15 +205,15 @@ export default function MatchesPage() {
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-4 mt-6">
-                  <div className="bg-black/20 rounded-lg p-3">
+                  <div className="bg-black/80 rounded-lg p-3">
                     <p className="text-gray-400 text-xs">Takedowns</p>
                     <p className="text-white font-semibold">Smith 3-1</p>
                   </div>
-                  <div className="bg-black/20 rounded-lg p-3">
+                  <div className="bg-black/80 rounded-lg p-3">
                     <p className="text-gray-400 text-xs">First Takedown</p>
                     <p className="text-[#D4AF38] font-semibold">Smith</p>
                   </div>
-                  <div className="bg-black/20 rounded-lg p-3">
+                  <div className="bg-black/80 rounded-lg p-3">
                     <p className="text-gray-400 text-xs">Escapes</p>
                     <p className="text-white font-semibold">Johnson 1-1</p>
                   </div>
@@ -225,7 +225,7 @@ export default function MatchesPage() {
           {/* Recent Matches Tab */}
           <TabsContent value="recent" className="space-y-4">
             {RECENT_MATCHES.map((match) => (
-              <Card key={match.id} className="bg-white/10 backdrop-blur-md border border-gold/30 hover:bg-white/15 transition-all">
+              <Card key={match.id} className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30 hover:bg-black/70 transition-all">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -272,7 +272,7 @@ export default function MatchesPage() {
                       <p className="text-gray-400 text-sm mb-2">Match Highlights</p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         {match.highlights.map((highlight, index) => (
-                          <div key={index} className="bg-black/20 rounded p-2 text-sm">
+                          <div key={index} className="bg-black/80 rounded p-2 text-sm">
                             <span className="text-[#D4AF38] font-medium">{highlight.wrestler}</span>
                             {highlight.weight && <span className="text-gray-400"> • {highlight.weight} lbs</span>}
                             <div className="text-white">{highlight.result} {('time' in highlight ? highlight.time : highlight.score)}</div>
@@ -302,7 +302,7 @@ export default function MatchesPage() {
           {/* Upcoming Matches Tab */}
           <TabsContent value="upcoming" className="space-y-4">
             {UPCOMING_MATCHES.map((match) => (
-              <Card key={match.id} className="bg-white/10 backdrop-blur-md border border-gold/30">
+              <Card key={match.id} className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -343,7 +343,7 @@ export default function MatchesPage() {
           {/* Statistics Tab */}
           <TabsContent value="stats" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+              <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -356,7 +356,7 @@ export default function MatchesPage() {
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+              <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -369,7 +369,7 @@ export default function MatchesPage() {
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+              <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -382,7 +382,7 @@ export default function MatchesPage() {
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+              <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -396,7 +396,7 @@ export default function MatchesPage() {
               </Card>
             </div>
 
-            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+            <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
               <CardHeader>
                 <CardTitle className="text-[#D4AF38]">Weight Class Performance</CardTitle>
               </CardHeader>
@@ -413,7 +413,7 @@ export default function MatchesPage() {
                     { weight: 152, wrestler: 'Tanner Eppard', record: '20-9', points: 92 },
                     { weight: 160, wrestler: 'Arell Sago', record: '18-11', points: 79 }
                   ].map((wc) => (
-                    <div key={wc.weight} className="bg-black/20 rounded-lg p-3">
+                    <div key={wc.weight} className="bg-black/80 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[#D4AF38] font-bold">{wc.weight} lbs</span>
                         <span className="text-gray-400 text-sm">{wc.points} pts</span>

@@ -78,7 +78,7 @@ export default function DashboardPage() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Trophy className="w-5 h-5 text-gold" />
@@ -89,7 +89,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Users className="w-5 h-5 text-gold" />
@@ -100,7 +100,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="w-5 h-5 text-gold" />
@@ -111,7 +111,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Calendar className="w-5 h-5 text-gold" />
@@ -122,7 +122,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Video className="w-5 h-5 text-gold" />
@@ -133,7 +133,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Award className="w-5 h-5 text-gold" />
@@ -152,7 +152,7 @@ export default function DashboardPage() {
               <Card className={`${action.color} backdrop-blur border cursor-pointer hover:scale-105 transition-all`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-black/30 rounded-lg">
+                    <div className="p-3 bg-black/80 rounded-lg">
                       {action.icon}
                     </div>
                     <ChevronRight className="w-5 h-5 text-white/50" />
@@ -167,7 +167,7 @@ export default function DashboardPage() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Recent Matches */}
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 {recentMatches.map(match => (
-                  <div key={match.id} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
+                  <div key={match.id} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
                     <div className="flex-1">
                       <p className="text-white font-medium">{match.wrestler}</p>
                       <p className="text-sm text-gray-400">vs {match.opponent}</p>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Upcoming Events */}
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 {upcomingEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
+                  <div key={event.id} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
                     <div>
                       <p className="text-white font-medium">{event.name}</p>
                       <p className="text-sm text-gray-400">{event.date}</p>

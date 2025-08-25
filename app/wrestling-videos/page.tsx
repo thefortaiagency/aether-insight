@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import CloudflarePlayer from '@/components/cloudflare-player'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,36 +25,17 @@ export default function WrestlingVideosPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
       <WrestlingStatsBackground />
-      {/* Header */}
-      <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Aether Logo */}
-              <div className="relative w-16 h-16">
-                <Image 
-                  src="/aether-logo.png" 
-                  alt="Aether Logo" 
-                  fill
-                  className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-[#D4AF38]">Aether Insight</h1>
-                <p className="text-gray-200">Wrestling Video Platform</p>
-              </div>
-            </div>
-            <Badge className="bg-green-600">Connected</Badge>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-[#D4AF38]">Wrestling Videos</h1>
+          <p className="text-gray-200">Video Analysis Platform</p>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Video List */}
           <div className="lg:col-span-1">
-            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+            <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
               <CardHeader>
                 <CardTitle className="text-[#D4AF38]">Videos</CardTitle>
               </CardHeader>
@@ -84,7 +64,7 @@ export default function WrestlingVideosPage() {
 
           {/* Video Player */}
           <div className="lg:col-span-3 space-y-4">
-            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+            <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white">{selectedVideo.title}</CardTitle>
@@ -123,7 +103,7 @@ export default function WrestlingVideosPage() {
             </Card>
 
             {/* Video Details */}
-            <Card className="bg-white/10 backdrop-blur-md border border-gold/30">
+            <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
               <CardHeader>
                 <CardTitle className="text-[#D4AF38]">Video Information</CardTitle>
               </CardHeader>

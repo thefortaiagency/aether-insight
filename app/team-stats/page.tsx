@@ -114,7 +114,7 @@ export default function TeamStatsPage() {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -126,7 +126,7 @@ export default function TeamStatsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -138,7 +138,7 @@ export default function TeamStatsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -150,7 +150,7 @@ export default function TeamStatsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -165,7 +165,7 @@ export default function TeamStatsPage() {
 
         {/* Dual Meet & Tournament Records */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center gap-2">
                 <Users className="w-5 h-5" />
@@ -193,7 +193,7 @@ export default function TeamStatsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center gap-2">
                 <Award className="w-5 h-5" />
@@ -226,7 +226,7 @@ export default function TeamStatsPage() {
         </div>
 
         {/* Weight Class Performance */}
-        <Card className="bg-black/40 backdrop-blur border border-gold/20 mb-6">
+        <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30 mb-6">
           <CardHeader>
             <CardTitle className="text-gold flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
@@ -252,7 +252,7 @@ export default function TeamStatsPage() {
         </Card>
 
         {/* Monthly Progress */}
-        <Card className="bg-black/40 backdrop-blur border border-gold/20 mb-6">
+        <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30 mb-6">
           <CardHeader>
             <CardTitle className="text-gold flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -280,7 +280,7 @@ export default function TeamStatsPage() {
 
         {/* Scoring Breakdown */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center gap-2">
                 <Target className="w-5 h-5" />
@@ -309,7 +309,7 @@ export default function TeamStatsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 backdrop-blur border border-gold/20">
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center gap-2">
                 <Trophy className="w-5 h-5" />
@@ -359,7 +359,7 @@ export default function TeamStatsPage() {
         </div>
 
         {/* Match Type Breakdown */}
-        <Card className="bg-black/40 backdrop-blur border border-gold/20">
+        <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
           <CardHeader>
             <CardTitle className="text-gold flex items-center gap-2">
               <Activity className="w-5 h-5" />
