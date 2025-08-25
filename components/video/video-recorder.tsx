@@ -51,6 +51,7 @@ export function VideoRecorder({
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedCamera, setSelectedCamera] = useState<string>('')
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>('')
+  const [selectedSpeaker, setSelectedSpeaker] = useState<string>('')
   const [showSettings, setShowSettings] = useState(false)
   const [videoEnabled, setVideoEnabled] = useState(true)
   const [audioEnabled, setAudioEnabled] = useState(true)
@@ -69,18 +70,39 @@ export function VideoRecorder({
 
   // Get available devices
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then(devices => {
-      const videoDevices = devices.filter(d => d.kind === 'videoinput')
-      const audioDevices = devices.filter(d => d.kind === 'audioinput')
-      setDevices(devices)
-      
-      if (videoDevices.length > 0 && !selectedCamera) {
-        setSelectedCamera(videoDevices[0].deviceId)
+    const getDevices = async () => {
+      try {
+        // Request permissions first to get device labels
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const videoDevices = devices.filter(d => d.kind === 'videoinput')
+        const audioDevices = devices.filter(d => d.kind === 'audioinput')
+        const audioOutputDevices = devices.filter(d => d.kind === 'audiooutput')
+        
+        setDevices(devices)
+        
+        if (videoDevices.length > 0 && !selectedCamera) {
+          setSelectedCamera(videoDevices[0].deviceId)
+        }
+        if (audioDevices.length > 0 && !selectedMicrophone) {
+          setSelectedMicrophone(audioDevices[0].deviceId)
+        }
+        if (audioOutputDevices.length > 0 && !selectedSpeaker) {
+          setSelectedSpeaker(audioOutputDevices[0].deviceId || 'default')
+        }
+      } catch (err) {
+        console.error('Error getting devices:', err)
       }
-      if (audioDevices.length > 0 && !selectedMicrophone) {
-        setSelectedMicrophone(audioDevices[0].deviceId)
-      }
-    })
+    }
+    
+    getDevices()
+    
+    // Listen for device changes
+    navigator.mediaDevices.addEventListener('devicechange', getDevices)
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', getDevices)
+    }
   }, [])
 
   // Auto-start recording when component mounts if enabled
@@ -490,16 +512,9 @@ export function VideoRecorder({
 
         {/* Settings overlay */}
         {showSettings && (
-          <div className="absolute inset-0 bg-black/90 p-4 overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
+          <div className="absolute inset-0 bg-black/90 p-4 overflow-y-auto z-50">
+            <div className="mb-4">
               <h3 className="text-lg font-bold text-white">Recording Settings</h3>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowSettings(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
             </div>
 
             <div className="space-y-4">
@@ -533,6 +548,60 @@ export function VideoRecorder({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Audio Output</label>
+                <Select value={selectedSpeaker} onValueChange={setSelectedSpeaker}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">System Default</SelectItem>
+                    {devices.filter(d => d.kind === 'audiooutput').map(device => (
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
+                        {device.label || 'Speaker'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    // Apply device changes if stream is active
+                    if (streamRef.current) {
+                      streamRef.current.getTracks().forEach(track => track.stop())
+                      try {
+                        const newStream = await navigator.mediaDevices.getUserMedia({
+                          video: videoEnabled ? { deviceId: selectedCamera } : false,
+                          audio: audioEnabled ? { deviceId: selectedMicrophone } : false
+                        })
+                        streamRef.current = newStream
+                        if (videoRef.current) {
+                          videoRef.current.srcObject = newStream
+                        }
+                      } catch (err) {
+                        setError('Failed to apply device changes')
+                      }
+                    }
+                    setShowSettings(false)
+                  }}
+                  className="flex-1"
+                >
+                  Apply Changes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowSettings(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
           </div>
