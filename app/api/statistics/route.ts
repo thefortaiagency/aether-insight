@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         .eq('wrestler_id', wrestlerId)
 
       // Calculate totals
-      const totals = matchStats?.reduce((acc, stat) => ({
+      const totals = matchStats?.reduce((acc: any, stat: any) => ({
         takedowns: acc.takedowns + (stat.takedowns || 0),
         escapes: acc.escapes + (stat.escapes || 0),
         reversals: acc.reversals + (stat.reversals || 0),
