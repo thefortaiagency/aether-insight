@@ -8,12 +8,12 @@ import {
 } from 'lucide-react'
 
 // A utility function for combining class names, often found in projects using Tailwind CSS.
-const cn = (...classes) => {
+const cn = (...classes: (string | undefined | null | false)[]) => {
   return classes.filter(Boolean).join(' ')
 }
 
 // A simple Button component to replace the one from a UI library.
-const Button = ({ children, className, ...props }) => {
+const Button = ({ children, className, ...props }: any) => {
   return (
     <button className={cn("px-4 py-2 rounded-md font-semibold transition-colors", className)} {...props}>
       {children}
@@ -59,7 +59,7 @@ export default function Navigation() {
                 src="/aether-logo.png" 
                 alt="Aether Logo" 
                 className="object-contain w-full h-full drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
-                onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/000000/d4af37?text=AI'; }}
+                onError={(e: any) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/000000/d4af37?text=AI'; }}
               />
             </div>
             <div className="flex flex-col justify-center h-full">
