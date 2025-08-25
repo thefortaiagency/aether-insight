@@ -11,7 +11,8 @@ import {
   ChevronUp, ChevronDown, Users, Activity, Award,
   TrendingUp, Shield, Zap, Flag, Circle, Square,
   Timer, Heart, Droplets, AlertTriangle, X, Check,
-  ArrowUp, ArrowDown, RefreshCw, User, Settings, Save
+  ArrowUp, ArrowDown, RefreshCw, User, Settings, Save,
+  Undo2, Redo2, History
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import MatchSetup from '@/components/match-setup'
@@ -66,11 +67,20 @@ const PERIODS = {
   'UTB': { name: 'Ultimate TB', duration: 30 }
 }
 
+interface MatchAction {
+  type: string
+  timestamp: number
+  previousState: LiveMatch
+  description: string
+}
+
 export default function LiveScoringPage() {
   const router = useRouter()
   const [matchId, setMatchId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [autoSave, setAutoSave] = useState(true)
+  const [actionHistory, setActionHistory] = useState<MatchAction[]>([])
+  const [redoStack, setRedoStack] = useState<MatchAction[]>([])
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
     wrestler1: {
@@ -253,15 +263,77 @@ export default function LiveScoringPage() {
     }))
   }
 
+  // Record an action for undo/redo
+  const recordAction = (type: string, description: string, newState: LiveMatch) => {
+    const action: MatchAction = {
+      type,
+      timestamp: Date.now(),
+      previousState: match,
+      description
+    }
+    
+    setActionHistory(prev => [...prev, action])
+    setRedoStack([]) // Clear redo stack when new action is performed
+    setMatch(newState)
+  }
+
+  // Undo last action
+  const undo = () => {
+    if (actionHistory.length === 0) return
+    
+    const lastAction = actionHistory[actionHistory.length - 1]
+    const currentState = match
+    
+    // Move action to redo stack
+    setRedoStack(prev => [...prev, {
+      ...lastAction,
+      previousState: currentState
+    }])
+    
+    // Restore previous state
+    setMatch(lastAction.previousState)
+    setActionHistory(prev => prev.slice(0, -1))
+    
+    // Save to database
+    if (autoSave && matchId) {
+      saveMatchToDatabase()
+    }
+  }
+
+  // Redo last undone action
+  const redo = () => {
+    if (redoStack.length === 0) return
+    
+    const redoAction = redoStack[redoStack.length - 1]
+    const currentState = match
+    
+    // Move action back to history
+    setActionHistory(prev => [...prev, {
+      ...redoAction,
+      previousState: currentState
+    }])
+    
+    // Restore the state
+    setMatch(redoAction.previousState)
+    setRedoStack(prev => prev.slice(0, -1))
+    
+    // Save to database
+    if (autoSave && matchId) {
+      saveMatchToDatabase()
+    }
+  }
+
   const addScore = (wrestler: 'wrestler1' | 'wrestler2', points: number, action: string) => {
-    setMatch(prev => ({
-      ...prev,
+    const newState = {
+      ...match,
       [wrestler]: {
-        ...prev[wrestler],
-        score: prev[wrestler].score + points
+        ...match[wrestler],
+        score: match[wrestler].score + points
       },
-      lastAction: `${prev[wrestler].name} - ${action} +${points}`
-    }))
+      lastAction: `${match[wrestler].name} - ${action} +${points}`
+    }
+    
+    recordAction('score', `${match[wrestler].name} - ${action} +${points}`, newState)
     
     // Auto-save if enabled
     if (autoSave && matchId) {
@@ -521,11 +593,18 @@ export default function LiveScoringPage() {
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <Button 
                   onClick={() => {
-                    addScore('wrestler1', 2, 'Takedown')
-                    setMatch(prev => ({
-                      ...prev,
-                      wrestler1: { ...prev.wrestler1, takedowns: prev.wrestler1.takedowns + 1 }
-                    }))
+                    const newState = {
+                      ...match,
+                      wrestler1: { 
+                        ...match.wrestler1, 
+                        score: match.wrestler1.score + 2,
+                        takedowns: match.wrestler1.takedowns + 1 
+                      },
+                      lastAction: `${match.wrestler1.name} - Takedown +2`
+                    }
+                    recordAction('score', `${match.wrestler1.name} - Takedown +2`, newState)
+                    if (autoSave && matchId) saveMatchToDatabase()
+                    if (matchId) saveMatchEvent('wrestler1', 'Takedown', 2)
                   }}
                   className="bg-green-700 hover:bg-green-800 text-white font-bold"
                   size="sm"
@@ -701,8 +780,26 @@ export default function LiveScoringPage() {
                   </Button>
                 </div>
                 
-                {/* Save Controls */}
+                {/* Save and History Controls */}
                 <div className="flex justify-center gap-2 mt-4">
+                  <Button
+                    onClick={undo}
+                    disabled={actionHistory.length === 0}
+                    className="bg-gray-700 hover:bg-gray-600 text-white font-bold disabled:opacity-50"
+                    size="sm"
+                    title={actionHistory.length > 0 ? `Undo: ${actionHistory[actionHistory.length - 1]?.description}` : 'Nothing to undo'}
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={redo}
+                    disabled={redoStack.length === 0}
+                    className="bg-gray-700 hover:bg-gray-600 text-white font-bold disabled:opacity-50"
+                    size="sm"
+                    title={redoStack.length > 0 ? `Redo: ${redoStack[redoStack.length - 1]?.description}` : 'Nothing to redo'}
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
                   <Button
                     onClick={saveMatchToDatabase}
                     disabled={isSaving}
@@ -722,6 +819,14 @@ export default function LiveScoringPage() {
                     Auto-save
                   </label>
                 </div>
+                
+                {/* Action History Counter */}
+                {actionHistory.length > 0 && (
+                  <div className="text-center text-xs text-gray-400 mt-2">
+                    <History className="w-3 h-3 inline mr-1" />
+                    {actionHistory.length} action{actionHistory.length !== 1 ? 's' : ''} recorded
+                  </div>
+                )}
                 {matchId && (
                   <div className="text-center text-xs text-gray-400 mt-2">
                     Match ID: {matchId}

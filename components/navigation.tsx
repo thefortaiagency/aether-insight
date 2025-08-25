@@ -29,6 +29,11 @@ export default function Navigation() {
       icon: <Activity className="w-4 h-4" /> 
     },
     { 
+      name: 'Live Matches', 
+      href: '/matches/live', 
+      icon: <Activity className="w-4 h-4 text-red-500" /> 
+    },
+    { 
       name: 'Matches', 
       href: '/matches', 
       icon: <Trophy className="w-4 h-4" /> 
