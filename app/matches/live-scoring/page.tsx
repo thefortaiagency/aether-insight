@@ -406,7 +406,7 @@ export default function LiveScoringPage() {
             onClick={() => setShowSetup(true)}
             variant="outline"
             size="sm"
-            className="border-gold/30 text-gold hover:bg-gold/10"
+            className="bg-black/60 text-gold hover:bg-gold/20 font-semibold"
           >
             <Settings className="w-4 h-4 mr-2" />
             Setup
@@ -573,7 +573,7 @@ export default function LiveScoringPage() {
                     onClick={() => setTimeRemaining(PERIODS[match.period].duration)}
                     variant="outline"
                     size="sm"
-                    className="border-gold/30 text-gold hover:bg-gold/10"
+                    className="bg-black/60 text-gold hover:bg-gold/20 font-semibold"
                   >
                     <RotateCcw className="w-4 h-4" />
                   </Button>
@@ -646,7 +646,7 @@ export default function LiveScoringPage() {
                       }}
                       variant={match.period === p ? 'default' : 'outline'}
                       size="sm"
-                      className={match.period === p ? 'bg-gold text-black' : 'border-gold/30 text-gold'}
+                      className={match.period === p ? 'bg-gold text-black font-bold' : 'bg-black/60 text-gold hover:bg-gold/20 font-semibold'}
                     >
                       P{p}
                     </Button>

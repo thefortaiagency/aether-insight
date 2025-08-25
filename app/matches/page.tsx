@@ -168,21 +168,25 @@ export default function MatchesPage() {
                 </div>
 
                 {/* Scoring Buttons */}
-                <div className="grid grid-cols-5 gap-2 mb-6">
-                  <Button className="bg-green-600 hover:bg-green-500 text-white">
+                <div className="grid grid-cols-3 gap-2 mb-6">
+                  <Button className="bg-green-700 hover:bg-green-800 text-white font-bold">
                     Takedown<br/>+2
                   </Button>
-                  <Button className="bg-blue-600 hover:bg-blue-500 text-white">
+                  <Button className="bg-blue-700 hover:bg-blue-800 text-white font-bold">
                     Escape<br/>+1
                   </Button>
-                  <Button className="bg-purple-600 hover:bg-purple-500 text-white">
+                  <Button className="bg-purple-700 hover:bg-purple-800 text-white font-bold">
                     Reversal<br/>+2
                   </Button>
-                  <Button className="bg-orange-600 hover:bg-orange-500 text-white">
+                  <Button className="bg-orange-700 hover:bg-orange-800 text-white font-bold">
                     Near Fall<br/>2|3|4
                   </Button>
-                  <Button className="bg-yellow-600 hover:bg-yellow-500 text-white">
+                  <Button className="bg-yellow-600 hover:bg-yellow-700 text-black font-bold">
                     Penalty<br/>+1
+                  </Button>
+                  <Button className="bg-gold hover:bg-gold/90 text-black font-bold">
+                    <Trophy className="h-4 w-4 inline mr-1" />
+                    PIN
                   </Button>
                 </div>
 
