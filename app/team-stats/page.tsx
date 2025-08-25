@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { 
   Trophy, TrendingUp, Users, Target, Award, BarChart3, 
   Activity, Zap, Shield, Star, ChevronUp, ChevronDown,
-  Calendar, Clock, Percent, Hash
+  Calendar, Clock, Percent, Hash, Upload, FileText,
+  Download, CheckCircle, AlertCircle
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import {
@@ -49,6 +50,11 @@ interface TeamStats {
 }
 
 export default function TeamStatsPage() {
+  const [showImport, setShowImport] = useState(false)
+  const [importSource, setImportSource] = useState<'matboss' | 'trackwrestling' | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importStatus, setImportStatus] = useState<string>('')
+  
   const [stats, setStats] = useState<TeamStats>({
     totalMatches: 342,
     wins: 287,
@@ -101,16 +107,246 @@ export default function TeamStatsPage() {
 
   const COLORS = ['#D4AF38', '#FFD700', '#FFA500', '#FF6B6B', '#4ECDC4', '#45B7D1']
 
+  // Handle import from MatBoss or TrackWrestling
+  const handleImport = async (source: 'matboss' | 'trackwrestling') => {
+    setImporting(true)
+    setImportSource(source)
+    setImportStatus(`Importing from ${source === 'matboss' ? 'MatBoss' : 'TrackWrestling'}...`)
+    
+    try {
+      // Simulate API call to import data
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // In production, this would make an actual API call
+      // const response = await fetch(`/api/import/${source}`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ teamId, apiKey })
+      // })
+      
+      setImportStatus(`Successfully imported data from ${source === 'matboss' ? 'MatBoss' : 'TrackWrestling'}!`)
+      setShowImport(false)
+      
+      // Update stats with imported data
+      // setStats(importedData)
+      
+    } catch (error) {
+      setImportStatus(`Failed to import from ${source === 'matboss' ? 'MatBoss' : 'TrackWrestling'}`)
+    } finally {
+      setImporting(false)
+      setTimeout(() => setImportStatus(''), 3000)
+    }
+  }
+
+  // Handle file upload for MatBoss CSV/Excel
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    
+    setImporting(true)
+    setImportStatus('Processing file...')
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      // In production, upload to server
+      // const response = await fetch('/api/import/file', {
+      //   method: 'POST',
+      //   body: formData
+      // })
+      
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      setImportStatus('File imported successfully!')
+      setShowImport(false)
+      
+    } catch (error) {
+      setImportStatus('Failed to process file')
+    } finally {
+      setImporting(false)
+      setTimeout(() => setImportStatus(''), 3000)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
       
       <div className="relative z-10 p-4 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gold mb-2">Team Statistics</h1>
-          <p className="text-gray-400">Fort Wayne North Warriors - 2024-25 Season</p>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gold mb-2">Team Statistics</h1>
+            <p className="text-gray-400">Fort Wayne North Warriors - 2024-25 Season</p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Button
+              onClick={() => setShowImport(!showImport)}
+              className="bg-gold hover:bg-gold/90 text-black font-bold"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import Stats
+            </Button>
+          </div>
         </div>
+
+        {/* Import Section */}
+        {showImport && (
+          <Card className="bg-black/90 backdrop-blur-sm border-gold/30 mb-6">
+            <CardHeader>
+              <CardTitle className="text-gold flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" />
+                  Import Team Statistics
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowImport(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* MatBoss Import */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-bold">MatBoss</h3>
+                      <p className="text-xs text-gray-400">Import from MatBoss system</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => handleImport('matboss')}
+                      disabled={importing}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {importing && importSource === 'matboss' ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Sync with MatBoss Cloud
+                        </>
+                      )}
+                    </Button>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-gray-700" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-black px-2 text-gray-400">or</span>
+                      </div>
+                    </div>
+                    
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".csv,.xlsx,.xls"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        disabled={importing}
+                      />
+                      <div className="w-full p-3 border-2 border-dashed border-gray-600 rounded-lg hover:border-gold/50 transition-colors text-center">
+                        <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-400">Upload MatBoss Export</p>
+                        <p className="text-xs text-gray-500 mt-1">CSV or Excel file</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* TrackWrestling Import */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                      <Activity className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-bold">TrackWrestling</h3>
+                      <p className="text-xs text-gray-400">Import from TrackWrestling</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => handleImport('trackwrestling')}
+                      disabled={importing}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {importing && importSource === 'trackwrestling' ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Connect TrackWrestling
+                        </>
+                      )}
+                    </Button>
+                    
+                    <div className="p-3 bg-gray-900/50 rounded-lg">
+                      <p className="text-xs text-gray-400 mb-2">Quick Import:</p>
+                      <div className="space-y-2">
+                        <button className="text-xs text-gold hover:text-gold/80 block">
+                          → Import Season Results
+                        </button>
+                        <button className="text-xs text-gold hover:text-gold/80 block">
+                          → Import Tournament Data
+                        </button>
+                        <button className="text-xs text-gold hover:text-gold/80 block">
+                          → Import Wrestler Records
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Import Status */}
+              {importStatus && (
+                <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
+                  importStatus.includes('Success') || importStatus.includes('success') 
+                    ? 'bg-green-900/30 border border-green-600/50 text-green-400'
+                    : importStatus.includes('Failed') || importStatus.includes('failed')
+                    ? 'bg-red-900/30 border border-red-600/50 text-red-400'
+                    : 'bg-blue-900/30 border border-blue-600/50 text-blue-400'
+                }`}>
+                  {importStatus.includes('Success') || importStatus.includes('success') ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : importStatus.includes('Failed') || importStatus.includes('failed') ? (
+                    <AlertCircle className="w-4 h-4" />
+                  ) : (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                  )}
+                  <span className="text-sm">{importStatus}</span>
+                </div>
+              )}
+
+              {/* Help Text */}
+              <div className="mt-4 p-3 bg-gray-900/30 rounded-lg">
+                <p className="text-xs text-gray-400">
+                  <strong>Note:</strong> Import your team's statistics from MatBoss or TrackWrestling to automatically 
+                  populate all charts and analytics. Supports season data, tournament results, and individual wrestler records.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
