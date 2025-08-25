@@ -92,7 +92,7 @@ export default function LiveScoringPage() {
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [matchEnded, setMatchEnded] = useState(false)
-  const [showVideoRecorder, setShowVideoRecorder] = useState(false)
+  const [showVideoRecorder, setShowVideoRecorder] = useState(true) // Always show video recorder
   const [recordedVideoId, setRecordedVideoId] = useState<string | null>(null)
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
@@ -274,11 +274,6 @@ export default function LiveScoringPage() {
       isRunning: !prev.isRunning,
       lastAction: !prev.isRunning ? 'Match Started' : 'Match Paused'
     }))
-    
-    // Auto-show video recorder when starting match
-    if (!match.isRunning && !showVideoRecorder && !recordedVideoId) {
-      setShowVideoRecorder(true)
-    }
   }
 
   // Record an action for undo/redo
@@ -650,6 +645,33 @@ export default function LiveScoringPage() {
       <OfflineIndicator />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
+        {/* Video Recorder Section - Always visible */}
+        <div className="mb-4">
+          <VideoRecorder
+            matchId={matchId || `temp-${Date.now()}`}
+            autoStart={match.isRunning} // Auto-start when match is running
+            autoUpload={true} // Enable auto-upload for chunks
+            chunkDuration={300} // Upload every 5 minutes
+            maxFileSize={50} // Upload when chunk reaches 50MB
+            onRecordingComplete={(blob, url) => {
+              console.log('Recording complete', { size: blob.size, url })
+            }}
+            onUploadComplete={(videoId) => {
+              setRecordedVideoId(videoId)
+              console.log('Video uploaded to Cloudflare:', videoId)
+              // Update match with video ID
+              if (matchId) {
+                fetch(`/api/matches/${matchId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ video_id: videoId })
+                })
+              }
+            }}
+            className="max-w-4xl mx-auto"
+          />
+        </div>
+
         {/* Header Bar */}
         <div className="mb-4 flex justify-between items-center">
           <div className="flex gap-2">
@@ -933,14 +955,6 @@ export default function LiveScoringPage() {
                   >
                     <Printer className="w-4 h-4 mr-1" />
                     Bout Sheet
-                  </Button>
-                  <Button
-                    onClick={() => setShowVideoRecorder(!showVideoRecorder)}
-                    className={`${showVideoRecorder ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'} text-white font-bold`}
-                    size="sm"
-                  >
-                    <Video className="w-4 h-4 mr-1" />
-                    {showVideoRecorder ? 'Hide' : 'Record'}
                   </Button>
                   <Button
                     onClick={saveMatchToDatabase}
@@ -1380,35 +1394,6 @@ export default function LiveScoringPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Video Recorder Section */}
-      {showVideoRecorder && (
-        <div className="mt-4">
-          <VideoRecorder
-            matchId={matchId || `temp-${Date.now()}`}
-            autoStart={match.isRunning} // Auto-start when match is running
-            autoUpload={true} // Enable auto-upload for chunks
-            chunkDuration={300} // Upload every 5 minutes
-            maxFileSize={50} // Upload when chunk reaches 50MB
-            onRecordingComplete={(blob, url) => {
-              console.log('Recording complete', { size: blob.size, url })
-            }}
-            onUploadComplete={(videoId) => {
-              setRecordedVideoId(videoId)
-              console.log('Video uploaded to Cloudflare:', videoId)
-              // Update match with video ID
-              if (matchId) {
-                fetch(`/api/matches/${matchId}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ video_id: videoId })
-                })
-              }
-            }}
-            className="max-w-4xl mx-auto"
-          />
-        </div>
-      )}
       
       {/* Bout Sheet Modal/Overlay */}
       {showBoutSheet && (
