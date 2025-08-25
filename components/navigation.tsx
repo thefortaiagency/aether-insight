@@ -71,7 +71,7 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="relative w-10 h-10">
+            <div className="relative w-10 h-10 flex-shrink-0">
               <Image 
                 src="/aether-logo.png" 
                 alt="Aether Logo" 
@@ -79,9 +79,9 @@ export default function Navigation() {
                 className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
               />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gold">Aether Insight</h1>
-              <p className="text-xs text-gray-400 hidden md:block">Wrestling Analytics Platform</p>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-xl font-bold text-gold leading-tight">Aether Insight</h1>
+              <p className="text-xs text-gray-400 hidden md:block leading-tight">Wrestling Analytics Platform</p>
             </div>
           </Link>
 
