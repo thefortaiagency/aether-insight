@@ -6,11 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { OfflineIndicator } from '@/components/offline-indicator'
+import { supabase } from '@/lib/supabase'
 import { 
   Video, Settings, Info, CheckCircle, AlertCircle, 
-  Wifi, WifiOff, Upload, Download, Trash2, RefreshCw
+  Wifi, WifiOff, Upload, Download, Trash2, RefreshCw,
+  Trophy, Users, Plus, Minus, Clock, Play, Pause,
+  Target, Flag, Activity, ChevronUp, ChevronDown,
+  Award, Shield, Zap
 } from 'lucide-react'
 
 export default function VideoRecorderTestPage() {
@@ -20,8 +26,22 @@ export default function VideoRecorderTestPage() {
   const [chunkDuration, setChunkDuration] = useState(300) // 5 minutes
   const [maxFileSize, setMaxFileSize] = useState(50) // 50MB
   const [uploadedVideos, setUploadedVideos] = useState<string[]>([])
-  const [testMatchId] = useState(`test-${Date.now()}`)
+  const [testMatchId, setTestMatchId] = useState(`test-${Date.now()}`)
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true)
+  
+  // Match state
+  const [matchCreated, setMatchCreated] = useState(false)
+  const [matchStartTime, setMatchStartTime] = useState<number>(0)
+  const [wrestlerName, setWrestlerName] = useState('Test Wrestler')
+  const [opponentName, setOpponentName] = useState('Test Opponent')
+  const [wrestlerScore, setWrestlerScore] = useState(0)
+  const [opponentScore, setOpponentScore] = useState(0)
+  const [currentPeriod, setCurrentPeriod] = useState(1)
+  const [periodTime, setPeriodTime] = useState(0)
+  const [isRecording, setIsRecording] = useState(false)
+  const [scoringEvents, setScoringEvents] = useState<any[]>([])
+  const [showMatchForm, setShowMatchForm] = useState(false)
+  const [showScoring, setShowScoring] = useState(false)
 
   // Monitor online status
   useEffect(() => {
@@ -55,6 +75,111 @@ export default function VideoRecorderTestPage() {
     setAutoStart(!autoStart)
   }
 
+  // Create a test match
+  const createTestMatch = async () => {
+    try {
+      const matchData = {
+        id: testMatchId,
+        wrestler_name: wrestlerName,
+        opponent_name: opponentName,
+        event_name: 'Test Event',
+        weight_class: 'Test',
+        match_type: 'Regular',
+        final_score_for: 0,
+        final_score_against: 0,
+        status: 'in_progress',
+        video_start_time: new Date().toISOString(),
+        has_video: true
+      }
+
+      const { data, error } = await supabase
+        .from('matches')
+        .insert(matchData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating match:', error)
+        // Continue anyway for testing
+      }
+
+      setMatchCreated(true)
+      setMatchStartTime(Date.now())
+      setShowMatchForm(false)
+      setShowScoring(true)
+      
+      // Start recording automatically
+      setAutoStart(true)
+      
+      console.log('Test match created:', matchData)
+    } catch (error) {
+      console.error('Error creating test match:', error)
+    }
+  }
+
+  // Add scoring event
+  const addScoringEvent = async (type: string, points: number, wrestler: 'wrestler1' | 'wrestler2') => {
+    const isWrestler1 = wrestler === 'wrestler1'
+    const videoTimestamp = matchStartTime ? Math.floor((Date.now() - matchStartTime) / 1000) : 0
+    
+    const event = {
+      id: `event-${Date.now()}`,
+      match_id: testMatchId,
+      timestamp: Date.now(),
+      video_timestamp: videoTimestamp,
+      event_type: type,
+      wrestler_id: wrestler,
+      wrestler_name: isWrestler1 ? wrestlerName : opponentName,
+      points: points,
+      description: `${isWrestler1 ? wrestlerName : opponentName} - ${type} +${points}`,
+      period: currentPeriod,
+      event_time: periodTime
+    }
+
+    // Update scores
+    if (isWrestler1) {
+      setWrestlerScore(prev => prev + points)
+    } else {
+      setOpponentScore(prev => prev + points)
+    }
+
+    // Add to local events
+    setScoringEvents(prev => [...prev, event])
+
+    // Save to database
+    try {
+      const response = await fetch('/api/matches/live/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event)
+      })
+      
+      if (!response.ok) {
+        console.error('Failed to save event')
+      }
+    } catch (error) {
+      console.error('Error saving event:', error)
+    }
+  }
+
+  // Period timer
+  useEffect(() => {
+    if (matchCreated && isRecording) {
+      const timer = setInterval(() => {
+        setPeriodTime(prev => prev + 1)
+      }, 1000)
+      
+      return () => clearInterval(timer)
+    }
+  }, [matchCreated, isRecording])
+
+  // Format time
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
@@ -79,14 +204,223 @@ export default function VideoRecorderTestPage() {
             {isOnline ? 'Online' : 'Offline'}
           </Badge>
           <Badge className="bg-blue-900/50 text-blue-400 border-blue-600">
-            Match ID: {testMatchId}
+            Match ID: {testMatchId.substring(0, 15)}...
           </Badge>
+          {matchCreated && (
+            <Badge className="bg-gold/50 text-gold border-gold">
+              <Trophy className="w-3 h-3 mr-1" />
+              Match Active
+            </Badge>
+          )}
+          {matchCreated && (
+            <Badge className="bg-green-900/50 text-green-400 border-green-600">
+              Score: {wrestlerScore} - {opponentScore}
+            </Badge>
+          )}
           {uploadedVideos.length > 0 && (
             <Badge className="bg-purple-900/50 text-purple-400 border-purple-600">
               {uploadedVideos.length} Videos Uploaded
             </Badge>
           )}
         </div>
+
+        {/* Match Creation Card */}
+        {!matchCreated && (
+          <Card className="bg-black/80 backdrop-blur-sm border-gold/30 mb-6">
+            <CardHeader>
+              <CardTitle className="text-gold flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5" />
+                  Create Test Match
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => setShowMatchForm(!showMatchForm)}
+                  className="bg-gold text-black hover:bg-gold/80"
+                >
+                  {showMatchForm ? 'Cancel' : 'Create Match'}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            {showMatchForm && (
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-400">Wrestler Name</Label>
+                    <Input
+                      value={wrestlerName}
+                      onChange={(e) => setWrestlerName(e.target.value)}
+                      className="bg-gray-900/50 border-gray-700"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400">Opponent Name</Label>
+                    <Input
+                      value={opponentName}
+                      onChange={(e) => setOpponentName(e.target.value)}
+                      className="bg-gray-900/50 border-gray-700"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={createTestMatch}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Match & Recording
+                </Button>
+              </CardContent>
+            )}
+          </Card>
+        )}
+
+        {/* Scoring Controls */}
+        {matchCreated && showScoring && (
+          <Card className="bg-black/80 backdrop-blur-sm border-gold/30 mb-6">
+            <CardHeader>
+              <CardTitle className="text-gold flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Live Scoring
+                </span>
+                <div className="flex items-center gap-4">
+                  <Badge className="bg-blue-900/50 text-blue-400">
+                    Period {currentPeriod} - {formatTime(periodTime)}
+                  </Badge>
+                  <Badge className="bg-green-900/50 text-green-400">
+                    {wrestlerScore} - {opponentScore}
+                  </Badge>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Wrestler 1 Controls */}
+                <div className="space-y-3">
+                  <h3 className="text-green-500 font-bold text-center">{wrestlerName}</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('takedown', 2, 'wrestler1')}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Target className="w-4 h-4 mr-1" />
+                      Takedown +2
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('escape', 1, 'wrestler1')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <ChevronUp className="w-4 h-4 mr-1" />
+                      Escape +1
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('reversal', 2, 'wrestler1')}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Shield className="w-4 h-4 mr-1" />
+                      Reversal +2
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('near_fall', 3, 'wrestler1')}
+                      className="bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      <Zap className="w-4 h-4 mr-1" />
+                      Near Fall +3
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Wrestler 2 Controls */}
+                <div className="space-y-3">
+                  <h3 className="text-red-500 font-bold text-center">{opponentName}</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('takedown', 2, 'wrestler2')}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Target className="w-4 h-4 mr-1" />
+                      Takedown +2
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('escape', 1, 'wrestler2')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <ChevronUp className="w-4 h-4 mr-1" />
+                      Escape +1
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('reversal', 2, 'wrestler2')}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Shield className="w-4 h-4 mr-1" />
+                      Reversal +2
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addScoringEvent('near_fall', 3, 'wrestler2')}
+                      className="bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      <Zap className="w-4 h-4 mr-1" />
+                      Near Fall +3
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Period Controls */}
+              <div className="mt-4 flex justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentPeriod(prev => Math.max(1, prev - 1))
+                    setPeriodTime(0)
+                  }}
+                  disabled={currentPeriod === 1}
+                >
+                  Previous Period
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentPeriod(prev => Math.min(3, prev + 1))
+                    setPeriodTime(0)
+                  }}
+                  disabled={currentPeriod === 3}
+                >
+                  Next Period
+                </Button>
+              </div>
+
+              {/* Recent Events */}
+              {scoringEvents.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <h4 className="text-sm text-gray-400 mb-2">Recent Events</h4>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {scoringEvents.slice(-5).reverse().map((event: any) => (
+                      <div key={event.id} className="text-xs flex justify-between">
+                        <span className={event.wrestler_id === 'wrestler1' ? 'text-green-400' : 'text-red-400'}>
+                          {event.description}
+                        </span>
+                        <span className="text-gray-500">
+                          @ {event.video_timestamp}s
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Video Recorder */}
@@ -105,6 +439,8 @@ export default function VideoRecorderTestPage() {
                 })
               }}
               onUploadComplete={handleUploadComplete}
+              onRecordingStart={() => setIsRecording(true)}
+              onRecordingStop={() => setIsRecording(false)}
             />
           </div>
 

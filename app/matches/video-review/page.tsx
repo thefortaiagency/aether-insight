@@ -74,7 +74,7 @@ export default function VideoReviewPage() {
       const videosData = await videosResponse.json()
 
       // Match videos with matches by matchId
-      const matchesWithVideos = matchesData?.map(match => {
+      const matchesWithVideos = matchesData?.map((match: any) => {
         const video = videosData.videos?.find((v: any) => 
           v.meta?.matchId === match.id || 
           v.title?.includes(match.id)
@@ -85,7 +85,7 @@ export default function VideoReviewPage() {
           videoId: video?.id,
           videoDuration: video?.duration
         }
-      }).filter(m => m.hasVideo) // Only show matches with videos
+      }).filter((m: any) => m.hasVideo) // Only show matches with videos
 
       setMatches(matchesWithVideos || [])
     } catch (error) {
@@ -116,7 +116,7 @@ export default function VideoReviewPage() {
     }
 
     // Convert events to scoring timeline
-    const scoringEvents: ScoringEvent[] = events?.map((event, index) => {
+    const scoringEvents: ScoringEvent[] = events?.map((event: any, index: number) => {
       // Calculate video time based on event timestamp and match start
       const videoTime = Math.floor((event.timestamp - match.created_at) / 1000)
       

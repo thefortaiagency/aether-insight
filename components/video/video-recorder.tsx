@@ -23,6 +23,8 @@ interface VideoRecorderProps {
   matchId?: string
   onRecordingComplete?: (blob: Blob, videoUrl: string) => void
   onUploadComplete?: (cloudflareId: string) => void
+  onRecordingStart?: () => void
+  onRecordingStop?: () => void
   className?: string
   autoStart?: boolean
   autoUpload?: boolean
@@ -34,6 +36,8 @@ export function VideoRecorder({
   matchId, 
   onRecordingComplete,
   onUploadComplete,
+  onRecordingStart,
+  onRecordingStop,
   className = '',
   autoStart = false,
   autoUpload = true,
@@ -212,6 +216,9 @@ export function VideoRecorder({
     try {
       setError(null)
       chunksRef.current = []
+      
+      // Call the start callback
+      onRecordingStart?.()
 
       const constraints: MediaStreamConstraints = {
         video: videoEnabled ? {
@@ -325,6 +332,9 @@ export function VideoRecorder({
       mediaRecorderRef.current.stop()
       setIsRecording(false)
       setIsPaused(false)
+      
+      // Call the stop callback
+      onRecordingStop?.()
 
       // Stop all tracks
       if (streamRef.current) {

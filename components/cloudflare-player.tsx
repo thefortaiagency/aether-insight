@@ -1,5 +1,6 @@
 'use client'
 
+import { forwardRef, useRef, useImperativeHandle, useEffect } from 'react'
 import { Stream } from '@cloudflare/stream-react'
 
 interface CloudflarePlayerProps {
@@ -11,14 +12,30 @@ interface CloudflarePlayerProps {
   className?: string
 }
 
-export default function CloudflarePlayer({ 
+const CloudflarePlayer = forwardRef<any, CloudflarePlayerProps>(({ 
   videoId, 
   autoplay = false,
   muted = false,
   loop = false,
   preload = 'metadata',
   className = ''
-}: CloudflarePlayerProps) {
+}, ref) => {
+  const streamRef = useRef<any>(null)
+  
+  // Expose player controls via ref
+  useImperativeHandle(ref, () => ({
+    get currentTime() {
+      return streamRef.current?.currentTime || 0
+    },
+    set currentTime(time: number) {
+      if (streamRef.current) {
+        streamRef.current.currentTime = time
+      }
+    },
+    play: () => streamRef.current?.play(),
+    pause: () => streamRef.current?.pause()
+  }), [])
+  
   // Following Cloudflare Stream best practices
   const playerOptions = {
     src: videoId,
@@ -33,7 +50,8 @@ export default function CloudflarePlayer({
     // Additional recommended settings
     primaryColor: '#D4AF38', // Gold theme
     posterTimestamp: '2s', // Show poster at 2 seconds
-    defaultTextTrack: 'en'
+    defaultTextTrack: 'en',
+    ref: streamRef
   }
 
   return (
@@ -41,4 +59,8 @@ export default function CloudflarePlayer({
       <Stream {...playerOptions} />
     </div>
   )
-}
+})
+
+CloudflarePlayer.displayName = 'CloudflarePlayer'
+
+export default CloudflarePlayer
