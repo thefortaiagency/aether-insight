@@ -14,6 +14,7 @@ import {
   ArrowUp, ArrowDown, RefreshCw, User, Settings, Save
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
+import MatchSetup from '@/components/match-setup'
 import { useRouter } from 'next/navigation'
 
 interface Wrestler {
@@ -124,6 +125,62 @@ export default function LiveScoringPage() {
 
   const [timeRemaining, setTimeRemaining] = useState(120)
   const [showSetup, setShowSetup] = useState(true)
+  
+  const handleStartMatch = (setupData: any) => {
+    // Update match with setup data
+    setMatch(prev => ({
+      ...prev,
+      wrestler1: {
+        ...prev.wrestler1,
+        name: setupData.wrestler1.name,
+        team: setupData.wrestler1.team
+      },
+      wrestler2: {
+        ...prev.wrestler2,
+        name: setupData.wrestler2.name,
+        team: setupData.wrestler2.team
+      },
+      weightClass: setupData.weightClass,
+      matchType: setupData.matchType,
+      referee: setupData.referee,
+      mat: setupData.mat
+    }))
+    
+    // Hide setup and show scoring interface
+    setShowSetup(false)
+    
+    // Create match in database
+    createMatch(setupData)
+  }
+  
+  const createMatch = async (setupData: any) => {
+    try {
+      const response = await fetch('/api/matches/live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wrestler1_name: setupData.wrestler1.name,
+          wrestler1_team: setupData.wrestler1.team,
+          wrestler1_id: setupData.wrestler1.id,
+          wrestler2_name: setupData.wrestler2.name,
+          wrestler2_team: setupData.wrestler2.team,
+          wrestler2_id: setupData.wrestler2.id,
+          weight_class: setupData.weightClass,
+          mat_number: setupData.mat,
+          referee_name: setupData.referee,
+          match_type: setupData.matchType,
+          bout_number: setupData.boutNumber
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setMatchId(data.data.id)
+      }
+    } catch (error) {
+      console.error('Error creating match:', error)
+    }
+  }
 
   // Timer Effect
   useEffect(() => {
@@ -406,98 +463,8 @@ export default function LiveScoringPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
         <WrestlingStatsBackground />
-        <div className="relative z-10 max-w-3xl mx-auto px-4 py-8">
-          <Card className="bg-black/80 backdrop-blur-sm border-[#D4AF38]/30">
-            <CardContent className="p-8">
-              <h1 className="text-3xl font-bold text-gold mb-6">Match Setup</h1>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-400">Red Wrestler</label>
-                    <Input 
-                      value={match.wrestler1.name}
-                      onChange={(e) => setMatch(prev => ({
-                        ...prev,
-                        wrestler1: { ...prev.wrestler1, name: e.target.value }
-                      }))}
-                      className="bg-black/50 border-red-500/30 text-white"
-                      placeholder="Last, First"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Green Wrestler</label>
-                    <Input 
-                      value={match.wrestler2.name}
-                      onChange={(e) => setMatch(prev => ({
-                        ...prev,
-                        wrestler2: { ...prev.wrestler2, name: e.target.value }
-                      }))}
-                      className="bg-black/50 border-green-500/30 text-white"
-                      placeholder="Last, First"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-400">Weight Class</label>
-                    <Select value={match.weightClass.toString()} onValueChange={(val) => setMatch(prev => ({ ...prev, weightClass: parseInt(val) }))}>
-                      <SelectTrigger className="bg-black/50 border-gold/30 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[106, 113, 120, 126, 132, 138, 145, 152, 160, 170, 182, 195, 220, 285].map(weight => (
-                          <SelectItem key={weight} value={weight.toString()}>{weight} lbs</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-400">Match Type</label>
-                    <Select value={match.matchType} onValueChange={(val: any) => setMatch(prev => ({ ...prev, matchType: val }))}>
-                      <SelectTrigger className="bg-black/50 border-gold/30 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dual">Dual Meet</SelectItem>
-                        <SelectItem value="tournament">Tournament</SelectItem>
-                        <SelectItem value="exhibition">Exhibition</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400">Mat</label>
-                    <Input 
-                      value={match.mat}
-                      onChange={(e) => setMatch(prev => ({ ...prev, mat: e.target.value }))}
-                      className="bg-black/50 border-gold/30 text-white"
-                      placeholder="1"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-400">Referee</label>
-                  <Input 
-                    value={match.referee}
-                    onChange={(e) => setMatch(prev => ({ ...prev, referee: e.target.value }))}
-                    className="bg-black/50 border-gold/30 text-white"
-                    placeholder="Referee Name"
-                  />
-                </div>
-
-                <Button 
-                  onClick={() => setShowSetup(false)}
-                  className="w-full bg-gold hover:bg-gold/90 text-black font-bold"
-                >
-                  Start Match
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-8">
+          <MatchSetup onStartMatch={handleStartMatch} />
         </div>
       </div>
     )
@@ -669,6 +636,20 @@ export default function LiveScoringPage() {
                 >
                   Stalling ({match.wrestler1.stalls})
                 </Button>
+                
+                {/* Stalling Progression Display */}
+                {match.wrestler1.stalls > 0 && (
+                  <div className="flex gap-1 justify-center px-2">
+                    <div className={`flex-1 h-2 rounded ${match.wrestler1.stalls >= 1 ? 'bg-yellow-500' : 'bg-gray-600'}`} title="Warning" />
+                    <div className={`flex-1 h-2 rounded ${match.wrestler1.stalls >= 2 ? 'bg-orange-500' : 'bg-gray-600'}`} title="+1 pt" />
+                    <div className={`flex-1 h-2 rounded ${match.wrestler1.stalls >= 3 ? 'bg-orange-600' : 'bg-gray-600'}`} title="+1 pt" />
+                    <div className={`flex-1 h-2 rounded ${match.wrestler1.stalls >= 4 ? 'bg-red-600' : 'bg-gray-600'}`} title="+2 pts" />
+                    {match.wrestler1.stalls >= 5 && (
+                      <div className="flex-1 h-2 rounded bg-red-900 animate-pulse" title="DQ" />
+                    )}
+                  </div>
+                )}
+                
                 <Button 
                   onClick={() => addPenalty('wrestler1', 1)}
                   variant="outline"
@@ -1005,6 +986,20 @@ export default function LiveScoringPage() {
                 >
                   Stalling ({match.wrestler2.stalls})
                 </Button>
+                
+                {/* Stalling Progression Display */}
+                {match.wrestler2.stalls > 0 && (
+                  <div className="flex gap-1 justify-center px-2">
+                    <div className={`flex-1 h-2 rounded ${match.wrestler2.stalls >= 1 ? 'bg-yellow-500' : 'bg-gray-600'}`} title="Warning" />
+                    <div className={`flex-1 h-2 rounded ${match.wrestler2.stalls >= 2 ? 'bg-orange-500' : 'bg-gray-600'}`} title="+1 pt" />
+                    <div className={`flex-1 h-2 rounded ${match.wrestler2.stalls >= 3 ? 'bg-orange-600' : 'bg-gray-600'}`} title="+1 pt" />
+                    <div className={`flex-1 h-2 rounded ${match.wrestler2.stalls >= 4 ? 'bg-red-600' : 'bg-gray-600'}`} title="+2 pts" />
+                    {match.wrestler2.stalls >= 5 && (
+                      <div className="flex-1 h-2 rounded bg-red-900 animate-pulse" title="DQ" />
+                    )}
+                  </div>
+                )}
+                
                 <Button 
                   onClick={() => addPenalty('wrestler2', 1)}
                   variant="outline"
