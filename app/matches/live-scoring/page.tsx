@@ -12,12 +12,13 @@ import {
   TrendingUp, Shield, Zap, Flag, Circle, Square,
   Timer, Heart, Droplets, AlertTriangle, X, Check,
   ArrowUp, ArrowDown, RefreshCw, User, Settings, Save,
-  Undo2, Redo2, History, Printer, CheckCircle
+  Undo2, Redo2, History, Printer, CheckCircle, Video, ChevronRight
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import MatchSetup from '@/components/match-setup'
 import { BoutSheet } from '@/components/bout-sheet'
 import { MatchEndDialog } from '@/components/match-end-dialog'
+import { VideoRecorder } from '@/components/video/video-recorder'
 import { useRouter } from 'next/navigation'
 
 interface Wrestler {
@@ -89,6 +90,8 @@ export default function LiveScoringPage() {
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [matchEnded, setMatchEnded] = useState(false)
+  const [showVideoRecorder, setShowVideoRecorder] = useState(false)
+  const [recordedVideoId, setRecordedVideoId] = useState<string | null>(null)
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
     wrestler1: {
@@ -905,6 +908,14 @@ export default function LiveScoringPage() {
                     Bout Sheet
                   </Button>
                   <Button
+                    onClick={() => setShowVideoRecorder(!showVideoRecorder)}
+                    className={`${showVideoRecorder ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'} text-white font-bold`}
+                    size="sm"
+                  >
+                    <Video className="w-4 h-4 mr-1" />
+                    {showVideoRecorder ? 'Hide' : 'Record'}
+                  </Button>
+                  <Button
                     onClick={saveMatchToDatabase}
                     disabled={isSaving}
                     className="bg-[#D4AF38] hover:bg-[#B8941C] text-black font-bold"
@@ -1342,6 +1353,31 @@ export default function LiveScoringPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Video Recorder Section */}
+      {showVideoRecorder && (
+        <div className="mt-4">
+          <VideoRecorder
+            matchId={matchId || `temp-${Date.now()}`}
+            onRecordingComplete={(blob, url) => {
+              console.log('Recording complete', { size: blob.size, url })
+            }}
+            onUploadComplete={(videoId) => {
+              setRecordedVideoId(videoId)
+              console.log('Video uploaded to Cloudflare:', videoId)
+              // Update match with video ID
+              if (matchId) {
+                fetch(`/api/matches/${matchId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ video_id: videoId })
+                })
+              }
+            }}
+            className="max-w-4xl mx-auto"
+          />
+        </div>
+      )}
       
       {/* Bout Sheet Modal/Overlay */}
       {showBoutSheet && (
