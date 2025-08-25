@@ -39,25 +39,34 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    // Also update the match to indicate it has events
+    // Also try to update the match to indicate it has events
+    // But don't fail if the column doesn't exist
     if (data.match_id) {
-      await supabaseAdmin
-        .from('matches')
-        .update({ 
-          has_video: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', data.match_id)
+      try {
+        await supabaseAdmin
+          .from('matches')
+          .update({ 
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.match_id)
+      } catch (updateError) {
+        console.log('Could not update match timestamp:', updateError)
+        // Continue anyway - the event was saved
+      }
     }
 
     return NextResponse.json({ 
       success: true,
       data: eventData 
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in match event API:', error)
     return NextResponse.json(
-      { error: 'Failed to save match event' },
+      { 
+        error: 'Failed to save match event',
+        details: error.message || 'Unknown error',
+        code: error.code
+      },
       { status: 500 }
     )
   }
