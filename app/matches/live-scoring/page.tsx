@@ -21,7 +21,8 @@ import { MatchEndDialog } from '@/components/match-end-dialog'
 import { VideoRecorder } from '@/components/video/video-recorder'
 import { useRouter } from 'next/navigation'
 import { offlineStorage } from '@/lib/offline-storage'
-import { OfflineIndicator } from '@/components/offline-indicator'
+import { offlineQueue } from '@/lib/offline-queue'
+import { OfflineStatus } from '@/components/offline-status'
 
 interface Wrestler {
   name: string
@@ -536,18 +537,35 @@ export default function LiveScoringPage() {
 
       console.log('Updating match with data:', updateData)
 
-      const response = await fetch('/api/matches/live', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData)
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('✅ Match updated successfully:', data)
+      // Check if online and try to save
+      if (navigator.onLine) {
+        try {
+          const response = await fetch('/api/matches/live', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log('✅ Match updated successfully:', data)
+          } else {
+            const errorData = await response.json()
+            console.error('❌ Failed to update match, queuing offline:', errorData)
+            // Queue for later sync
+            await offlineQueue.queueMatchUpdate(matchId, updateData)
+          }
+        } catch (error) {
+          console.error('❌ Error updating match, queuing offline:', error)
+          // Queue for later sync
+          await offlineQueue.queueMatchUpdate(matchId, updateData)
+        }
       } else {
-        const errorData = await response.json()
-        console.error('❌ Failed to update match:', errorData)
+        // Offline - queue the update
+        console.log('📵 Offline - queuing match update for later sync')
+        await offlineQueue.queueMatchUpdate(matchId, updateData)
+        // Also save to offline storage for immediate local access
+        await offlineStorage.saveMatch(updateData)
       }
       
       setIsSaving(false)
@@ -582,7 +600,7 @@ export default function LiveScoringPage() {
       period: periodNumber,
       event_type: action,
       points: points,
-      wrestler_id: wrestler,
+      wrestler_id: null, // Set to null instead of "wrestler1" or "wrestler2" since we don't have UUID
       wrestler_name: wrestlerName,
       move_name: action,
       from_position: match.currentPosition
@@ -590,22 +608,33 @@ export default function LiveScoringPage() {
 
     console.log('Saving match event:', eventData)
 
-    try {
-      const response = await fetch('/api/matches/live/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(eventData)
-      })
+    // Check if online and try to save
+    if (navigator.onLine) {
+      try {
+        const response = await fetch('/api/matches/live/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventData)
+        })
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log('✅ Event saved successfully:', data)
-      } else {
-        const errorData = await response.json()
-        console.error('❌ Failed to save event:', errorData)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ Event saved successfully:', data)
+        } else {
+          const errorData = await response.json()
+          console.error('❌ Failed to save event, queuing offline:', errorData)
+          // Queue for later sync
+          await offlineQueue.queueMatchEvent(matchId, eventData)
+        }
+      } catch (error) {
+        console.error('❌ Error saving event, queuing offline:', error)
+        // Queue for later sync
+        await offlineQueue.queueMatchEvent(matchId, eventData)
       }
-    } catch (error) {
-      console.error('❌ Error saving event:', error)
+    } else {
+      // Offline - queue the event
+      console.log('📵 Offline - queuing event for later sync')
+      await offlineQueue.queueMatchEvent(matchId, eventData)
     }
   }
 
@@ -704,7 +733,7 @@ export default function LiveScoringPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
-      <OfflineIndicator />
+      <OfflineStatus />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
         {/* Video Recorder Section - Always visible */}
@@ -713,8 +742,8 @@ export default function LiveScoringPage() {
             matchId={matchId || `temp-${Date.now()}`}
             autoStart={match.isRunning} // Auto-start when match is running
             autoUpload={true} // Enable auto-upload for chunks
-            chunkDuration={300} // Upload every 5 minutes
-            maxFileSize={50} // Upload when chunk reaches 50MB
+            chunkDuration={60} // Upload every 60 seconds
+            maxFileSize={10} // Upload when chunk reaches 10MB (smaller chunks to avoid 413 error)
             onRecordingComplete={(blob, url) => {
               console.log('Recording complete', { size: blob.size, url })
             }}

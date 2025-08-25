@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase'
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const CLOUDFLARE_STREAM_TOKEN = process.env.CLOUDFLARE_STREAM_TOKEN
 
+// Configure route to handle larger video files
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds timeout for video uploads
+
 export async function POST(request: NextRequest) {
   try {
     // Get the video file from form data
