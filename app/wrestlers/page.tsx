@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -108,40 +107,26 @@ export default function WrestlersPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
       <WrestlingStatsBackground />
       
-      {/* Header */}
-      <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16">
-                <Image 
-                  src="/aether-logo.png" 
-                  alt="Aether Logo" 
-                  fill
-                  className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-[#D4AF38]">Team Roster</h1>
-                <p className="text-gray-200">Wrestler Management System</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button className="bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Wrestler
-              </Button>
-              <Button variant="outline" className="border-gold/30 text-white hover:bg-white/10">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </div>
+      <div className="container mx-auto px-4 py-6 relative z-10">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-[#D4AF38]">Team Roster</h1>
+            <p className="text-gray-200">Wrestler Management System</p>
+          </div>
+          <div className="flex gap-2">
+            <Button className="bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Wrestler
+            </Button>
+            <Button variant="outline" className="border-gold/30 text-gold hover:bg-gold/10">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="container mx-auto px-4 py-6 relative z-10">
+        {/* Filters */}
         <div className="bg-white/10 backdrop-blur-md border border-gold/30 rounded-lg p-4 mb-6">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[300px]">
@@ -158,7 +143,11 @@ export default function WrestlersPage() {
             <div className="flex gap-2 flex-wrap">
               <Button 
                 variant="outline" 
-                className={`border-gold/30 hover:bg-white/10 ${!selectedWeightClass ? 'bg-white/20 text-[#D4AF38]' : 'text-white'}`}
+                className={`border-gold/50 transition-all ${
+                  !selectedWeightClass 
+                    ? 'bg-gold text-black font-bold hover:bg-gold/90' 
+                    : 'bg-black/40 text-gold hover:bg-gold/20 hover:text-gold'
+                }`}
                 onClick={() => setSelectedWeightClass(null)}
               >
                 All Weights
@@ -167,7 +156,12 @@ export default function WrestlersPage() {
                 <Button 
                   key={weight}
                   variant="outline" 
-                  className={`border-gold/30 hover:bg-white/10 ${selectedWeightClass === weight ? 'bg-white/20 text-[#D4AF38]' : 'text-white'}`}
+                  size="sm"
+                  className={`border-gold/50 min-w-[50px] transition-all ${
+                    selectedWeightClass === weight 
+                      ? 'bg-gold text-black font-bold hover:bg-gold/90' 
+                      : 'bg-black/40 text-gold hover:bg-gold/20 hover:text-gold'
+                  }`}
                   onClick={() => setSelectedWeightClass(weight)}
                 >
                   {weight}

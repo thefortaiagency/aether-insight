@@ -169,8 +169,7 @@ export default function Navigation() {
             <Link href="/matches/live-scoring">
               <Button 
                 size="sm" 
-                variant="outline"
-                className="border-gold/50 text-gold hover:bg-gold/10"
+                className="bg-green-600 hover:bg-green-500 text-white font-semibold"
               >
                 <Clock className="w-4 h-4 mr-2" />
                 Live Score

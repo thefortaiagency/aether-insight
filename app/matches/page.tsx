@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -107,39 +106,12 @@ export default function MatchesPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 relative">
       <WrestlingStatsBackground />
       
-      {/* Header */}
-      <div className="bg-black/40 backdrop-blur-md border-b border-gold/30 relative z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16">
-                <Image 
-                  src="/aether-logo.png" 
-                  alt="Aether Logo" 
-                  fill
-                  className="object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-[#D4AF38]">Match Center</h1>
-                <p className="text-gray-200">Live Scoring & Match Management</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button className="bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black">
-                <Plus className="h-4 w-4 mr-2" />
-                New Match
-              </Button>
-              <Button variant="outline" className="border-gold/30 text-white hover:bg-white/10">
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 py-6 relative z-10">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-[#D4AF38]">Match Center</h1>
+          <p className="text-gray-200">Live Scoring & Match Management</p>
+        </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-black/40 border border-gold/30">
             <TabsTrigger value="live" className="data-[state=active]:bg-[#D4AF38] data-[state=active]:text-black">

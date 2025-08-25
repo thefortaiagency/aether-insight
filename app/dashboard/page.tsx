@@ -10,7 +10,6 @@ import {
   TrendingUp, Award, Calendar, PlayCircle, Settings,
   ChevronRight, Zap, Shield, Target, Star
 } from 'lucide-react'
-import Navigation from '@/components/navigation'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
 export default function DashboardPage() {
@@ -69,7 +68,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
-      <Navigation />
       
       <div className="relative z-10 p-4 md:p-6">
         {/* Header */}
