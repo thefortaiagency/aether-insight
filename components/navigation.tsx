@@ -35,6 +35,7 @@ export default function Navigation() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
+    { name: 'Calendar', href: '/calendar', icon: <Calendar className="w-4 h-4" /> },
     { name: 'Live Scoring', href: '/matches/live-scoring', icon: <Activity className="w-4 h-4" /> },
     { name: 'Live Matches', href: '/matches/live', icon: <Activity className="w-4 h-4 text-red-500" /> },
     { name: 'Matches', href: '/matches', icon: <Trophy className="w-4 h-4" /> },
