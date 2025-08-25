@@ -16,10 +16,18 @@ interface Wrestler {
   phone?: string
   grade: number
   weight: number
+  certifiedWeight?: number
   role: 'wrestler' | 'captain' | 'manager'
   joinedDate: string
-  record?: { wins: number; losses: number }
-  status: 'active' | 'injured' | 'inactive'
+  record?: { wins: number; losses: number; pins: number }
+  status: 'active' | 'injured' | 'inactive' | 'ineligible'
+  parentContact?: string
+  emergencyContact?: string
+  notes?: string
+  lastMatch?: Date
+  takedownRate?: number
+  escapeRate?: number
+  pinRate?: number
 }
 
 interface Team {
@@ -27,9 +35,14 @@ interface Team {
   name: string
   school: string
   division: string
+  conference?: string
   coaches: string[]
   wrestlers: Wrestler[]
   createdAt: string
+  dualRecord?: { wins: number; losses: number }
+  tournamentWins?: number
+  stateQualifiers?: number
+  teamPoints?: number
 }
 
 export default function TeamsPage() {
