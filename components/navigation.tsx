@@ -67,6 +67,11 @@ export default function Navigation() {
       name: 'Wrestlers', 
       href: '/wrestlers', 
       icon: <Users className="w-4 h-4" /> 
+    },
+    { 
+      name: 'Test Recorder', 
+      href: '/test/video-recorder', 
+      icon: <Settings className="w-4 h-4 text-orange-500" /> 
     }
   ]
 
