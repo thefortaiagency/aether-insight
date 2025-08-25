@@ -20,6 +20,8 @@ import { BoutSheet } from '@/components/bout-sheet'
 import { MatchEndDialog } from '@/components/match-end-dialog'
 import { VideoRecorder } from '@/components/video/video-recorder'
 import { useRouter } from 'next/navigation'
+import { offlineStorage } from '@/lib/offline-storage'
+import { OfflineIndicator } from '@/components/offline-indicator'
 
 interface Wrestler {
   name: string
@@ -431,24 +433,43 @@ export default function LiveScoringPage() {
   const saveMatchToDatabase = async () => {
     if (!matchId) {
       // Create new match
-      const response = await fetch('/api/matches/live', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wrestler1_name: match.wrestler1.name,
-          wrestler1_team: match.wrestler1.team,
-          wrestler2_name: match.wrestler2.name,
-          wrestler2_team: match.wrestler2.team,
-          weight_class: match.weightClass,
-          mat_number: match.mat,
-          referee_name: match.referee,
-          match_type: match.matchType
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setMatchId(data.data.id)
+      const matchData = {
+        wrestler1_name: match.wrestler1.name,
+        wrestler1_team: match.wrestler1.team,
+        wrestler2_name: match.wrestler2.name,
+        wrestler2_team: match.wrestler2.team,
+        weight_class: match.weightClass,
+        mat_number: match.mat,
+        referee_name: match.referee,
+        match_type: match.matchType
+      }
+
+      // Check if online
+      if (navigator.onLine) {
+        try {
+          const response = await fetch('/api/matches/live', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(matchData)
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setMatchId(data.data.id)
+          } else {
+            throw new Error('Failed to save online')
+          }
+        } catch (error) {
+          // Save offline if online save fails
+          console.log('Saving match offline due to error:', error)
+          const offlineId = await offlineStorage.saveMatch(matchData)
+          setMatchId(offlineId)
+        }
+      } else {
+        // Offline - save locally
+        console.log('Offline - saving match locally')
+        const offlineId = await offlineStorage.saveMatch(matchData)
+        setMatchId(offlineId)
       }
     } else {
       // Update existing match
@@ -626,6 +647,7 @@ export default function LiveScoringPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
+      <OfflineIndicator />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
         {/* Header Bar */}

@@ -8,8 +8,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Video, Circle, Square, Upload, Download, 
   Loader2, AlertCircle, Camera, CameraOff,
-  Mic, MicOff, Settings, X
+  Mic, MicOff, Settings, X, WifiOff, Database
 } from 'lucide-react'
+import { offlineStorage } from '@/lib/offline-storage'
 import {
   Select,
   SelectContent,
@@ -137,29 +138,45 @@ export function VideoRecorder({
         const currentChunk = chunkNumber
         setChunkNumber(prev => prev + 1)
         
-        // Upload chunk
-        const formData = new FormData()
-        formData.append('file', chunkBlob, `match-${matchId}-chunk-${currentChunk}.webm`)
-        formData.append('meta', JSON.stringify({
-          matchId,
-          chunkNumber: currentChunk,
-          isChunk: true,
-          recordedAt: new Date().toISOString()
-        }))
-        
-        const response = await fetch('/api/videos/upload', {
-          method: 'POST',
-          body: formData
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setUploadedChunks(prev => [...prev, data.videoId])
-          console.log(`Chunk ${currentChunk} uploaded:`, data.videoId)
+        // Check if online
+        if (navigator.onLine) {
+          // Try to upload chunk
+          const formData = new FormData()
+          formData.append('file', chunkBlob, `match-${matchId}-chunk-${currentChunk}.webm`)
+          formData.append('meta', JSON.stringify({
+            matchId,
+            chunkNumber: currentChunk,
+            isChunk: true,
+            recordedAt: new Date().toISOString()
+          }))
+          
+          try {
+            const response = await fetch('/api/videos/upload', {
+              method: 'POST',
+              body: formData
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              setUploadedChunks(prev => [...prev, data.videoId])
+              console.log(`Chunk ${currentChunk} uploaded:`, data.videoId)
+              // Clear chunks after successful upload
+              chunksRef.current = []
+            } else {
+              throw new Error('Upload failed')
+            }
+          } catch (uploadError) {
+            // Save to offline storage if upload fails
+            console.log('Upload failed, saving chunk offline')
+            await offlineStorage.saveVideoChunk(matchId || 'temp', chunkBlob, currentChunk)
+            chunksRef.current = []
+          }
+        } else {
+          // Offline - save to IndexedDB
+          console.log('Offline - saving chunk locally')
+          await offlineStorage.saveVideoChunk(matchId || 'temp', chunkBlob, currentChunk)
+          chunksRef.current = []
         }
-        
-        // Clear chunks after successful upload
-        chunksRef.current = []
       }
     } catch (err) {
       console.error('Error processing chunk:', err)
