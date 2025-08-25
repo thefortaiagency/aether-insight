@@ -168,11 +168,12 @@ class OfflineQueue {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['operations'], 'readonly')
       const store = transaction.objectStore('operations')
-      const index = store.index('synced')
-      const request = index.getAll(false)
+      const request = store.getAll()
 
       request.onsuccess = () => {
-        const operations = request.result || []
+        const allOperations = request.result || []
+        // Filter for unsynced operations
+        const operations = allOperations.filter(op => op.synced === false)
         // Sort by timestamp to maintain order
         operations.sort((a, b) => a.timestamp - b.timestamp)
         resolve(operations)
@@ -259,11 +260,12 @@ class OfflineQueue {
 
     const transaction = this.db!.transaction(['operations'], 'readwrite')
     const store = transaction.objectStore('operations')
-    const index = store.index('synced')
-    const request = index.getAll(true)
+    const request = store.getAll()
 
     request.onsuccess = () => {
-      const operations = request.result || []
+      const allOperations = request.result || []
+      // Filter for synced operations
+      const operations = allOperations.filter(op => op.synced === true)
       // Keep last 100 synced operations for debugging
       if (operations.length > 100) {
         const toDelete = operations.slice(0, operations.length - 100)

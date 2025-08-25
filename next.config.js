@@ -21,12 +21,6 @@ const nextConfig = {
       },
     ],
   },
-  // Increase body size limit for API routes (for video uploads)
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
-  },
 }
 
 module.exports = nextConfig
