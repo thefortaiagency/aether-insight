@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from 'next/server'
+
+const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
+const CLOUDFLARE_STREAM_TOKEN = process.env.CLOUDFLARE_STREAM_TOKEN
+
+export async function POST(request: NextRequest) {
+  try {
+    const { matchId, fileName } = await request.json()
+    
+    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_STREAM_TOKEN) {
+      return NextResponse.json(
+        { error: 'Cloudflare Stream not configured' },
+        { status: 500 }
+      )
+    }
+    
+    // Request a direct upload URL from Cloudflare
+    // This allows client-side upload of any size video
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/stream/direct_upload`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CLOUDFLARE_STREAM_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          maxDurationSeconds: 3600, // 1 hour max
+          requireSignedURLs: false,
+          allowedOrigins: ['*'],
+          meta: {
+            matchId: matchId,
+            fileName: fileName || `match-${matchId}.webm`,
+            uploadedAt: new Date().toISOString()
+          }
+        })
+      }
+    )
+    
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('Cloudflare direct upload error:', error)
+      return NextResponse.json(
+        { error: 'Failed to get upload URL' },
+        { status: 500 }
+      )
+    }
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      console.error('Cloudflare error:', data.errors)
+      return NextResponse.json(
+        { error: 'Failed to get upload URL', details: data.errors },
+        { status: 500 }
+      )
+    }
+    
+    // Return the upload URL and video ID
+    return NextResponse.json({
+      success: true,
+      uploadURL: data.result.uploadURL,
+      videoId: data.result.uid,
+      // Stream URL will be available after upload completes
+      streamURL: `https://customer-${process.env.NEXT_PUBLIC_CLOUDFLARE_CUSTOMER_SUBDOMAIN}.cloudflarestream.com/${data.result.uid}/manifest/video.m3u8`
+    })
+    
+  } catch (error) {
+    console.error('Error getting upload URL:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export const runtime = 'edge'

@@ -118,7 +118,7 @@ export function SyncManager({ matchId }: { matchId?: string }) {
     }
   }
 
-  // Manual video upload using proper FormData approach
+  // Manual video upload using Cloudflare Stream direct upload URLs (no size limit!)
   const uploadVideos = async () => {
     if (!syncStatus.online) {
       setSyncMessage('Cannot upload videos while offline')
@@ -141,53 +141,76 @@ export function SyncManager({ matchId }: { matchId?: string }) {
       for (let i = 0; i < videos.length; i++) {
         const video = videos[i]
         setSyncProgress((i / videos.length) * 100)
-        setSyncMessage(`Uploading video ${i + 1} of ${videos.length}...`)
+        
+        const sizeMB = video.blob.size / (1024 * 1024)
+        setSyncMessage(`Uploading video ${i + 1} of ${videos.length} (${sizeMB.toFixed(1)}MB)...`)
         
         try {
+          // Step 1: Get a direct upload URL from Cloudflare
+          const uploadUrlResponse = await fetch('/api/videos/get-upload-url', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              matchId: video.matchId,
+              fileName: `match-${video.matchId}.webm`
+            })
+          })
+          
+          if (!uploadUrlResponse.ok) {
+            throw new Error('Failed to get upload URL')
+          }
+          
+          const { uploadURL, videoId, streamURL } = await uploadUrlResponse.json()
+          
+          // Step 2: Upload directly to Cloudflare (bypasses Vercel limits!)
+          setSyncMessage(`Uploading video ${i + 1} directly to Cloudflare...`)
+          
           // Create a File object from the blob
           const file = new File([video.blob], `match-${video.matchId}.webm`, {
             type: 'video/webm'
           })
           
-          // Check file size - if over 3MB, skip with warning
-          const sizeMB = file.size / (1024 * 1024)
-          if (sizeMB > 3) {
-            setSyncMessage(`Video ${i + 1} too large (${sizeMB.toFixed(1)}MB) - skipping`)
-            continue
-          }
-          
-          // Use FormData for proper file upload
-          const formData = new FormData()
-          formData.append('file', file)
-          formData.append('meta', JSON.stringify({
-            matchId: video.matchId,
-            timestamp: new Date().toISOString()
-          }))
-          
-          const response = await fetch('/api/videos/upload', {
+          const uploadResponse = await fetch(uploadURL, {
             method: 'POST',
-            body: formData
+            body: file,
+            headers: {
+              'Content-Type': 'video/webm'
+            }
           })
           
-          if (!response.ok) {
-            const error = await response.text()
-            console.error(`Upload failed: ${response.status} - ${error}`)
-            setSyncMessage(`Failed to upload video ${i + 1} - ${response.status === 413 ? 'too large' : 'error'}`)
-            continue // Skip to next video
+          if (!uploadResponse.ok) {
+            throw new Error(`Direct upload failed: ${uploadResponse.status}`)
           }
+          
+          // Step 3: Save video info to our database
+          await fetch('/api/videos/save-upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              matchId: video.matchId,
+              cloudflareId: videoId,
+              streamUrl: streamURL,
+              fileSize: video.blob.size
+            })
+          })
           
           // Mark video as synced
           await offlineStorage.markVideoSynced(video.id)
-          setSyncMessage(`Uploaded video ${i + 1} of ${videos.length}`)
+          setSyncMessage(`✓ Uploaded video ${i + 1} of ${videos.length} (${sizeMB.toFixed(1)}MB)`)
+          
         } catch (error) {
           console.error('Video upload error:', error)
-          setSyncMessage(`Failed to upload video ${i + 1}`)
+          setSyncMessage(`Failed to upload video ${i + 1} - ${error}`)
           // Continue with next video instead of stopping
         }
       }
       
       setSyncProgress(100)
-      setSyncMessage('Video upload complete')
+      setSyncMessage('All videos uploaded successfully!')
       await checkStatus()
     } catch (error) {
       console.error('Video upload error:', error)
