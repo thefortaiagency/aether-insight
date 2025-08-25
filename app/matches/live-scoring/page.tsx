@@ -18,7 +18,7 @@ import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import MatchSetup from '@/components/match-setup'
 import { BoutSheet } from '@/components/bout-sheet'
 import { MatchEndDialog } from '@/components/match-end-dialog'
-import { VideoRecorder } from '@/components/video/video-recorder'
+import { SimpleVideoRecorder } from '@/components/video/simple-video-recorder'
 import { useRouter } from 'next/navigation'
 import { offlineStorage } from '@/lib/offline-storage'
 import { offlineQueue } from '@/lib/offline-queue'
@@ -786,26 +786,12 @@ export default function LiveScoringPage() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
         {/* Video Recorder Section - Always visible */}
         <div className="mb-4">
-          <VideoRecorder
-            matchId={matchId || `temp-${Date.now()}`}
-            autoStart={match.isRunning} // Auto-start when match is running
-            autoUpload={false} // Disable auto-upload - store locally only
-            chunkDuration={300} // Save chunks every 5 minutes locally
-            maxFileSize={50} // Max chunk size for local storage
+          <SimpleVideoRecorder
+            matchId={matchId || undefined}
+            autoStart={match.isRunning}
             onRecordingComplete={(blob, url) => {
               console.log('Recording complete', { size: blob.size, url })
-            }}
-            onUploadComplete={(videoId) => {
-              setRecordedVideoId(videoId)
-              console.log('Video uploaded to Cloudflare:', videoId)
-              // Update match with video ID
-              if (matchId) {
-                fetch(`/api/matches/${matchId}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ video_id: videoId })
-                })
-              }
+              setRecordedVideoId(`local-${Date.now()}`)
             }}
             className="max-w-4xl mx-auto"
           />
