@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Trophy, Calendar, Clock, MapPin, Video, 
   Plus, Search, Filter, PlayCircle, Users,
-  TrendingUp, Target, Award, Activity
+  TrendingUp, Target, Award, Activity, Upload
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 
@@ -139,6 +139,12 @@ export default function MatchesPage() {
                       <Button className="bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black">
                         <Trophy className="h-4 w-4 mr-2" />
                         Advanced Scoring
+                      </Button>
+                    </Link>
+                    <Link href="/matches/import">
+                      <Button variant="outline" className="border-gold/30 text-gold hover:bg-gold/10">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import CSV
                       </Button>
                     </Link>
                     <Badge className="bg-red-600 animate-pulse">LIVE</Badge>

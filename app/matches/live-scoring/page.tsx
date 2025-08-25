@@ -12,10 +12,11 @@ import {
   TrendingUp, Shield, Zap, Flag, Circle, Square,
   Timer, Heart, Droplets, AlertTriangle, X, Check,
   ArrowUp, ArrowDown, RefreshCw, User, Settings, Save,
-  Undo2, Redo2, History
+  Undo2, Redo2, History, Printer
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import MatchSetup from '@/components/match-setup'
+import { BoutSheet } from '@/components/bout-sheet'
 import { useRouter } from 'next/navigation'
 
 interface Wrestler {
@@ -81,6 +82,8 @@ export default function LiveScoringPage() {
   const [autoSave, setAutoSave] = useState(true)
   const [actionHistory, setActionHistory] = useState<MatchAction[]>([])
   const [redoStack, setRedoStack] = useState<MatchAction[]>([])
+  const [showBoutSheet, setShowBoutSheet] = useState(false)
+  const [scoreHistory, setScoreHistory] = useState<any[]>([])
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
     wrestler1: {
@@ -335,6 +338,16 @@ export default function LiveScoringPage() {
     
     recordAction('score', `${match[wrestler].name} - ${action} +${points}`, newState)
     
+    // Add to score history for bout sheet
+    setScoreHistory(prev => [...prev, {
+      timestamp: Date.now(),
+      wrestlerId: wrestler,
+      action: action,
+      points: points,
+      period: match.period,
+      time: formatTime(timeRemaining)
+    }])
+    
     // Auto-save if enabled
     if (autoSave && matchId) {
       saveMatchToDatabase()
@@ -559,6 +572,18 @@ export default function LiveScoringPage() {
             {match.matchType === 'tournament' && (
               <Badge className="bg-blue-500/20 text-blue-300 border-blue-500">
                 Mat {match.mat}
+              </Badge>
+            )}
+            {match.bloodTime && (
+              <Badge className="bg-red-600 text-white border-red-400 animate-pulse">
+                <Droplets className="w-3 h-3 mr-1 inline" />
+                BLOOD TIME
+              </Badge>
+            )}
+            {match.injuryTime && (
+              <Badge className="bg-orange-600 text-white border-orange-400 animate-pulse">
+                <Heart className="w-3 h-3 mr-1 inline" />
+                INJURY TIME
               </Badge>
             )}
           </div>
@@ -801,6 +826,14 @@ export default function LiveScoringPage() {
                     <Redo2 className="w-4 h-4" />
                   </Button>
                   <Button
+                    onClick={() => setShowBoutSheet(!showBoutSheet)}
+                    className="bg-blue-700 hover:bg-blue-600 text-white font-bold"
+                    size="sm"
+                  >
+                    <Printer className="w-4 h-4 mr-1" />
+                    Bout Sheet
+                  </Button>
+                  <Button
                     onClick={saveMatchToDatabase}
                     disabled={isSaving}
                     className="bg-[#D4AF38] hover:bg-[#B8941C] text-black font-bold"
@@ -867,24 +900,63 @@ export default function LiveScoringPage() {
 
               {/* Special Times */}
               <div className="space-y-2 mb-4">
-                <Button
-                  onClick={() => setMatch(prev => ({ ...prev, bloodTime: !prev.bloodTime }))}
-                  variant={match.bloodTime ? 'default' : 'outline'}
-                  className={match.bloodTime ? 'bg-red-700 text-white font-bold w-full' : 'bg-red-900 text-white w-full hover:bg-red-800'}
-                  size="sm"
-                >
-                  <Droplets className="w-4 h-4 mr-2" />
-                  Blood Time
-                </Button>
-                <Button
-                  onClick={() => setMatch(prev => ({ ...prev, injuryTime: !prev.injuryTime }))}
-                  variant={match.injuryTime ? 'default' : 'outline'}
-                  className={match.injuryTime ? 'bg-orange-700 text-white font-bold w-full' : 'bg-orange-900 text-white w-full hover:bg-orange-800'}
-                  size="sm"
-                >
-                  <Heart className="w-4 h-4 mr-2" />
-                  Injury Time
-                </Button>
+                <div className="relative">
+                  <Button
+                    onClick={() => {
+                      setMatch(prev => ({ ...prev, bloodTime: !prev.bloodTime, isRunning: false }))
+                      if (!match.bloodTime) {
+                        recordAction('special', 'Blood time started', {
+                          ...match,
+                          bloodTime: true,
+                          isRunning: false,
+                          lastAction: 'Blood time started'
+                        })
+                      }
+                    }}
+                    variant={match.bloodTime ? 'default' : 'outline'}
+                    className={match.bloodTime 
+                      ? 'bg-red-600 text-white font-bold w-full animate-pulse border-2 border-red-400' 
+                      : 'bg-red-900 text-white w-full hover:bg-red-800'}
+                    size="sm"
+                  >
+                    <Droplets className={`w-4 h-4 mr-2 ${match.bloodTime ? 'animate-pulse' : ''}`} />
+                    {match.bloodTime ? 'BLOOD TIME ACTIVE' : 'Blood Time'}
+                  </Button>
+                  {match.bloodTime && (
+                    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-bounce">
+                      5:00 max
+                    </div>
+                  )}
+                </div>
+                
+                <div className="relative">
+                  <Button
+                    onClick={() => {
+                      setMatch(prev => ({ ...prev, injuryTime: !prev.injuryTime, isRunning: false }))
+                      if (!match.injuryTime) {
+                        recordAction('special', 'Injury time started', {
+                          ...match,
+                          injuryTime: true,
+                          isRunning: false,
+                          lastAction: 'Injury time started'
+                        })
+                      }
+                    }}
+                    variant={match.injuryTime ? 'default' : 'outline'}
+                    className={match.injuryTime 
+                      ? 'bg-orange-600 text-white font-bold w-full animate-pulse border-2 border-orange-400' 
+                      : 'bg-orange-900 text-white w-full hover:bg-orange-800'}
+                    size="sm"
+                  >
+                    <Heart className={`w-4 h-4 mr-2 ${match.injuryTime ? 'animate-pulse' : ''}`} />
+                    {match.injuryTime ? 'INJURY TIME ACTIVE' : 'Injury Time'}
+                  </Button>
+                  {match.injuryTime && (
+                    <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full animate-bounce">
+                      1:30 max
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Period Selection */}
@@ -1178,6 +1250,52 @@ export default function LiveScoringPage() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Bout Sheet Modal/Overlay */}
+      {showBoutSheet && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold text-black">Bout Sheet</h2>
+              <Button
+                onClick={() => setShowBoutSheet(false)}
+                variant="ghost"
+                size="sm"
+                className="text-black hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <BoutSheet 
+                match={{
+                  id: match.id,
+                  wrestler1: {
+                    name: match.wrestler1.name,
+                    team: match.wrestler1.team,
+                    score: match.wrestler1.score
+                  },
+                  wrestler2: {
+                    name: match.wrestler2.name,
+                    team: match.wrestler2.team,
+                    score: match.wrestler2.score
+                  },
+                  weightClass: match.weightClass,
+                  matchType: match.matchType,
+                  period: match.period as number,
+                  time: formatTime(timeRemaining),
+                  referee: match.referee,
+                  mat: match.mat,
+                  winner: match.winner,
+                  winType: match.winType,
+                  finalScore: match.winner ? `${match.wrestler1.score}-${match.wrestler2.score}` : undefined
+                }}
+                scoreHistory={scoreHistory}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

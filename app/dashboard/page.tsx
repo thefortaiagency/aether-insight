@@ -26,30 +26,34 @@ export default function DashboardPage() {
     {
       title: 'Start Live Match',
       description: 'Score a match in real-time',
-      icon: <Activity className="w-6 h-6" />,
+      icon: <Activity className="w-6 h-6 text-green-400" />,
       href: '/matches/live-scoring',
-      color: 'bg-green-500/20 hover:bg-green-500/30 border-green-500'
+      color: 'bg-green-500/20 hover:bg-green-500/30 border-green-500',
+      iconBg: 'bg-green-500/20 border border-green-500/30'
     },
     {
       title: 'View Team Stats',
       description: 'Analytics and performance',
-      icon: <BarChart3 className="w-6 h-6" />,
+      icon: <BarChart3 className="w-6 h-6 text-purple-400" />,
       href: '/team-stats',
-      color: 'bg-purple-500/20 hover:bg-purple-500/30 border-purple-500'
+      color: 'bg-purple-500/20 hover:bg-purple-500/30 border-purple-500',
+      iconBg: 'bg-purple-500/20 border border-purple-500/30'
     },
     {
       title: 'Manage Roster',
       description: 'Team and wrestler management',
-      icon: <Users className="w-6 h-6" />,
+      icon: <Users className="w-6 h-6 text-blue-400" />,
       href: '/teams',
-      color: 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500'
+      color: 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500',
+      iconBg: 'bg-blue-500/20 border border-blue-500/30'
     },
     {
       title: 'Watch Videos',
       description: 'Review match recordings',
-      icon: <Video className="w-6 h-6" />,
+      icon: <Video className="w-6 h-6 text-orange-400" />,
       href: '/wrestling-videos',
-      color: 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500'
+      color: 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500',
+      iconBg: 'bg-orange-500/20 border border-orange-500/30'
     }
   ]
 
@@ -152,7 +156,7 @@ export default function DashboardPage() {
               <Card className={`${action.color} backdrop-blur border cursor-pointer hover:scale-105 transition-all`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-black/80 rounded-lg">
+                    <div className={`p-3 ${action.iconBg} rounded-lg`}>
                       {action.icon}
                     </div>
                     <ChevronRight className="w-5 h-5 text-white/50" />
