@@ -23,13 +23,21 @@ interface VideoRecorderProps {
   onRecordingComplete?: (blob: Blob, videoUrl: string) => void
   onUploadComplete?: (cloudflareId: string) => void
   className?: string
+  autoStart?: boolean
+  autoUpload?: boolean
+  chunkDuration?: number // in seconds, default 300 (5 minutes)
+  maxFileSize?: number // in MB, default 100
 }
 
 export function VideoRecorder({ 
   matchId, 
   onRecordingComplete,
   onUploadComplete,
-  className = '' 
+  className = '',
+  autoStart = false,
+  autoUpload = true,
+  chunkDuration = 300, // 5 minutes default
+  maxFileSize = 100 // 100MB default
 }: VideoRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
@@ -45,12 +53,18 @@ export function VideoRecorder({
   const [showSettings, setShowSettings] = useState(false)
   const [videoEnabled, setVideoEnabled] = useState(true)
   const [audioEnabled, setAudioEnabled] = useState(true)
+  const [chunkNumber, setChunkNumber] = useState(0)
+  const [uploadedChunks, setUploadedChunks] = useState<string[]>([])
+  const [isProcessingChunk, setIsProcessingChunk] = useState(false)
+  const [totalRecordedSize, setTotalRecordedSize] = useState(0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const chunkTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const autoStartedRef = useRef(false)
 
   // Get available devices
   useEffect(() => {
@@ -68,6 +82,17 @@ export function VideoRecorder({
     })
   }, [])
 
+  // Auto-start recording when component mounts if enabled
+  useEffect(() => {
+    if (autoStart && !autoStartedRef.current && selectedCamera && selectedMicrophone) {
+      autoStartedRef.current = true
+      // Small delay to ensure devices are ready
+      setTimeout(() => {
+        startRecording()
+      }, 1000)
+    }
+  }, [autoStart, selectedCamera, selectedMicrophone])
+
   // Format time display
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600)
@@ -78,6 +103,69 @@ export function VideoRecorder({
       return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     }
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
+  // Process and upload chunk
+  const processChunk = async () => {
+    if (isProcessingChunk || chunksRef.current.length === 0) return
+    
+    setIsProcessingChunk(true)
+    
+    try {
+      // Create blob from current chunks
+      const chunkBlob = new Blob(chunksRef.current, { 
+        type: mediaRecorderRef.current?.mimeType || 'video/webm' 
+      })
+      
+      // Update total size
+      setTotalRecordedSize(prev => prev + chunkBlob.size)
+      
+      // Check if we should upload (size or duration based)
+      const shouldUpload = autoUpload && (
+        chunkBlob.size > maxFileSize * 1024 * 1024 || // Size limit
+        recordingTime % chunkDuration === 0 // Time limit
+      )
+      
+      if (shouldUpload) {
+        const currentChunk = chunkNumber
+        setChunkNumber(prev => prev + 1)
+        
+        // Upload chunk
+        const formData = new FormData()
+        formData.append('file', chunkBlob, `match-${matchId}-chunk-${currentChunk}.webm`)
+        formData.append('meta', JSON.stringify({
+          matchId,
+          chunkNumber: currentChunk,
+          isChunk: true,
+          recordedAt: new Date().toISOString()
+        }))
+        
+        const response = await fetch('/api/videos/upload', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setUploadedChunks(prev => [...prev, data.videoId])
+          console.log(`Chunk ${currentChunk} uploaded:`, data.videoId)
+        }
+        
+        // Clear chunks after successful upload
+        chunksRef.current = []
+      }
+    } catch (err) {
+      console.error('Error processing chunk:', err)
+    } finally {
+      setIsProcessingChunk(false)
+    }
   }
 
   // Start recording
@@ -126,14 +214,43 @@ export function VideoRecorder({
         }
       }
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType })
-        const url = URL.createObjectURL(blob)
-        setRecordedBlob(blob)
-        setRecordedUrl(url)
-        
-        if (onRecordingComplete) {
-          onRecordingComplete(blob, url)
+      mediaRecorder.onstop = async () => {
+        // Process final chunk if auto-upload is enabled
+        if (autoUpload && chunksRef.current.length > 0) {
+          await processChunk()
+          
+          // If we have uploaded chunks, merge them
+          if (uploadedChunks.length > 0 && matchId) {
+            try {
+              const response = await fetch('/api/videos/merge-chunks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  matchId,
+                  chunkIds: uploadedChunks
+                })
+              })
+              
+              if (response.ok) {
+                console.log('Video chunks merged successfully')
+                if (onUploadComplete && uploadedChunks[0]) {
+                  onUploadComplete(uploadedChunks[0])
+                }
+              }
+            } catch (err) {
+              console.error('Error merging chunks:', err)
+            }
+          }
+        } else {
+          // Normal completion for non-chunked recording
+          const blob = new Blob(chunksRef.current, { type: mimeType })
+          const url = URL.createObjectURL(blob)
+          setRecordedBlob(blob)
+          setRecordedUrl(url)
+          
+          if (onRecordingComplete) {
+            onRecordingComplete(blob, url)
+          }
         }
       }
 
@@ -141,11 +258,21 @@ export function VideoRecorder({
       mediaRecorder.start(1000) // Collect data every second
       setIsRecording(true)
       setRecordingTime(0)
+      setChunkNumber(0)
+      setUploadedChunks([])
+      setTotalRecordedSize(0)
 
       // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1)
       }, 1000)
+
+      // Start chunk processing timer if auto-upload is enabled
+      if (autoUpload) {
+        chunkTimerRef.current = setInterval(() => {
+          processChunk()
+        }, chunkDuration * 1000) // Process chunk every chunkDuration seconds
+      }
 
     } catch (err) {
       console.error('Error starting recording:', err)
@@ -165,9 +292,12 @@ export function VideoRecorder({
         streamRef.current.getTracks().forEach(track => track.stop())
       }
 
-      // Clear timer
+      // Clear timers
       if (timerRef.current) {
         clearInterval(timerRef.current)
+      }
+      if (chunkTimerRef.current) {
+        clearInterval(chunkTimerRef.current)
       }
 
       // Clear preview
@@ -308,14 +438,36 @@ export function VideoRecorder({
         
         {/* Recording indicator */}
         {isRecording && (
-          <div className="absolute top-4 left-4 flex items-center gap-2">
-            <div className="relative">
-              <Circle className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" />
-              <Circle className="absolute inset-0 w-4 h-4 text-red-500 animate-ping" />
+          <div className="absolute top-4 left-4 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Circle className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" />
+                <Circle className="absolute inset-0 w-4 h-4 text-red-500 animate-ping" />
+              </div>
+              <Badge className="bg-red-600 text-white">
+                {isPaused ? 'PAUSED' : 'REC'} • {formatTime(recordingTime)}
+              </Badge>
             </div>
-            <Badge className="bg-red-600 text-white">
-              {isPaused ? 'PAUSED' : 'REC'} • {formatTime(recordingTime)}
-            </Badge>
+            {autoUpload && (
+              <div className="flex items-center gap-2">
+                {isProcessingChunk && (
+                  <Badge className="bg-blue-600 text-white animate-pulse">
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Uploading Chunk {chunkNumber}
+                  </Badge>
+                )}
+                {uploadedChunks.length > 0 && (
+                  <Badge className="bg-green-600 text-white">
+                    {uploadedChunks.length} Chunks Uploaded
+                  </Badge>
+                )}
+                {totalRecordedSize > 0 && (
+                  <Badge className="bg-gray-700 text-white">
+                    {formatFileSize(totalRecordedSize)}
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         )}
 

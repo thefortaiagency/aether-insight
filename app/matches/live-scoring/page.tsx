@@ -272,6 +272,11 @@ export default function LiveScoringPage() {
       isRunning: !prev.isRunning,
       lastAction: !prev.isRunning ? 'Match Started' : 'Match Paused'
     }))
+    
+    // Auto-show video recorder when starting match
+    if (!match.isRunning && !showVideoRecorder && !recordedVideoId) {
+      setShowVideoRecorder(true)
+    }
   }
 
   // Record an action for undo/redo
@@ -1359,6 +1364,10 @@ export default function LiveScoringPage() {
         <div className="mt-4">
           <VideoRecorder
             matchId={matchId || `temp-${Date.now()}`}
+            autoStart={match.isRunning} // Auto-start when match is running
+            autoUpload={true} // Enable auto-upload for chunks
+            chunkDuration={300} // Upload every 5 minutes
+            maxFileSize={50} // Upload when chunk reaches 50MB
             onRecordingComplete={(blob, url) => {
               console.log('Recording complete', { size: blob.size, url })
             }}
