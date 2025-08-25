@@ -87,16 +87,27 @@ export class MatchService {
     const currentTakedowns = isWrestler1 ? match.takedowns_scored : match.takedowns_allowed
 
     const updates: MatchUpdate = {}
+    const period = match.period || 1
     if (isWrestler1) {
       updates.wrestler_score = currentScore + points
       updates.takedowns_scored = currentTakedowns + 1
-      updates[`period${match.period || 1}_wrestler_score`] = 
-        match[`period${match.period || 1}_wrestler_score`] + points
+      if (period === 1) {
+        updates.period1_wrestler_score = (match.period1_wrestler_score || 0) + points
+      } else if (period === 2) {
+        updates.period2_wrestler_score = (match.period2_wrestler_score || 0) + points
+      } else if (period === 3) {
+        updates.period3_wrestler_score = (match.period3_wrestler_score || 0) + points
+      }
     } else {
       updates.opponent_score = currentScore + points
       updates.takedowns_allowed = currentTakedowns + 1
-      updates[`period${match.period || 1}_opponent_score`] = 
-        match[`period${match.period || 1}_opponent_score`] + points
+      if (period === 1) {
+        updates.period1_opponent_score = (match.period1_opponent_score || 0) + points
+      } else if (period === 2) {
+        updates.period2_opponent_score = (match.period2_opponent_score || 0) + points
+      } else if (period === 3) {
+        updates.period3_opponent_score = (match.period3_opponent_score || 0) + points
+      }
     }
 
     return this.updateMatchScore(matchId, updates)
@@ -112,16 +123,27 @@ export class MatchService {
     const currentEscapes = isWrestler1 ? match.escapes_scored : match.escapes_allowed
 
     const updates: MatchUpdate = {}
+    const period = match.period || 1
     if (isWrestler1) {
       updates.wrestler_score = currentScore + 1
       updates.escapes_scored = currentEscapes + 1
-      updates[`period${match.period || 1}_wrestler_score`] = 
-        match[`period${match.period || 1}_wrestler_score`] + 1
+      if (period === 1) {
+        updates.period1_wrestler_score = (match.period1_wrestler_score || 0) + 1
+      } else if (period === 2) {
+        updates.period2_wrestler_score = (match.period2_wrestler_score || 0) + 1
+      } else if (period === 3) {
+        updates.period3_wrestler_score = (match.period3_wrestler_score || 0) + 1
+      }
     } else {
       updates.opponent_score = currentScore + 1
       updates.escapes_allowed = currentEscapes + 1
-      updates[`period${match.period || 1}_opponent_score`] = 
-        match[`period${match.period || 1}_opponent_score`] + 1
+      if (period === 1) {
+        updates.period1_opponent_score = (match.period1_opponent_score || 0) + 1
+      } else if (period === 2) {
+        updates.period2_opponent_score = (match.period2_opponent_score || 0) + 1
+      } else if (period === 3) {
+        updates.period3_opponent_score = (match.period3_opponent_score || 0) + 1
+      }
     }
 
     return this.updateMatchScore(matchId, updates)
@@ -137,16 +159,27 @@ export class MatchService {
     const currentReversals = isWrestler1 ? match.reversals_scored : match.reversals_allowed
 
     const updates: MatchUpdate = {}
+    const period = match.period || 1
     if (isWrestler1) {
       updates.wrestler_score = currentScore + 2
       updates.reversals_scored = currentReversals + 1
-      updates[`period${match.period || 1}_wrestler_score`] = 
-        match[`period${match.period || 1}_wrestler_score`] + 2
+      if (period === 1) {
+        updates.period1_wrestler_score = (match.period1_wrestler_score || 0) + 2
+      } else if (period === 2) {
+        updates.period2_wrestler_score = (match.period2_wrestler_score || 0) + 2
+      } else if (period === 3) {
+        updates.period3_wrestler_score = (match.period3_wrestler_score || 0) + 2
+      }
     } else {
       updates.opponent_score = currentScore + 2
       updates.reversals_allowed = currentReversals + 1
-      updates[`period${match.period || 1}_opponent_score`] = 
-        match[`period${match.period || 1}_opponent_score`] + 2
+      if (period === 1) {
+        updates.period1_opponent_score = (match.period1_opponent_score || 0) + 2
+      } else if (period === 2) {
+        updates.period2_opponent_score = (match.period2_opponent_score || 0) + 2
+      } else if (period === 3) {
+        updates.period3_opponent_score = (match.period3_opponent_score || 0) + 2
+      }
     }
 
     return this.updateMatchScore(matchId, updates)
@@ -162,6 +195,7 @@ export class MatchService {
     const currentScore = isWrestler1 ? match.wrestler_score : match.opponent_score
 
     const updates: MatchUpdate = {}
+    const period = match.period || 1
     if (isWrestler1) {
       updates.wrestler_score = currentScore + points
       if (seconds === 2) {
@@ -169,8 +203,13 @@ export class MatchService {
       } else {
         updates.nearfall_3_scored = (match.nearfall_3_scored || 0) + 1
       }
-      updates[`period${match.period || 1}_wrestler_score`] = 
-        match[`period${match.period || 1}_wrestler_score`] + points
+      if (period === 1) {
+        updates.period1_wrestler_score = (match.period1_wrestler_score || 0) + points
+      } else if (period === 2) {
+        updates.period2_wrestler_score = (match.period2_wrestler_score || 0) + points
+      } else if (period === 3) {
+        updates.period3_wrestler_score = (match.period3_wrestler_score || 0) + points
+      }
     } else {
       updates.opponent_score = currentScore + points
       if (seconds === 2) {
@@ -178,8 +217,13 @@ export class MatchService {
       } else {
         updates.nearfall_3_allowed = (match.nearfall_3_allowed || 0) + 1
       }
-      updates[`period${match.period || 1}_opponent_score`] = 
-        match[`period${match.period || 1}_opponent_score`] + points
+      if (period === 1) {
+        updates.period1_opponent_score = (match.period1_opponent_score || 0) + points
+      } else if (period === 2) {
+        updates.period2_opponent_score = (match.period2_opponent_score || 0) + points
+      } else if (period === 3) {
+        updates.period3_opponent_score = (match.period3_opponent_score || 0) + points
+      }
     }
 
     return this.updateMatchScore(matchId, updates)
@@ -258,7 +302,7 @@ export class MatchService {
 
     if (existingStats) {
       // Update existing stats
-      const updates = {
+      const updates: any = {
         matches_total: existingStats.matches_total + 1,
         matches_won: match.outcome === 'win' ? existingStats.matches_won + 1 : existingStats.matches_won,
         matches_lost: match.outcome === 'loss' ? existingStats.matches_lost + 1 : existingStats.matches_lost,
@@ -274,11 +318,12 @@ export class MatchService {
         total_points_allowed: existingStats.total_points_allowed + match.opponent_score,
         takedowns_total: existingStats.takedowns_total + match.takedowns_scored,
         escapes_total: existingStats.escapes_total + match.escapes_scored,
-        reversals_total: existingStats.reversals_total + match.reversals_scored
+        reversals_total: existingStats.reversals_total + match.reversals_scored,
+        win_percentage: 0
       }
 
       // Calculate win percentage
-      updates['win_percentage'] = updates.matches_total > 0 ? 
+      updates.win_percentage = updates.matches_total > 0 ? 
         (updates.matches_won / updates.matches_total) * 100 : 0
 
       await supabase
@@ -352,7 +397,7 @@ export class MatchService {
           table: 'matches',
           filter: `id=eq.${matchId}`
         },
-        (payload) => {
+        (payload: any) => {
           callback(payload.new as Match)
         }
       )

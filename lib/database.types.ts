@@ -113,6 +113,7 @@ export interface Database {
           outcome_type: string | null
           outcome_time: string | null
           outcome_round: number | null
+          period: number | null
           period1_wrestler_score: number
           period1_opponent_score: number
           period2_wrestler_score: number
