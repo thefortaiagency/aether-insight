@@ -4,12 +4,23 @@ import { supabaseAdmin } from '@/lib/supabase'
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 const CLOUDFLARE_STREAM_TOKEN = process.env.CLOUDFLARE_STREAM_TOKEN
 
-// Configure route to handle larger video files
+// Configure route to handle video chunks
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 60 seconds timeout for video uploads
 
+// Vercel has a 4.5MB limit for serverless functions
+// We handle chunks smaller than this
 export async function POST(request: NextRequest) {
   try {
+    // Check content length to prevent 413 errors
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && parseInt(contentLength) > 4.5 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 4.5MB per chunk.' },
+        { status: 413 }
+      )
+    }
+
     // Get the video file from form data
     const formData = await request.formData()
     const file = formData.get('file') as File

@@ -187,7 +187,9 @@ export function VideoRecorder({
               // Clear chunks after successful upload
               chunksRef.current = []
             } else {
-              throw new Error('Upload failed')
+              const errorData = await response.text()
+              console.error(`Upload failed (${response.status}):`, errorData)
+              throw new Error(`Upload failed: ${response.status}`)
             }
           } catch (uploadError) {
             // Save to offline storage if upload fails

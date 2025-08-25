@@ -369,13 +369,23 @@ export default function LiveScoringPage() {
   const handlePin = (wrestler: 'wrestler1' | 'wrestler2') => {
     setMatch(prev => ({ ...prev, isRunning: false }))
     const winnerName = wrestler === 'wrestler1' ? match.wrestler1.name : match.wrestler2.name
-    recordAction('match_end', `PIN by ${winnerName}`, match)
+    const currentTime = formatTime(timeRemaining)
+    
+    // Directly end the match with PIN without showing dialog
+    recordAction('match_end', `PIN by ${winnerName} at ${currentTime}`, match)
     setMatch(prev => ({
       ...prev,
+      isRunning: false,
       winner: winnerName,
-      winType: 'pin'
+      winType: 'pin',
+      pin_time: currentTime
     }))
-    setShowEndDialog(true)
+    
+    setMatchEnded(true)
+    saveMatchToDatabase()
+    
+    // Record final action
+    recordAction('match_end', `Match ended - PIN by ${winnerName} at ${currentTime}`, match)
   }
 
   // Handle match end confirmation
@@ -742,8 +752,8 @@ export default function LiveScoringPage() {
             matchId={matchId || `temp-${Date.now()}`}
             autoStart={match.isRunning} // Auto-start when match is running
             autoUpload={true} // Enable auto-upload for chunks
-            chunkDuration={60} // Upload every 60 seconds
-            maxFileSize={10} // Upload when chunk reaches 10MB (smaller chunks to avoid 413 error)
+            chunkDuration={30} // Upload every 30 seconds
+            maxFileSize={3} // Upload when chunk reaches 3MB (Vercel limit is ~4.5MB)
             onRecordingComplete={(blob, url) => {
               console.log('Recording complete', { size: blob.size, url })
             }}
