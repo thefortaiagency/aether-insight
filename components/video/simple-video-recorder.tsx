@@ -97,15 +97,9 @@ export function SimpleVideoRecorder({
             const { offlineStorage } = await import('@/lib/offline-storage')
             
             // Save video using the offline storage system
-            await offlineStorage.saveVideo({
-              id: `video-${matchId}-${Date.now()}`,
-              matchId: matchId,
-              blob: blob,
-              timestamp: new Date().toISOString(),
-              synced: false
-            })
+            const videoId = await offlineStorage.saveVideo(matchId, blob)
             
-            console.log(`Video saved to offline storage (${(blob.size / 1024 / 1024).toFixed(1)}MB)`)
+            console.log(`Video saved to offline storage (${(blob.size / 1024 / 1024).toFixed(1)}MB) with ID: ${videoId}`)
           } catch (err) {
             console.error('Failed to save video to offline storage:', err)
           }
