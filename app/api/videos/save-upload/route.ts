@@ -73,12 +73,14 @@ export async function POST(request: NextRequest) {
       // Don't fail - video is uploaded to Cloudflare successfully
     }
     
-    // Also update the match record
+    // Also update the match record with both video ID and URL
     await supabaseAdmin
       .from('matches')
       .update({
         has_video: true,
-        video_url: streamUrl
+        video_url: streamUrl,
+        video_id: cloudflareId,  // Save the Cloudflare video ID
+        cloudflare_video_id: cloudflareId  // Also save in this field for compatibility
       })
       .eq('id', matchId)
     

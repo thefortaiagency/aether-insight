@@ -43,6 +43,8 @@ interface MatchData {
   final_score_for: number
   final_score_against: number
   video_id?: string
+  video_url?: string
+  cloudflare_video_id?: string
   created_at: string
   event_name?: string
   weight_class?: string
@@ -222,25 +224,45 @@ export default function ScoringBreakdownPage() {
         <div className="grid lg:grid-cols-12 gap-6">
           {/* Video Player */}
           <div className="lg:col-span-7">
-            {match.video_id ? (
-              <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
-                <CardContent className="p-4">
-                  <CloudflarePlayer 
-                    videoId={match.video_id}
-                    ref={playerRef}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
-                <CardContent className="py-16">
-                  <div className="text-center">
-                    <Video className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                    <p className="text-gray-400">No video available for this match</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {(() => {
+              // Extract video ID from various possible fields
+              let videoId = match.video_id || match.cloudflare_video_id
+              
+              // If we have a video_url, extract the ID from it
+              if (!videoId && match.video_url) {
+                // Extract ID from URLs like:
+                // https://customer-xxx.cloudflarestream.com/VIDEO_ID/manifest/video.m3u8
+                // https://videodelivery.net/VIDEO_ID/manifest/video.m3u8
+                const urlMatch = match.video_url.match(/\/([a-f0-9]{32})\//)
+                if (urlMatch) {
+                  videoId = urlMatch[1]
+                }
+              }
+              
+              if (videoId) {
+                return (
+                  <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
+                    <CardContent className="p-4">
+                      <CloudflarePlayer 
+                        videoId={videoId}
+                        ref={playerRef}
+                      />
+                    </CardContent>
+                  </Card>
+                )
+              } else {
+                return (
+                  <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
+                    <CardContent className="py-16">
+                      <div className="text-center">
+                        <Video className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                        <p className="text-gray-400">No video available for this match</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              }
+            })()}
 
             {/* Period Breakdown */}
             <Card className="bg-black/80 backdrop-blur-sm border-gold/30 mt-4">
