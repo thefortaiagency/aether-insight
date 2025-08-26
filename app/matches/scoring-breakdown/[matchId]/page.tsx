@@ -80,6 +80,8 @@ export default function ScoringBreakdownPage() {
         .single()
 
       if (matchError) throw matchError
+      
+      console.log('Match data:', matchData)
       setMatch(matchData)
 
       // Get match events
@@ -93,8 +95,10 @@ export default function ScoringBreakdownPage() {
         console.error('Error fetching events:', eventsError)
         setEvents([])
       } else {
+        console.log('Events data:', eventsData)
         setEvents(eventsData || [])
-        calculatePeriodScores(eventsData || [])
+        // Pass the match data to calculatePeriodScores
+        calculatePeriodScores(eventsData || [], matchData)
       }
     } catch (error) {
       console.error('Error fetching match data:', error)
@@ -104,22 +108,43 @@ export default function ScoringBreakdownPage() {
   }
 
   // Calculate scores by period
-  const calculatePeriodScores = (events: ScoringEvent[]) => {
+  const calculatePeriodScores = (events: ScoringEvent[], matchData?: MatchData) => {
     const scores: {[key: number]: {wrestler1: number, wrestler2: number}} = {
       1: { wrestler1: 0, wrestler2: 0 },
       2: { wrestler1: 0, wrestler2: 0 },
       3: { wrestler1: 0, wrestler2: 0 }
     }
 
+    const currentMatch = matchData || match
+    
     events.forEach(event => {
       const period = event.period || 1
-      if (event.wrestler_id === 'wrestler1') {
+      // Debug log
+      console.log('Processing event:', {
+        wrestler_id: event.wrestler_id,
+        wrestler_name: event.wrestler_name,
+        points: event.points,
+        period: period,
+        match_wrestler: currentMatch?.wrestler_name,
+        match_opponent: currentMatch?.opponent_name
+      })
+      
+      // Check if this event is for the main wrestler or opponent
+      const isMainWrestler = 
+        event.wrestler_id === 'wrestler1' || 
+        event.wrestler_id === '1' ||
+        event.wrestler_name === currentMatch?.wrestler_name ||
+        (event.wrestler_name && currentMatch?.wrestler_name && 
+         event.wrestler_name.toLowerCase().includes(currentMatch.wrestler_name.toLowerCase()))
+      
+      if (isMainWrestler) {
         scores[period].wrestler1 += event.points
       } else {
         scores[period].wrestler2 += event.points
       }
     })
-
+    
+    console.log('Period scores calculated:', scores)
     setPeriodScores(scores)
   }
 
@@ -227,25 +252,53 @@ export default function ScoringBreakdownPage() {
             {(() => {
               // Extract video ID from various possible fields
               let videoId = match.video_id || match.cloudflare_video_id
+              let videoUrl = match.video_url
               
               // If we have a video_url, extract the ID from it
-              if (!videoId && match.video_url) {
+              if (!videoId && videoUrl) {
                 // Extract ID from URLs like:
                 // https://customer-xxx.cloudflarestream.com/VIDEO_ID/manifest/video.m3u8
                 // https://videodelivery.net/VIDEO_ID/manifest/video.m3u8
-                const urlMatch = match.video_url.match(/\/([a-f0-9]{32})\//)
+                const urlMatch = videoUrl.match(/\/([a-f0-9]{32})\//)
                 if (urlMatch) {
                   videoId = urlMatch[1]
                 }
               }
               
+              // Build proper video URLs
               if (videoId) {
+                // Use the iframe embed URL for Cloudflare Stream
+                const embedUrl = `https://iframe.videodelivery.net/${videoId}`
+                const hlsUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`
+                
                 return (
                   <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
                     <CardContent className="p-4">
-                      <CloudflarePlayer 
-                        videoId={videoId}
+                      <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+                        <iframe
+                          ref={playerRef}
+                          src={embedUrl}
+                          className="w-full h-full"
+                          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Video ID: {videoId}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              } else if (videoUrl) {
+                // Fallback to direct video URL if available
+                return (
+                  <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
+                    <CardContent className="p-4">
+                      <video
                         ref={playerRef}
+                        src={videoUrl}
+                        controls
+                        className="w-full aspect-video bg-black rounded-lg"
                       />
                     </CardContent>
                   </Card>
