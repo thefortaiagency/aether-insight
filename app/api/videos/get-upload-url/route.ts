@@ -57,16 +57,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Return the upload URL and video ID
-    // Cloudflare Stream URLs don't require the account ID in the URL
+    // Use videodelivery.net for playback URLs
     const videoId = data.result.uid
-    const streamURL = `https://cloudflarestream.com/${videoId}/manifest/video.m3u8`
-    const thumbnailURL = `https://cloudflarestream.com/${videoId}/thumbnails/thumbnail.jpg`
+    const streamURL = `https://customer-${CLOUDFLARE_ACCOUNT_ID}.cloudflarestream.com/${videoId}/manifest/video.m3u8`
+    const playbackURL = `https://videodelivery.net/${videoId}/manifest/video.m3u8`
+    const thumbnailURL = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`
     
     return NextResponse.json({
       success: true,
       uploadURL: data.result.uploadURL,
       videoId: videoId,
-      streamURL: streamURL,  // HLS URL for video playback
+      streamURL: playbackURL,  // Use videodelivery.net for playback
       thumbnailURL: thumbnailURL
     })
     
