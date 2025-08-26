@@ -272,6 +272,15 @@ export default function ScoringBreakdownPage() {
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
+  
+  // Log for debugging - must be before any conditional returns
+  useEffect(() => {
+    if (match) {
+      const videoInfo = getVideoInfo()
+      console.log('Scoring breakdown - match data:', match)
+      console.log('Scoring breakdown - video info:', videoInfo)
+    }
+  }, [match])
 
   const getEventIcon = (type: string) => {
     switch(type.toLowerCase()) {
@@ -407,14 +416,6 @@ export default function ScoringBreakdownPage() {
   const { wrestler1, wrestler2 } = getWrestlerNames()
   const { score1, score2 } = getFinalScores()
   const videoInfo = getVideoInfo()
-  
-  // Log for debugging
-  useEffect(() => {
-    if (match) {
-      console.log('Scoring breakdown - match data:', match)
-      console.log('Scoring breakdown - video info:', videoInfo)
-    }
-  }, [match, videoInfo])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
