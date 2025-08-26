@@ -90,43 +90,24 @@ export function SimpleVideoRecorder({
         setRecordedBlob(blob)
         setRecordedUrl(url)
         
-        // Save to IndexedDB instead of localStorage (no size limits!)
+        // Save to offline storage system (uses IndexedDB)
         if (matchId) {
           try {
-            // Open IndexedDB
-            const request = indexedDB.open('AetherVideos', 1)
+            // Import offlineStorage dynamically to avoid circular dependencies
+            const { offlineStorage } = await import('@/lib/offline-storage')
             
-            request.onupgradeneeded = (event) => {
-              const db = (event.target as IDBOpenDBRequest).result
-              if (!db.objectStoreNames.contains('videos')) {
-                db.createObjectStore('videos', { keyPath: 'matchId' })
-              }
-            }
+            // Save video using the offline storage system
+            await offlineStorage.saveVideo({
+              id: `video-${matchId}-${Date.now()}`,
+              matchId: matchId,
+              blob: blob,
+              timestamp: new Date().toISOString(),
+              synced: false
+            })
             
-            request.onsuccess = (event) => {
-              const db = (event.target as IDBOpenDBRequest).result
-              const transaction = db.transaction(['videos'], 'readwrite')
-              const store = transaction.objectStore('videos')
-              
-              // Store video blob directly in IndexedDB
-              store.put({
-                matchId: matchId,
-                blob: blob,
-                timestamp: new Date().toISOString(),
-                size: blob.size
-              })
-              
-              transaction.oncomplete = () => {
-                console.log(`Video saved to IndexedDB (${(blob.size / 1024 / 1024).toFixed(1)}MB)`)
-                db.close()
-              }
-            }
-            
-            request.onerror = () => {
-              console.error('Failed to save video to IndexedDB')
-            }
+            console.log(`Video saved to offline storage (${(blob.size / 1024 / 1024).toFixed(1)}MB)`)
           } catch (err) {
-            console.error('IndexedDB error:', err)
+            console.error('Failed to save video to offline storage:', err)
           }
         }
         
