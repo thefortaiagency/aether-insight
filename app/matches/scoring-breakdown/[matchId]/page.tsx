@@ -1,24 +1,25 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useParams } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   Play, Pause, SkipBack, SkipForward, Clock, Activity,
   Trophy, Video, BarChart3, Loader2, Target, Shield,
-  ChevronUp, Zap, Award, Timer, TrendingUp, Flag
+  ChevronUp, Zap, Award, Timer, TrendingUp, Flag, AlertCircle
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
+import dynamic from 'next/dynamic'
 
-const CloudflarePlayer = dynamic(() => import('@/components/cloudflare-player'), { 
+// Dynamically import CloudflarePlayer to avoid SSR issues
+const CloudflarePlayer = dynamic(() => import('@/components/cloudflare-player'), {
   ssr: false,
   loading: () => (
     <div className="w-full aspect-video bg-black rounded-lg flex items-center justify-center">
-      <p className="text-gray-400">Loading player...</p>
+      <Loader2 className="h-8 w-8 text-gold animate-spin" />
     </div>
   )
 })
@@ -38,10 +39,19 @@ interface ScoringEvent {
 
 interface MatchData {
   id: string
-  wrestler_name: string
-  opponent_name: string
-  final_score_for: number
-  final_score_against: number
+  // Support both naming conventions
+  wrestler1_name?: string
+  wrestler2_name?: string
+  wrestler1_team?: string
+  wrestler2_team?: string
+  wrestler1_score?: number
+  wrestler2_score?: number
+  // Alternative field names
+  wrestler_name?: string
+  opponent_name?: string
+  final_score_for?: number
+  final_score_against?: number
+  // Video fields
   video_id?: string
   video_url?: string
   cloudflare_video_id?: string
@@ -63,8 +73,8 @@ export default function ScoringBreakdownPage() {
   const [periodScores, setPeriodScores] = useState<{[key: number]: {wrestler1: number, wrestler2: number}}>({})
   
   const playerRef = useRef<any>(null)
+  const [videoError, setVideoError] = useState<string | null>(null)
 
-  // Fetch match and events data
   useEffect(() => {
     fetchMatchData()
   }, [matchId])
@@ -79,9 +89,12 @@ export default function ScoringBreakdownPage() {
         .eq('id', matchId)
         .single()
 
-      if (matchError) throw matchError
+      if (matchError) {
+        console.error('Match fetch error:', matchError)
+        return
+      }
       
-      console.log('Match data:', matchData)
+      console.log('Raw match data from database:', matchData)
       setMatch(matchData)
 
       // Get match events
@@ -91,14 +104,11 @@ export default function ScoringBreakdownPage() {
         .eq('match_id', matchId)
         .order('video_timestamp', { ascending: true })
 
-      if (eventsError) {
-        console.error('Error fetching events:', eventsError)
-        setEvents([])
-      } else {
-        console.log('Events data:', eventsData)
-        setEvents(eventsData || [])
-        // Pass the match data to calculatePeriodScores
-        calculatePeriodScores(eventsData || [], matchData)
+      console.log('Raw events data from database:', eventsData)
+
+      if (!eventsError && eventsData) {
+        setEvents(eventsData)
+        calculatePeriodScores(eventsData, matchData)
       }
     } catch (error) {
       console.error('Error fetching match data:', error)
@@ -107,67 +117,101 @@ export default function ScoringBreakdownPage() {
     }
   }
 
-  // Calculate scores by period
-  const calculatePeriodScores = (events: ScoringEvent[], matchData?: MatchData) => {
+  const calculatePeriodScores = (events: ScoringEvent[], matchData: MatchData) => {
     const scores: {[key: number]: {wrestler1: number, wrestler2: number}} = {
       1: { wrestler1: 0, wrestler2: 0 },
       2: { wrestler1: 0, wrestler2: 0 },
       3: { wrestler1: 0, wrestler2: 0 }
     }
 
-    const currentMatch = matchData || match
-    
+    // Get the wrestler names from the match data - normalize to handle different formats
+    const wrestler1Name = (matchData.wrestler1_name || matchData.wrestler_name || '').trim().toLowerCase()
+    const wrestler2Name = (matchData.wrestler2_name || matchData.opponent_name || '').trim().toLowerCase()
+
+    console.log('Match wrestlers:', { 
+      wrestler1: matchData.wrestler1_name || matchData.wrestler_name,
+      wrestler2: matchData.wrestler2_name || matchData.opponent_name
+    })
+
     events.forEach(event => {
       const period = event.period || 1
-      // Debug log
-      console.log('Processing event:', {
+      const eventWrestlerName = (event.wrestler_name || '').trim().toLowerCase()
+      
+      // Comprehensive matching logic
+      let isWrestler1 = false
+      
+      // Check by ID first (most reliable)
+      if (event.wrestler_id) {
+        if (event.wrestler_id === 'wrestler1' || event.wrestler_id === '1') {
+          isWrestler1 = true
+        } else if (event.wrestler_id === 'wrestler2' || event.wrestler_id === '2') {
+          isWrestler1 = false
+        } else if (event.wrestler_id === matchData.id) {
+          // Sometimes the ID might be the match owner's ID
+          isWrestler1 = true
+        }
+      }
+      
+      // If no clear ID match, check by name
+      if (event.wrestler_id === undefined || (event.wrestler_id !== 'wrestler1' && event.wrestler_id !== 'wrestler2' && event.wrestler_id !== '1' && event.wrestler_id !== '2')) {
+        if (eventWrestlerName && wrestler1Name) {
+          // Check if event wrestler matches wrestler1
+          if (eventWrestlerName === wrestler1Name || 
+              eventWrestlerName.includes(wrestler1Name) || 
+              wrestler1Name.includes(eventWrestlerName)) {
+            isWrestler1 = true
+          } else if (wrestler2Name && 
+                    (eventWrestlerName === wrestler2Name || 
+                     eventWrestlerName.includes(wrestler2Name) || 
+                     wrestler2Name.includes(eventWrestlerName))) {
+            isWrestler1 = false
+          }
+        }
+      }
+      
+      console.log('Event:', {
+        type: event.event_type,
+        wrestler: event.wrestler_name,
         wrestler_id: event.wrestler_id,
-        wrestler_name: event.wrestler_name,
         points: event.points,
         period: period,
-        match_wrestler: currentMatch?.wrestler_name,
-        match_opponent: currentMatch?.opponent_name
+        assignedTo: isWrestler1 ? 'wrestler1' : 'wrestler2'
       })
       
-      // Check if this event is for the main wrestler or opponent
-      const isMainWrestler = 
-        event.wrestler_id === 'wrestler1' || 
-        event.wrestler_id === '1' ||
-        event.wrestler_name === currentMatch?.wrestler_name ||
-        (event.wrestler_name && currentMatch?.wrestler_name && 
-         event.wrestler_name.toLowerCase().includes(currentMatch.wrestler_name.toLowerCase()))
-      
-      if (isMainWrestler) {
+      if (isWrestler1) {
         scores[period].wrestler1 += event.points
       } else {
         scores[period].wrestler2 += event.points
       }
     })
     
-    console.log('Period scores calculated:', scores)
+    // Calculate totals
+    const totalWrestler1 = scores[1].wrestler1 + scores[2].wrestler1 + scores[3].wrestler1
+    const totalWrestler2 = scores[1].wrestler2 + scores[2].wrestler2 + scores[3].wrestler2
+    
+    console.log('Period scores:', scores)
+    console.log('Totals:', { wrestler1: totalWrestler1, wrestler2: totalWrestler2 })
+    
     setPeriodScores(scores)
   }
 
-  // Jump to specific event time in video
   const jumpToEvent = (event: ScoringEvent) => {
     setSelectedEvent(event)
     
-    if (playerRef.current) {
-      playerRef.current.currentTime = event.video_timestamp
+    // Jump to timestamp in Cloudflare player
+    if (playerRef.current && typeof playerRef.current.currentTime !== 'undefined') {
+      playerRef.current.currentTime = event.video_timestamp || 0
     }
     
-    // Highlight for 3 seconds
     setTimeout(() => setSelectedEvent(null), 3000)
   }
 
-  // Format time for display
   const formatVideoTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Get event icon
   const getEventIcon = (type: string) => {
     switch(type.toLowerCase()) {
       case 'takedown': return <Target className="w-4 h-4" />
@@ -175,54 +219,119 @@ export default function ScoringBreakdownPage() {
       case 'reversal': return <Shield className="w-4 h-4" />
       case 'near_fall': return <Zap className="w-4 h-4" />
       case 'penalty': return <Flag className="w-4 h-4" />
-      case 'pin': return <Award className="w-4 h-4" />
-      default: return <Activity className="w-4 h-4" />
+      default: return <Trophy className="w-4 h-4" />
     }
   }
 
-  // Get event color
   const getEventColor = (type: string) => {
     switch(type.toLowerCase()) {
-      case 'takedown': return 'bg-green-600'
-      case 'escape': return 'bg-blue-600'
+      case 'takedown': return 'bg-blue-600'
+      case 'escape': return 'bg-green-600'
       case 'reversal': return 'bg-purple-600'
-      case 'near_fall': return 'bg-yellow-600'
+      case 'near_fall': return 'bg-orange-600'
       case 'penalty': return 'bg-red-600'
-      case 'pin': return 'bg-gold'
       default: return 'bg-gray-600'
     }
   }
 
+  // Get wrestler names with fallbacks
+  const getWrestlerNames = () => {
+    if (!match) return { wrestler1: 'Wrestler 1', wrestler2: 'Wrestler 2' }
+    
+    return {
+      wrestler1: match.wrestler1_name || match.wrestler_name || 'Wrestler 1',
+      wrestler2: match.wrestler2_name || match.opponent_name || 'Wrestler 2'
+    }
+  }
+
+  // Get final scores with fallbacks
+  const getFinalScores = () => {
+    if (!match) return { score1: 0, score2: 0 }
+    
+    // If we have wrestler1_score and wrestler2_score, use those
+    if (match.wrestler1_score !== undefined && match.wrestler2_score !== undefined) {
+      return {
+        score1: match.wrestler1_score,
+        score2: match.wrestler2_score
+      }
+    }
+    
+    // Otherwise use final_score_for and final_score_against
+    return {
+      score1: match.final_score_for || 0,
+      score2: match.final_score_against || 0
+    }
+  }
+
+  // Extract video ID from various sources with better validation
+  const getVideoInfo = () => {
+    if (!match) return null
+    
+    let videoId = match.video_id || match.cloudflare_video_id
+    let videoUrl = match.video_url
+    
+    // Extract ID from URL if needed
+    if (!videoId && videoUrl) {
+      // Try multiple patterns
+      const patterns = [
+        /videodelivery\.net\/([a-f0-9]{32})/,
+        /cloudflarestream\.com\/([a-f0-9]{32})/,
+        /\/([a-f0-9]{32})\//,
+        /video_id=([a-f0-9]{32})/
+      ]
+      
+      for (const pattern of patterns) {
+        const urlMatch = videoUrl.match(pattern)
+        if (urlMatch && urlMatch[1]) {
+          videoId = urlMatch[1]
+          console.log('Extracted video ID from URL:', videoId)
+          break
+        }
+      }
+    }
+    
+    // Validate the video ID format
+    if (videoId && !/^[a-f0-9]{32}$/.test(videoId)) {
+      console.warn('Invalid video ID format:', videoId)
+      setVideoError('Invalid video ID format')
+      return null
+    }
+    
+    console.log('Video info:', { videoId, videoUrl, hasVideo: match.has_video })
+    return { videoId, videoUrl }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-gold" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-gold animate-spin" />
       </div>
     )
   }
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative flex items-center justify-center">
-        <p className="text-gray-400">Match not found</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <p className="text-white">Match not found</p>
       </div>
     )
   }
+
+  const { wrestler1, wrestler2 } = getWrestlerNames()
+  const { score1, score2 } = getFinalScores()
+  const videoInfo = getVideoInfo()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
       
-      <div className="relative z-10 container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gold mb-2 flex items-center gap-3">
-            <Trophy className="w-8 h-8" />
-            Match Scoring Breakdown
-          </h1>
+          <h1 className="text-3xl font-bold text-gold mb-2">Match Breakdown</h1>
           <div className="flex items-center gap-4 text-gray-400">
             <span>{match.event_name || 'Match'}</span>
-            {match.weight_class && <span>• {match.weight_class}</span>}
+            {match.weight_class && <span>• {match.weight_class} lbs</span>}
             <span>• {new Date(match.created_at).toLocaleDateString()}</span>
           </div>
         </div>
@@ -233,14 +342,14 @@ export default function ScoringBreakdownPage() {
             <div className="flex justify-between items-center">
               <div className="text-center flex-1">
                 <p className="text-gray-400 text-sm mb-1">Wrestler</p>
-                <p className="text-white text-xl font-bold">{match.wrestler_name}</p>
-                <p className="text-green-500 text-3xl font-bold mt-2">{match.final_score_for}</p>
+                <p className="text-white text-xl font-bold">{wrestler1}</p>
+                <p className="text-green-500 text-3xl font-bold mt-2">{score1}</p>
               </div>
               <div className="text-gray-500 text-2xl">vs</div>
               <div className="text-center flex-1">
                 <p className="text-gray-400 text-sm mb-1">Opponent</p>
-                <p className="text-white text-xl font-bold">{match.opponent_name}</p>
-                <p className="text-red-500 text-3xl font-bold mt-2">{match.final_score_against}</p>
+                <p className="text-white text-xl font-bold">{wrestler2}</p>
+                <p className="text-red-500 text-3xl font-bold mt-2">{score2}</p>
               </div>
             </div>
           </CardContent>
@@ -249,73 +358,54 @@ export default function ScoringBreakdownPage() {
         <div className="grid lg:grid-cols-12 gap-6">
           {/* Video Player */}
           <div className="lg:col-span-7">
-            {(() => {
-              // Extract video ID from various possible fields
-              let videoId = match.video_id || match.cloudflare_video_id
-              let videoUrl = match.video_url
-              
-              // If we have a video_url, extract the ID from it
-              if (!videoId && videoUrl) {
-                // Extract ID from URLs like:
-                // https://customer-xxx.cloudflarestream.com/VIDEO_ID/manifest/video.m3u8
-                // https://videodelivery.net/VIDEO_ID/manifest/video.m3u8
-                const urlMatch = videoUrl.match(/\/([a-f0-9]{32})\//)
-                if (urlMatch) {
-                  videoId = urlMatch[1]
-                }
-              }
-              
-              // Build proper video URLs
-              if (videoId) {
-                // Use the iframe embed URL for Cloudflare Stream
-                const embedUrl = `https://iframe.videodelivery.net/${videoId}`
-                const hlsUrl = `https://videodelivery.net/${videoId}/manifest/video.m3u8`
-                
-                return (
-                  <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
-                    <CardContent className="p-4">
-                      <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
-                        <iframe
-                          ref={playerRef}
-                          src={embedUrl}
-                          className="w-full h-full"
-                          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                      <div className="mt-2 text-xs text-gray-500">
-                        Video ID: {videoId}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              } else if (videoUrl) {
-                // Fallback to direct video URL if available
-                return (
-                  <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
-                    <CardContent className="p-4">
-                      <video
-                        ref={playerRef}
-                        src={videoUrl}
-                        controls
-                        className="w-full aspect-video bg-black rounded-lg"
-                      />
-                    </CardContent>
-                  </Card>
-                )
-              } else {
-                return (
-                  <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
-                    <CardContent className="py-16">
-                      <div className="text-center">
-                        <Video className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                        <p className="text-gray-400">No video available for this match</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              }
-            })()}
+            {videoInfo?.videoId ? (
+              <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
+                <CardContent className="p-4">
+                  <CloudflarePlayer
+                    ref={playerRef}
+                    videoId={videoInfo.videoId}
+                    muted={false}
+                    autoplay={false}
+                    preload="metadata"
+                  />
+                  <div className="mt-2 flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      Video ID: {videoInfo.videoId}
+                    </div>
+                    {match.has_video && (
+                      <Badge variant="outline" className="text-green-500 border-green-500">
+                        Video Available
+                      </Badge>
+                    )}
+                  </div>
+                  {videoError && (
+                    <div className="mt-2 p-2 bg-red-900/20 border border-red-500/30 rounded">
+                      <p className="text-red-400 text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        {videoError}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
+                <CardContent className="py-16">
+                  <div className="text-center">
+                    <Video className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-2">No video available for this match</p>
+                    {match.has_video && (
+                      <p className="text-yellow-400 text-sm">
+                        Video marked as available but ID not found
+                      </p>
+                    )}
+                    {videoError && (
+                      <p className="text-red-400 text-sm mt-2">{videoError}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Period Breakdown */}
             <Card className="bg-black/80 backdrop-blur-sm border-gold/30 mt-4">
@@ -360,7 +450,7 @@ export default function ScoringBreakdownPage() {
                   {events.length === 0 ? (
                     <p className="text-gray-400 text-center py-4">No scoring events recorded</p>
                   ) : (
-                    events.map((event, index) => (
+                    events.map((event) => (
                       <button
                         key={event.id}
                         onClick={() => jumpToEvent(event)}
@@ -369,95 +459,34 @@ export default function ScoringBreakdownPage() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          {/* Event Icon & Points */}
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getEventColor(event.event_type)}`}>
                             +{event.points}
                           </div>
-
-                          {/* Event Details */}
                           <div className="flex-1 text-left">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2">
                               {getEventIcon(event.event_type)}
                               <span className="text-white font-medium capitalize">
-                                {event.event_type.replace('_', ' ')}
+                                {event.event_type.replace(/_/g, ' ')}
                               </span>
                             </div>
-                            <p className={`text-sm ${
-                              event.wrestler_id === 'wrestler1' ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {event.wrestler_name}
+                            <p className="text-sm text-gray-400">
+                              {event.wrestler_name || 'Unknown'} • Period {event.period || 1}
                             </p>
+                            {event.description && (
+                              <p className="text-xs text-gray-500 mt-1">{event.description}</p>
+                            )}
                           </div>
-
-                          {/* Time & Period */}
                           <div className="text-right">
-                            <p className="text-gold text-sm font-medium">
-                              {formatVideoTime(event.video_timestamp)}
-                            </p>
-                            <p className="text-gray-500 text-xs">
-                              Period {event.period}
-                            </p>
+                            <p className="text-gold text-sm">{formatVideoTime(event.video_timestamp || 0)}</p>
+                            {videoInfo?.videoId && (
+                              <p className="text-xs text-gray-500 mt-1">Click to jump</p>
+                            )}
                           </div>
-                        </div>
-
-                        {/* Running Score */}
-                        <div className="mt-2 pt-2 border-t border-gray-700 flex justify-between text-xs">
-                          <span className="text-gray-400">After this:</span>
-                          <span className="font-bold">
-                            <span className="text-green-500">
-                              {events.slice(0, index + 1)
-                                .filter(e => e.wrestler_id === 'wrestler1')
-                                .reduce((sum, e) => sum + e.points, 0)}
-                            </span>
-                            <span className="text-gray-500 mx-1">-</span>
-                            <span className="text-red-500">
-                              {events.slice(0, index + 1)
-                                .filter(e => e.wrestler_id === 'wrestler2')
-                                .reduce((sum, e) => sum + e.points, 0)}
-                            </span>
-                          </span>
                         </div>
                       </button>
                     ))
                   )}
                 </div>
-
-                {/* Statistics Summary */}
-                {events.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-700">
-                    <h4 className="text-sm text-gray-400 mb-3">Move Statistics</h4>
-                    <div className="space-y-2">
-                      {Object.entries(
-                        events.reduce((acc, event) => {
-                          const key = event.event_type
-                          if (!acc[key]) {
-                            acc[key] = { count: 0, points: 0 }
-                          }
-                          acc[key].count++
-                          acc[key].points += event.points
-                          return acc
-                        }, {} as Record<string, {count: number, points: number}>)
-                      ).map(([type, stats]) => (
-                        <div key={type} className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            {getEventIcon(type)}
-                            <span className="text-gray-300 capitalize">
-                              {type.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Badge className={getEventColor(type)}>
-                              {stats.count}x
-                            </Badge>
-                            <span className="text-gray-400 text-sm">
-                              {stats.points} pts
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
