@@ -38,19 +38,26 @@ interface MatchData {
   wrestler2_team?: string
   wrestler1_score?: number
   wrestler2_score?: number
-  // Alternative field names
+  // Alternative field names (from your actual data)
   wrestler_name?: string
+  wrestler_id?: string | null
   opponent_name?: string
+  opponent_wrestler_id?: string | null
+  opponent_team?: string
   final_score_for?: number
   final_score_against?: number
   // Video fields
   video_id?: string
   video_url?: string
-  cloudflare_video_id?: string
+  cloudflare_video_id?: string | null
   has_video?: boolean
   created_at: string
   event_name?: string
-  weight_class?: string
+  event_id?: string | null
+  weight_class?: string | number
+  match_date?: string
+  match_type?: string
+  referee_name?: string
 }
 
 export default function ScoringBreakdownPage() {
@@ -88,7 +95,32 @@ export default function ScoringBreakdownPage() {
       }
       
       console.log('Raw match data from database:', matchData)
-      setMatch(matchData)
+      
+      // If no video_id in database, try to fetch from Cloudflare API
+      let enhancedMatchData = { ...matchData }
+      if (!matchData.video_id && !matchData.cloudflare_video_id) {
+        try {
+          const videosResponse = await fetch('/api/videos/list')
+          const videosData = await videosResponse.json()
+          
+          // Try to find a video for this match
+          const matchVideo = videosData.videos?.find((v: any) => 
+            v.meta?.matchId === matchId || 
+            v.meta?.match_id === matchId ||
+            v.title?.includes(matchId)
+          )
+          
+          if (matchVideo) {
+            enhancedMatchData.video_id = matchVideo.id
+            enhancedMatchData.has_video = true
+            console.log('Found video from Cloudflare:', matchVideo.id)
+          }
+        } catch (error) {
+          console.error('Error fetching videos from Cloudflare:', error)
+        }
+      }
+      
+      setMatch(enhancedMatchData)
 
       // Get match events
       const { data: eventsData, error: eventsError } = await supabase
@@ -108,9 +140,10 @@ export default function ScoringBreakdownPage() {
           // Fix wrestler_name if it's "wrestler1" or "wrestler2"
           let wrestlerName = event.wrestler_name
           if (wrestlerName === 'wrestler1' || wrestlerName === 'Wrestler 1') {
-            wrestlerName = matchData.wrestler1_name || matchData.wrestler_name || 'Wrestler 1'
+            // For the primary wrestler, we might not have a name stored
+            wrestlerName = matchData.wrestler1_name || matchData.wrestler_name || 'Wrestler'
           } else if (wrestlerName === 'wrestler2' || wrestlerName === 'Wrestler 2') {
-            wrestlerName = matchData.wrestler2_name || matchData.opponent_name || 'Wrestler 2'
+            wrestlerName = matchData.wrestler2_name || matchData.opponent_name || 'Opponent'
           }
           
           // If no wrestler_name, try to extract from notes
@@ -262,21 +295,26 @@ export default function ScoringBreakdownPage() {
     }
   }
 
-  // Get wrestler names with fallbacks - fix "Wrestler 1" literal issue
+  // Get wrestler names with fallbacks - handle missing wrestler_name field
   const getWrestlerNames = () => {
-    if (!match) return { wrestler1: 'Wrestler 1', wrestler2: 'Wrestler 2' }
+    if (!match) return { wrestler1: 'Wrestler', wrestler2: 'Opponent' }
     
-    // Get the actual names, not the literal "Wrestler 1" or "wrestler1"
-    let wrestler1Name = match.wrestler1_name || match.wrestler_name || 'Wrestler 1'
-    let wrestler2Name = match.wrestler2_name || match.opponent_name || 'Wrestler 2'
+    // Based on the actual data structure, we may not have a wrestler_name field at all
+    // The match seems to be recorded from one wrestler's perspective
+    let wrestler1Name = match.wrestler1_name || match.wrestler_name
+    let wrestler2Name = match.wrestler2_name || match.opponent_name
     
-    // If the name is literally "Wrestler 1" or "wrestler1", it's not a real name
-    if (wrestler1Name === 'Wrestler 1' || wrestler1Name === 'wrestler1') {
-      wrestler1Name = match.wrestler_name || 'Unknown'
+    // If no wrestler1 name at all, we might need to infer it
+    if (!wrestler1Name || wrestler1Name === 'Wrestler 1' || wrestler1Name === 'wrestler1') {
+      // Try to get from events or just use "Wrestler" as fallback
+      wrestler1Name = 'Wrestler' // The primary wrestler's name might not be stored
     }
-    if (wrestler2Name === 'Wrestler 2' || wrestler2Name === 'wrestler2') {
-      wrestler2Name = match.opponent_name || 'Unknown'
+    
+    if (!wrestler2Name || wrestler2Name === 'Wrestler 2' || wrestler2Name === 'wrestler2') {
+      wrestler2Name = match.opponent_name || 'Opponent'
     }
+    
+    console.log('Resolved wrestler names:', { wrestler1: wrestler1Name, wrestler2: wrestler2Name })
     
     return {
       wrestler1: wrestler1Name,
@@ -369,6 +407,14 @@ export default function ScoringBreakdownPage() {
   const { wrestler1, wrestler2 } = getWrestlerNames()
   const { score1, score2 } = getFinalScores()
   const videoInfo = getVideoInfo()
+  
+  // Log for debugging
+  useEffect(() => {
+    if (match) {
+      console.log('Scoring breakdown - match data:', match)
+      console.log('Scoring breakdown - video info:', videoInfo)
+    }
+  }, [match, videoInfo])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
