@@ -69,10 +69,17 @@ export function SimpleVideoRecorder({
         videoRef.current.srcObject = stream
       }
 
-      // Setup MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm'
-      })
+      // Setup MediaRecorder with codec that Cloudflare supports
+      let options = { mimeType: 'video/webm' }
+      
+      // Try to use VP8 codec which has better compatibility
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+        options = { mimeType: 'video/webm;codecs=vp8' }
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        options = { mimeType: 'video/webm;codecs=vp9' }
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, options)
       
       mediaRecorderRef.current = mediaRecorder
 

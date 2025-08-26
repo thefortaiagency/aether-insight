@@ -26,13 +26,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           maxDurationSeconds: 3600, // 1 hour max
-          requireSignedURLs: false,
-          allowedOrigins: ['*'],
-          meta: {
-            matchId: matchId,
-            fileName: fileName || `match-${matchId}.webm`,
-            uploadedAt: new Date().toISOString()
-          }
+          requireSignedURLs: false
         })
       }
     )

@@ -183,8 +183,12 @@ export function SyncManager({ matchId }: { matchId?: string }) {
           })
           
           if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text()
+            console.error('Upload failed:', errorText)
             throw new Error(`Direct upload failed: ${uploadResponse.status}`)
           }
+          
+          console.log(`Video uploaded successfully to Cloudflare: ${videoId}`)
           
           // Step 3: Save video info to our database
           await fetch('/api/videos/save-upload', {
