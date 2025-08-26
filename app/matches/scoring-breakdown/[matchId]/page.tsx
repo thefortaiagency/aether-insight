@@ -55,6 +55,7 @@ interface MatchData {
   video_id?: string
   video_url?: string
   cloudflare_video_id?: string
+  has_video?: boolean
   created_at: string
   event_name?: string
   weight_class?: string
