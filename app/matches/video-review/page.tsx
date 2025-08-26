@@ -170,7 +170,18 @@ export default function VideoReviewPage() {
         videoTime: videoTime > 0 ? videoTime : index * 10, // Fallback to 10s intervals
         type: event.event_type,
         wrestler: event.wrestler_id,
-        wrestlerName: event.wrestler_name || (event.wrestler_id === 'wrestler1' ? match.wrestler_name : match.opponent_name),
+        wrestlerName: (() => {
+          // Fix wrestler names - don't use literal "wrestler1"
+          if (event.wrestler_name && event.wrestler_name !== 'wrestler1' && event.wrestler_name !== 'wrestler2') {
+            return event.wrestler_name
+          }
+          // Use match data to get actual names
+          if (event.wrestler_id === 'wrestler1' || event.wrestler_id === '1') {
+            return match.wrestler1_name || match.wrestler_name || 'Unknown'
+          } else {
+            return match.wrestler2_name || match.opponent_name || 'Unknown'
+          }
+        })(),
         points: event.points || 0,
         description: event.description || `${event.event_type} +${event.points}`,
         period: event.period || 1
@@ -278,11 +289,11 @@ export default function VideoReviewPage() {
                           </span>
                         </div>
                         <p className="text-white font-medium">
-                          {match.wrestler_name || 'Wrestler 1'}
+                          {match.wrestler1_name || match.wrestler_name || 'Unknown'}
                         </p>
                         <p className="text-gray-400 text-sm">vs</p>
                         <p className="text-white font-medium">
-                          {match.opponent_name || 'Wrestler 2'}
+                          {match.wrestler2_name || match.opponent_name || 'Unknown'}
                         </p>
                         <div className="mt-2 flex justify-between text-lg font-bold">
                           <span className="text-green-500">{match.final_score_for || 0}</span>

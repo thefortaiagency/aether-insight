@@ -262,13 +262,25 @@ export default function ScoringBreakdownPage() {
     }
   }
 
-  // Get wrestler names with fallbacks
+  // Get wrestler names with fallbacks - fix "Wrestler 1" literal issue
   const getWrestlerNames = () => {
     if (!match) return { wrestler1: 'Wrestler 1', wrestler2: 'Wrestler 2' }
     
+    // Get the actual names, not the literal "Wrestler 1" or "wrestler1"
+    let wrestler1Name = match.wrestler1_name || match.wrestler_name || 'Wrestler 1'
+    let wrestler2Name = match.wrestler2_name || match.opponent_name || 'Wrestler 2'
+    
+    // If the name is literally "Wrestler 1" or "wrestler1", it's not a real name
+    if (wrestler1Name === 'Wrestler 1' || wrestler1Name === 'wrestler1') {
+      wrestler1Name = match.wrestler_name || 'Unknown'
+    }
+    if (wrestler2Name === 'Wrestler 2' || wrestler2Name === 'wrestler2') {
+      wrestler2Name = match.opponent_name || 'Unknown'
+    }
+    
     return {
-      wrestler1: match.wrestler1_name || match.wrestler_name || 'Wrestler 1',
-      wrestler2: match.wrestler2_name || match.opponent_name || 'Wrestler 2'
+      wrestler1: wrestler1Name,
+      wrestler2: wrestler2Name
     }
   }
 
@@ -295,6 +307,15 @@ export default function ScoringBreakdownPage() {
   const getVideoInfo = () => {
     if (!match) return null
     
+    // Debug log all video fields
+    console.log('Match video fields:', {
+      video_id: match.video_id,
+      cloudflare_video_id: match.cloudflare_video_id,
+      video_url: match.video_url,
+      has_video: match.has_video,
+      all_fields: Object.keys(match).filter(k => k.includes('video'))
+    })
+    
     let videoId = match.video_id || match.cloudflare_video_id
     let videoUrl = match.video_url
     
@@ -318,15 +339,15 @@ export default function ScoringBreakdownPage() {
       }
     }
     
-    // Validate the video ID format
-    if (videoId && !/^[a-f0-9]{32}$/.test(videoId)) {
+    // Validate the video ID format - allow different lengths for Cloudflare IDs
+    if (videoId && !/^[a-f0-9-]+$/.test(videoId)) {
       console.warn('Invalid video ID format:', videoId)
       setVideoError('Invalid video ID format')
       return null
     }
     
-    console.log('Video info:', { videoId, videoUrl, hasVideo: match.has_video })
-    return { videoId, videoUrl }
+    console.log('Final video info:', { videoId, videoUrl, hasVideo: match.has_video })
+    return videoId ? { videoId, videoUrl } : null
   }
 
   if (loading) {
