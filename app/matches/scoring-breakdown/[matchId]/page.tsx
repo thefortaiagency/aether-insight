@@ -12,29 +12,21 @@ import {
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
-import dynamic from 'next/dynamic'
-
-// Dynamically import CloudflarePlayer to avoid SSR issues
-const CloudflarePlayer = dynamic(() => import('@/components/cloudflare-player'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full aspect-video bg-black rounded-lg flex items-center justify-center">
-      <Loader2 className="h-8 w-8 text-gold animate-spin" />
-    </div>
-  )
-})
+// Removed CloudflarePlayer import - using iframe directly for better compatibility
 
 interface ScoringEvent {
   id: string
-  timestamp: number
-  video_timestamp: number
+  timestamp?: number
+  video_timestamp?: number
   event_type: string
   wrestler_id: string
-  wrestler_name: string
-  points: number
-  description: string
-  period: number
+  wrestler_name?: string
+  points?: number
+  points_scored?: number  // Alternative field name
+  description?: string
+  period?: number
   event_time?: number
+  notes?: string  // Alternative field for wrestler info
 }
 
 interface MatchData {
@@ -108,8 +100,37 @@ export default function ScoringBreakdownPage() {
       console.log('Raw events data from database:', eventsData)
 
       if (!eventsError && eventsData) {
-        setEvents(eventsData)
-        calculatePeriodScores(eventsData, matchData)
+        // Process events to ensure we have proper wrestler names
+        const processedEvents = eventsData.map((event: any) => {
+          // Get points from either field
+          const points = event.points || event.points_scored || 0
+          
+          // Fix wrestler_name if it's "wrestler1" or "wrestler2"
+          let wrestlerName = event.wrestler_name
+          if (wrestlerName === 'wrestler1' || wrestlerName === 'Wrestler 1') {
+            wrestlerName = matchData.wrestler1_name || matchData.wrestler_name || 'Wrestler 1'
+          } else if (wrestlerName === 'wrestler2' || wrestlerName === 'Wrestler 2') {
+            wrestlerName = matchData.wrestler2_name || matchData.opponent_name || 'Wrestler 2'
+          }
+          
+          // If no wrestler_name, try to extract from notes
+          if (!wrestlerName && event.notes) {
+            const noteParts = event.notes.split(' - ')
+            if (noteParts.length > 0) {
+              wrestlerName = noteParts[0]
+            }
+          }
+          
+          return {
+            ...event,
+            wrestler_name: wrestlerName,
+            points: points,
+            video_timestamp: event.video_timestamp || 0
+          }
+        })
+        
+        setEvents(processedEvents)
+        calculatePeriodScores(processedEvents, matchData)
       }
     } catch (error) {
       console.error('Error fetching match data:', error)
@@ -136,6 +157,7 @@ export default function ScoringBreakdownPage() {
 
     events.forEach(event => {
       const period = event.period || 1
+      const points = event.points || event.points_scored || 0
       const eventWrestlerName = (event.wrestler_name || '').trim().toLowerCase()
       
       // Comprehensive matching logic
@@ -180,9 +202,9 @@ export default function ScoringBreakdownPage() {
       })
       
       if (isWrestler1) {
-        scores[period].wrestler1 += event.points
+        scores[period].wrestler1 += points
       } else {
-        scores[period].wrestler2 += event.points
+        scores[period].wrestler2 += points
       }
     })
     
@@ -199,9 +221,14 @@ export default function ScoringBreakdownPage() {
   const jumpToEvent = (event: ScoringEvent) => {
     setSelectedEvent(event)
     
-    // Jump to timestamp in Cloudflare player
-    if (playerRef.current && typeof playerRef.current.currentTime !== 'undefined') {
-      playerRef.current.currentTime = event.video_timestamp || 0
+    // Jump to timestamp using Cloudflare iframe API
+    if (playerRef.current) {
+      const videoInfo = getVideoInfo()
+      if (videoInfo?.videoId) {
+        // Update the iframe src to jump to timestamp
+        const timestamp = event.video_timestamp || 0
+        playerRef.current.src = `https://iframe.videodelivery.net/${videoInfo.videoId}?muted=false&preload=true&autoplay=true&controls=true&primaryColor=D4AF38&currentTime=${timestamp}`
+      }
     }
     
     setTimeout(() => setSelectedEvent(null), 3000)
@@ -362,13 +389,17 @@ export default function ScoringBreakdownPage() {
             {videoInfo?.videoId ? (
               <Card className="bg-black/80 backdrop-blur-sm border-gold/30">
                 <CardContent className="p-4">
-                  <CloudflarePlayer
-                    ref={playerRef}
-                    videoId={videoInfo.videoId}
-                    muted={false}
-                    autoplay={false}
-                    preload="metadata"
-                  />
+                  {/* Use iframe directly for better compatibility */}
+                  <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      ref={playerRef as any}
+                      src={`https://iframe.videodelivery.net/${videoInfo.videoId}?muted=false&preload=true&autoplay=false&controls=true&primaryColor=D4AF38`}
+                      className="w-full h-full"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                  </div>
                   <div className="mt-2 flex justify-between items-center">
                     <div className="text-xs text-gray-500">
                       Video ID: {videoInfo.videoId}
@@ -461,7 +492,7 @@ export default function ScoringBreakdownPage() {
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getEventColor(event.event_type)}`}>
-                            +{event.points}
+                            +{event.points || event.points_scored || 0}
                           </div>
                           <div className="flex-1 text-left">
                             <div className="flex items-center gap-2">
