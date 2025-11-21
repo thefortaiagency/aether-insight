@@ -132,7 +132,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4">
               <div className="relative h-12">
                 <Image
-                  src="/matopslogo.png"
+                  src="/matopswhite.png"
                   alt="Mat Ops Logo"
                   width={200}
                   height={48}

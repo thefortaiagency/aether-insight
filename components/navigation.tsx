@@ -57,7 +57,7 @@ export default function Navigation() {
           <a href="/" className="flex items-center gap-3 h-10 flex-shrink-0">
             <div className="relative h-10 flex-shrink-0">
               <img
-                src="/matopslogo.png"
+                src="/matopswhite.png"
                 alt="Mat Ops Logo"
                 className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
                 onError={(e: any) => { e.target.onerror = null; e.target.src='https://placehold.co/200x40/000000/d4af37?text=MAT+OPS'; }}
