@@ -102,7 +102,7 @@ export default function MatOpsAIPage() {
     }
   }, [])
 
-  // Load team data for context
+  // Load team data for context - DETAILED wrestler awareness
   useEffect(() => {
     const loadTeamData = async () => {
       const session = localStorage.getItem('aether-session')
@@ -115,13 +115,76 @@ export default function MatOpsAIPage() {
         .from('wrestlers')
         .select('*')
         .eq('team_id', team.id)
+        .order('weight_class', { ascending: true })
+
+      if (!wrestlers) return
+
+      // Calculate detailed stats for AI context
+      const totalWins = wrestlers.reduce((sum: number, w: any) => sum + (w.wins || 0), 0)
+      const totalLosses = wrestlers.reduce((sum: number, w: any) => sum + (w.losses || 0), 0)
+      const totalPins = wrestlers.reduce((sum: number, w: any) => sum + (w.pins || 0), 0)
+      const totalTechFalls = wrestlers.reduce((sum: number, w: any) => sum + (w.tech_falls || 0), 0)
+      const totalMajors = wrestlers.reduce((sum: number, w: any) => sum + (w.major_decisions || 0), 0)
+      const totalTakedowns = wrestlers.reduce((sum: number, w: any) => sum + (w.takedowns || 0), 0)
+      const totalEscapes = wrestlers.reduce((sum: number, w: any) => sum + (w.escapes || 0), 0)
+      const totalReversals = wrestlers.reduce((sum: number, w: any) => sum + (w.reversals || 0), 0)
+      const totalTeamPoints = wrestlers.reduce((sum: number, w: any) => sum + (w.team_points || 0), 0)
+
+      // Identify top performers
+      const wrestlersWithMatches = wrestlers.filter((w: any) => (w.wins || 0) + (w.losses || 0) > 0)
+      const topByWinPct = [...wrestlersWithMatches]
+        .map((w: any) => ({
+          ...w,
+          winPct: (w.wins || 0) / ((w.wins || 0) + (w.losses || 0)) * 100
+        }))
+        .sort((a, b) => b.winPct - a.winPct)
+        .slice(0, 5)
+
+      const topByPins = [...wrestlers]
+        .sort((a: any, b: any) => (b.pins || 0) - (a.pins || 0))
+        .slice(0, 5)
+
+      const topByTakedowns = [...wrestlers]
+        .sort((a: any, b: any) => (b.takedowns || 0) - (a.takedowns || 0))
+        .slice(0, 5)
+
+      // Weight class coverage
+      const WEIGHT_CLASSES = [106, 113, 120, 126, 132, 138, 144, 150, 157, 165, 175, 190, 215, 285]
+      const filledWeightClasses = new Set(wrestlers.map((w: any) => w.weight_class).filter(Boolean))
+      const emptyWeightClasses = WEIGHT_CLASSES.filter(wc => !filledWeightClasses.has(wc))
+
+      // Grade distribution
+      const gradeDistribution: Record<number, number> = {}
+      wrestlers.forEach((w: any) => {
+        if (w.grade) {
+          gradeDistribution[w.grade] = (gradeDistribution[w.grade] || 0) + 1
+        }
+      })
 
       setTeamData({
         teamName: team.name,
-        wrestlers: wrestlers || [],
-        wrestlerCount: wrestlers?.length || 0,
-        totalWins: wrestlers?.reduce((sum: number, w: any) => sum + (w.wins || 0), 0) || 0,
-        totalLosses: wrestlers?.reduce((sum: number, w: any) => sum + (w.losses || 0), 0) || 0,
+        wrestlers,
+        wrestlerCount: wrestlers.length,
+        totalWins,
+        totalLosses,
+        winPercentage: totalWins + totalLosses > 0
+          ? ((totalWins / (totalWins + totalLosses)) * 100).toFixed(1)
+          : 0,
+        totalPins,
+        totalTechFalls,
+        totalMajors,
+        bonusPointPct: totalWins > 0
+          ? (((totalPins + totalTechFalls + totalMajors) / totalWins) * 100).toFixed(1)
+          : 0,
+        totalTakedowns,
+        totalEscapes,
+        totalReversals,
+        totalTeamPoints,
+        topByWinPct,
+        topByPins,
+        topByTakedowns,
+        emptyWeightClasses,
+        gradeDistribution,
       })
     }
     loadTeamData()
@@ -169,16 +232,49 @@ What can I help you with today?`,
     setLoading(true)
 
     try {
-      // Build context with team data if available
+      // Build DETAILED context with team data
       let context = WRESTLING_KNOWLEDGE
-      if (teamData) {
-        context += `\n\nTeam Context:
-- Team: ${teamData.teamName}
+      if (teamData && teamData.wrestlers?.length > 0) {
+        context += `
+
+=== TEAM DATA: ${teamData.teamName} ===
+
+TEAM OVERVIEW:
 - Roster Size: ${teamData.wrestlerCount} wrestlers
-- Season Record: ${teamData.totalWins}-${teamData.totalLosses}
-- Wrestlers: ${teamData.wrestlers.map((w: any) =>
-  `${w.first_name} ${w.last_name} (${w.weight_class || '?'}lbs, ${w.wins || 0}-${w.losses || 0})`
-).join(', ')}`
+- Season Record: ${teamData.totalWins}-${teamData.totalLosses} (${teamData.winPercentage}% win rate)
+- Total Pins: ${teamData.totalPins} | Tech Falls: ${teamData.totalTechFalls} | Major Decisions: ${teamData.totalMajors}
+- Bonus Point Rate: ${teamData.bonusPointPct}% of wins are bonus point wins
+- Team Points Earned: ${teamData.totalTeamPoints}
+- Total Takedowns: ${teamData.totalTakedowns} | Escapes: ${teamData.totalEscapes} | Reversals: ${teamData.totalReversals}
+
+${teamData.emptyWeightClasses?.length > 0 ? `UNFILLED WEIGHT CLASSES: ${teamData.emptyWeightClasses.join(', ')} lbs` : 'All weight classes filled!'}
+
+GRADE DISTRIBUTION:
+${Object.entries(teamData.gradeDistribution || {}).map(([grade, count]) => `- Grade ${grade}: ${count} wrestlers`).join('\n') || 'No grade data'}
+
+TOP PERFORMERS BY WIN %:
+${teamData.topByWinPct?.map((w: any, i: number) =>
+  `${i + 1}. ${w.first_name} ${w.last_name} (${w.weight_class || '?'}lbs) - ${w.wins}-${w.losses} (${w.winPct.toFixed(1)}%)`
+).join('\n') || 'No match data yet'}
+
+TOP PINNERS:
+${teamData.topByPins?.filter((w: any) => w.pins > 0).map((w: any, i: number) =>
+  `${i + 1}. ${w.first_name} ${w.last_name} - ${w.pins} pins`
+).join('\n') || 'No pins recorded'}
+
+TOP TAKEDOWN SCORERS:
+${teamData.topByTakedowns?.filter((w: any) => w.takedowns > 0).map((w: any, i: number) =>
+  `${i + 1}. ${w.first_name} ${w.last_name} - ${w.takedowns} takedowns`
+).join('\n') || 'No takedowns recorded'}
+
+FULL ROSTER (by weight class):
+${teamData.wrestlers.map((w: any) => {
+  const matches = (w.wins || 0) + (w.losses || 0)
+  const winPct = matches > 0 ? ((w.wins / matches) * 100).toFixed(0) : 'N/A'
+  return `- ${w.first_name} ${w.last_name} | ${w.weight_class || '?'}lbs | Grade ${w.grade || '?'} | ${w.wins || 0}-${w.losses || 0} (${winPct}%) | ${w.pins || 0} pins | TD: ${w.takedowns || 0} | E: ${w.escapes || 0} | R: ${w.reversals || 0}`
+}).join('\n')}
+
+When answering questions about specific wrestlers, reference their actual stats. Be specific with names and numbers.`
       }
 
       // Call AI API (using OpenAI-compatible endpoint)
