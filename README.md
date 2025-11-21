@@ -1,17 +1,28 @@
-# Mat Ops - Wrestling Analytics Platform
+# Aether Insights - Wrestling Analytics Platform
 
-**Advanced wrestling analytics, live scoring, video analysis, and team management powered by AI.**
+**Advanced wrestling analytics, live scoring, practice planning, and AI coaching powered by Claude.**
 
 ---
 
-## 🎯 What is Mat Ops?
+## 🏢 Platform Ecosystem
 
-Mat Ops is the complete wrestling team management system that combines:
-- **Live Match Scoring** - Real-time scoring with video sync
+| Platform | Purpose | Repository |
+|----------|---------|------------|
+| **Aether Insights** | Wrestling stats, practice planning, coaching AI | This repo |
+| **AetherVTC** | Communication - video, chat, phone, SMS | Separate platform |
+
+> **Note**: Aether Insights requires an AetherVTC account for coach authentication.
+
+---
+
+## 🎯 What is Aether Insights?
+
+Aether Insights is the complete wrestling team management system that combines:
+- **Stats Management** - Track, analyze, and visualize wrestler performance
+- **Practice Planning** - AI-assisted practice plans based on team needs
+- **Coaching AI** - Personalized insights and recommendations
 - **USABracketing Integration** - Automatic stats extraction via Chrome extension
-- **Video Analysis** - Cloudflare Stream integration with AI analysis
-- **Team Management** - Roster, weight tracking, season stats
-- **AI-Powered Insights** - Claude-powered analytics and coaching recommendations
+- **Live Match Scoring** - Real-time scoring with video sync
 
 **The MatBoss Killer** - Everything coaches need in one platform.
 
@@ -23,6 +34,7 @@ Mat Ops is the complete wrestling team management system that combines:
 - Node.js 18+
 - Supabase account
 - Vercel account (for deployment)
+- AetherVTC account (for coach access)
 
 ### Installation
 
@@ -55,7 +67,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the platform.
 aether-insight/
 ├── app/                        # Next.js 15 App Router
 │   ├── api/                    # API routes
-│   │   ├── matops/sync/        # USABracketing sync endpoint
+│   │   ├── matops/sync/        # Stats sync endpoint
 │   │   ├── matches/            # Match CRUD operations
 │   │   ├── teams/              # Team management
 │   │   └── videos/             # Video upload/analysis
@@ -76,13 +88,13 @@ aether-insight/
 ├── matops-extension/           # Chrome Extension
 │   └── extension-src/          # Extension source files
 └── public/                     # Static assets
-    ├── matopslogo.png          # Full logo
+    ├── matopswhite.png         # Full logo (white text)
     └── matopstarget.png        # Icon/target logo
 ```
 
 ---
 
-## 🔌 Mat Ops Chrome Extension
+## 🔌 Chrome Extension (Stats Extraction)
 
 **Automatically extract wrestling stats from USABracketing!**
 
@@ -98,77 +110,93 @@ aether-insight/
 1. Navigate to USABracketing.com
 2. Click Mat Ops icon in toolbar
 3. Extract stats from "My Wrestlers" page
-4. Click "Sync to Mat Ops Platform"
+4. Click "Sync to Platform"
 5. View updated stats in dashboard
 
 **See**: `matops-extension/README.md` for full documentation
 
 ---
 
-## 🗄️ Database
+## 🗄️ Database Schema
 
 ### Technology
 - **PostgreSQL** via Supabase
 - **Drizzle ORM** for type-safe queries
 - **Real-time subscriptions** for live updates
 
-### Main Tables
-- `teams` - Team info, coaches, branding
-- `wrestlers` - Detailed wrestler profiles with stats
-- `matches` - Match results with period-by-period scoring
-- `videos` - Video recordings with Cloudflare Stream
-- `statistics` - Aggregated season stats
-- `matops_sync_log` - USABracketing sync history
+### Core Tables
+| Table | Purpose |
+|-------|---------|
+| `teams` | Team info, branding, settings |
+| `wrestlers` | Profiles (no accounts - just data) |
+| `matches` | Match results with detailed scoring |
+| `coaches` | Coach accounts (linked to AetherVTC) |
+| `practices` | Practice sessions and plans |
+| `coaching_insights` | AI-generated recommendations |
 
-### Running Migrations
+### Stats Tables
+| Table | Purpose |
+|-------|---------|
+| `wrestler_season_stats` | Aggregated season statistics |
+| `match_events` | Move-by-move tracking |
+| `weight_history` | Weight tracking over time |
+| `matops_sync_log` | Import/sync history |
 
-```bash
-# Push schema changes to Supabase
-npm run db:push
-
-# Generate new migration
-npm run db:generate
-
-# View current schema
-npm run db:studio
+### Sync Fields (Optional)
+```sql
+wrestlers.usab_id    -- USABracketing ID
+wrestlers.track_id   -- TrackWrestling ID
+wrestlers.flo_id     -- FloWrestling ID
 ```
 
 ---
 
-## 🎥 Features
+## 🎯 Core Features
 
-### 1. Live Match Scoring
+### 1. Stats Management
+- Import from USABracketing, TrackWrestling, FloWrestling
+- Season stats with MatBoss Power Index
+- Win/loss trends, pin rates, bonus percentages
+- Position-specific analytics (neutral, top, bottom)
+
+### 2. Coaching AI
+- Ask questions about your team's stats
+- Get personalized recommendations
+- Opponent scouting analysis
+- Identify strengths and weaknesses
+
+### 3. Practice Planning
+- AI-generated practice plans
+- Based on team weaknesses and upcoming opponents
+- Drill library with progressions
+- Attendance tracking
+
+### 4. Live Match Scoring
 - Real-time scoring interface
 - Period-by-period tracking
 - Detailed stats (takedowns, escapes, reversals, nearfalls)
 - Riding time tracking
-- Video timestamp sync
 
-### 2. USABracketing Integration
-- **Chrome Extension** extracts stats automatically
-- **API Endpoint** `/api/matops/sync` receives data
-- **Upsert Logic** prevents duplicates
-- **Sync History** tracks all imports
-
-### 3. Video Analysis
-- **Cloudflare Stream** for video hosting
-- **Timeline Markers** for scoring events
-- **AI Analysis** (coming soon) - Move detection
-- **Highlight Generation** - Auto-create highlight reels
-
-### 4. Team Management
-- Roster management
+### 5. Team Management
+- Roster management (wrestlers are data, not users)
 - Weight class tracking
-- Season stats aggregation
 - Tournament scheduling
-- Parent communication
+- Coach collaboration
 
-### 5. Analytics Dashboard
-- Team performance metrics
-- Wrestler comparisons
-- Opponent scouting reports
-- Trend analysis
-- Predictive modeling (coming soon)
+---
+
+## 👤 Account Model
+
+```
+COACHES (require AetherVTC account)
+    └── Teams
+        └── Wrestlers (just data records - no accounts)
+            └── Matches/Stats
+```
+
+- **Coaches**: Must have AetherVTC account to access Aether Insights
+- **Wrestlers**: Data entries only - no login required
+- **Future**: Wrestlers with AetherVTC accounts can "pull" their stats
 
 ---
 
@@ -184,7 +212,7 @@ NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Cloudflare Stream
+# Cloudflare Stream (Phase 2 - Video)
 NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID=your-account-id
 CLOUDFLARE_STREAM_API_TOKEN=your-api-token
 
@@ -195,7 +223,7 @@ OPENAI_API_KEY=your-openai-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### Chrome Extension Config
+### Extension Config
 
 Edit `matops-extension/extension-src/background.js`:
 
@@ -210,53 +238,36 @@ const CONFIG = {
 
 ---
 
-## 🚀 Deployment
+## 🏗️ Architecture
 
-### Vercel (Recommended)
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Set environment variables in Vercel dashboard
-# Add production URL to Chrome extension config
 ```
-
-### Database Migration on Deploy
-
-Migrations run automatically via Supabase CLI or manually:
-
-```bash
-supabase db push
-```
-
----
-
-## 🧪 Testing
-
-### Run Development Server
-```bash
-npm run dev
-```
-
-### Test Extension
-1. Load extension in Chrome (see above)
-2. Navigate to USABracketing.com
-3. Extract stats
-4. Verify sync to localhost:3000
-
-### Check Database
-```sql
--- View sync history
-SELECT * FROM matops_sync_log
-ORDER BY sync_timestamp DESC;
-
--- View imported wrestlers
-SELECT * FROM wrestlers
-WHERE imported_from = 'USABracketing';
+┌─────────────────────────────────────────────┐
+│         Chrome Extension                     │
+│  (USABracketing/FloArena/Track extraction)   │
+└──────────────────┬──────────────────────────┘
+                   │
+                   │ POST /api/matops/sync
+                   ▼
+┌─────────────────────────────────────────────┐
+│       Aether Insights (Next.js)              │
+│                                              │
+│  ├─ Stats Dashboard                          │
+│  ├─ Coaching AI (Claude)                     │
+│  ├─ Practice Planning                        │
+│  └─ Live Scoring                             │
+└──────────────────┬──────────────────────────┘
+                   │
+                   │ Auth via AetherVTC
+                   ▼
+┌─────────────────────────────────────────────┐
+│           AetherVTC Platform                 │
+│  (Communication - separate platform)         │
+│                                              │
+│  ├─ Video Conferencing                       │
+│  ├─ Chat/Messaging                           │
+│  ├─ Phone/SMS                                │
+│  └─ User Accounts                            │
+└─────────────────────────────────────────────┘
 ```
 
 ---
@@ -298,58 +309,17 @@ Sync wrestler and match data from Chrome extension.
 }
 ```
 
-### GET /api/matops/sync
-
-Get sync history.
-
-**Query Params**:
-- `teamId` - Filter by team
-- `limit` - Max records (default: 10)
-
 ---
 
-## 🏗️ Architecture
+## 🚀 Deployment
 
-```
-┌─────────────────────────────────────────────┐
-│        Mat Ops Chrome Extension              │
-│  (USABracketing stats extraction)            │
-└──────────────────┬──────────────────────────┘
-                   │
-                   │ POST /api/matops/sync
-                   ▼
-┌─────────────────────────────────────────────┐
-│          Mat Ops Platform (Next.js)          │
-│                                              │
-│  ├─ API Routes (/api/matops, /api/matches)  │
-│  ├─ React Components (dashboard, scoring)   │
-│  └─ Supabase Client (queries, subscriptions)│
-└──────────────────┬──────────────────────────┘
-                   │
-                   │ Database queries
-                   ▼
-┌─────────────────────────────────────────────┐
-│       PostgreSQL (Supabase)                  │
-│                                              │
-│  ├─ teams, wrestlers, matches                │
-│  ├─ videos, statistics                       │
-│  └─ matops_sync_log                          │
-└─────────────────────────────────────────────┘
+### Vercel (Recommended)
+
+```bash
+vercel
 ```
 
----
-
-## 🤝 Contributing
-
-This is a proprietary project for The Fort Suite. Internal contributions welcome.
-
-### Development Workflow
-1. Create feature branch
-2. Make changes
-3. Test locally
-4. Submit PR
-5. Deploy to staging
-6. Merge to master
+See `VERCEL_SETUP.md` for environment variable configuration.
 
 ---
 
@@ -367,13 +337,5 @@ Proprietary - The Fort Suite
 
 ---
 
-## 📞 Support
-
-- **Issues**: Create GitHub issue
-- **Questions**: Contact via The Fort Suite
-- **Documentation**: See `/docs` and `matops-extension/README.md`
-
----
-
-**Mat Ops - The MatBoss Killer** 🤼‍♂️
+**Aether Insights - The MatBoss Killer** 🤼‍♂️
 *Built by coaches, for coaches*
