@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import {
-  Menu, X, Users, Trophy, BarChart3, Home,
-  Activity, Award, ChevronDown, Clock,
-  Calendar, PlusCircle, Brain, ClipboardList
+  Menu, X, Users, Home,
+  Activity, ChevronDown,
+  Calendar, Brain, ClipboardList, LogOut, User
 } from 'lucide-react'
 
 // A utility function for combining class names, often found in projects using Tailwind CSS.
@@ -21,16 +21,39 @@ const Button = ({ children, className, ...props }: any) => {
   )
 }
 
+interface Session {
+  coach: { first_name: string; last_name: string; email: string }
+  team: { name: string } | null
+}
+
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
-  const [showQuickActions, setShowQuickActions] = useState(false)
-  // Use window.location.pathname for standard React apps instead of Next.js's usePathname
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
   const [pathname, setPathname] = useState('')
 
   useEffect(() => {
-    // Set the pathname on the client-side
     setPathname(window.location.pathname)
+    // Load session
+    const stored = localStorage.getItem('aether-session')
+    if (stored) {
+      try {
+        setSession(JSON.parse(stored))
+      } catch (e) {
+        console.error('Failed to parse session')
+      }
+    }
   }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('aether-session')
+    setSession(null)
+    window.location.href = '/login'
+  }
+
+  const handleLogin = () => {
+    window.location.href = '/login'
+  }
 
 
   const navItems = [
@@ -82,41 +105,61 @@ export default function Navigation() {
             })}
           </div>
 
-          {/* Quick Actions */}
+          {/* User Menu */}
           <div className="hidden lg:flex items-center gap-3">
+            {/* User Menu */}
             <div className="relative">
-              <Button 
-                size="sm" 
-                className="bg-gold hover:bg-gold/90 text-black font-bold flex items-center gap-2"
-                onClick={() => setShowQuickActions(!showQuickActions)}
-              >
-                <PlusCircle className="w-4 h-4" />
-                Quick Actions
-                <ChevronDown className={cn(
-                  "w-4 h-4 transition-transform",
-                  showQuickActions && "rotate-180"
-                )} />
-              </Button>
-              
-              {showQuickActions && (
-                <div className="absolute top-full right-0 mt-2 w-56 bg-black/95 backdrop-blur-lg border border-gold/20 rounded-lg shadow-xl overflow-hidden">
-                  <a
-                    href="/roster"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
-                    onClick={() => setShowQuickActions(false)}
+              {session ? (
+                <>
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-gold/20 hover:border-gold/40 transition-all"
                   >
-                    <ClipboardList className="w-4 h-4" />
-                    <span>Roster Spreadsheet</span>
-                  </a>
-                  <a
-                    href="/wrestlers/new"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
-                    onClick={() => setShowQuickActions(false)}
-                  >
-                    <Award className="w-4 h-4" />
-                    <span>Add Wrestler</span>
-                  </a>
-                </div>
+                    <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center">
+                      <User className="w-4 h-4 text-gold" />
+                    </div>
+                    <div className="text-left hidden xl:block">
+                      <div className="text-sm font-medium text-white">
+                        {session.coach.first_name}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {session.team?.name || 'No Team'}
+                      </div>
+                    </div>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 text-gray-400 transition-transform",
+                      showUserMenu && "rotate-180"
+                    )} />
+                  </button>
+
+                  {showUserMenu && (
+                    <div className="absolute top-full right-0 mt-2 w-56 bg-black/95 backdrop-blur-lg border border-gold/20 rounded-lg shadow-xl overflow-hidden">
+                      <div className="px-4 py-3 border-b border-gold/10">
+                        <div className="text-sm font-medium text-white">
+                          {session.coach.first_name} {session.coach.last_name}
+                        </div>
+                        <div className="text-xs text-gray-400">{session.coach.email}</div>
+                        {session.team && (
+                          <div className="text-xs text-gold mt-1">{session.team.name}</div>
+                        )}
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-3 w-full hover:bg-red-500/10 text-red-400 transition-all"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Button
+                  onClick={handleLogin}
+                  className="bg-gold hover:bg-gold/90 text-black font-bold"
+                >
+                  Log In
+                </Button>
               )}
             </div>
           </div>
@@ -158,24 +201,36 @@ export default function Navigation() {
                 )
               })}
               <div className="pt-3 mt-3 border-t border-gold/20 space-y-2">
-                <a href="/roster" onClick={() => setIsOpen(false)}>
+                {session ? (
+                  <>
+                    <div className="px-3 py-2 text-sm text-gray-400">
+                      Signed in as <span className="text-gold">{session.coach.first_name}</span>
+                      {session.team && <span className="text-gray-500"> • {session.team.name}</span>}
+                    </div>
+                    <a href="/roster" onClick={() => setIsOpen(false)}>
+                      <Button
+                        className="w-full bg-gold hover:bg-gold/90 text-black font-bold flex items-center justify-center gap-2"
+                      >
+                        <ClipboardList className="w-4 h-4" />
+                        Roster Spreadsheet
+                      </Button>
+                    </a>
+                    <Button
+                      onClick={() => { setIsOpen(false); handleLogout(); }}
+                      className="w-full border border-red-500/50 text-red-400 hover:bg-red-500/10 bg-transparent"
+                    >
+                      <LogOut className="w-4 h-4 mr-1" />
+                      Log Out
+                    </Button>
+                  </>
+                ) : (
                   <Button
-                    className="w-full bg-gold hover:bg-gold/90 text-black font-bold flex items-center justify-center gap-2"
+                    onClick={() => { setIsOpen(false); handleLogin(); }}
+                    className="w-full bg-gold hover:bg-gold/90 text-black font-bold"
                   >
-                    <ClipboardList className="w-4 h-4" />
-                    Roster Spreadsheet
+                    Log In
                   </Button>
-                </a>
-                <a href="/wrestlers/new" onClick={() => setIsOpen(false)}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full border-gold/50 text-gold hover:bg-gold/10"
-                  >
-                    <Award className="w-4 h-4 mr-1" />
-                    Add Wrestler
-                  </Button>
-                </a>
+                )}
               </div>
             </div>
           </div>

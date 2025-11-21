@@ -59,15 +59,39 @@ export default function RosterPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+  const [teamId, setTeamId] = useState<string | null>(null)
+  const [teamName, setTeamName] = useState<string>('')
 
-  // Team ID - would come from auth context in production
-  const teamId = '44f8355c-17f6-4868-840b-c394ae790fe5' // Fort Wrestling
-
+  // Get team ID from session
   useEffect(() => {
-    loadData()
+    const session = localStorage.getItem('aether-session')
+    if (session) {
+      try {
+        const parsed = JSON.parse(session)
+        if (parsed.team?.id) {
+          setTeamId(parsed.team.id)
+          setTeamName(parsed.team.name || '')
+        } else {
+          // No team - redirect to login
+          window.location.href = '/login'
+        }
+      } catch (e) {
+        window.location.href = '/login'
+      }
+    } else {
+      window.location.href = '/login'
+    }
   }, [])
 
+  // Load data when teamId is available
+  useEffect(() => {
+    if (teamId) {
+      loadData()
+    }
+  }, [teamId])
+
   const loadData = async () => {
+    if (!teamId) return
     setLoading(true)
     try {
       // Load seasons
@@ -412,7 +436,7 @@ export default function RosterPage() {
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <Users className="w-8 h-8 text-gold" />
-              Roster & Stats
+              {teamName || 'Team'} Roster
             </h1>
             <p className="text-gray-400 mt-1">Spreadsheet view - click any cell to edit</p>
           </div>
