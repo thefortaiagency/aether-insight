@@ -19,7 +19,6 @@ import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import MatchSetup from '@/components/match-setup'
 import { BoutSheet } from '@/components/bout-sheet'
 import { MatchEndDialog } from '@/components/match-end-dialog'
-import { SimpleVideoRecorder } from '@/components/video/simple-video-recorder'
 import { useRouter } from 'next/navigation'
 import { offlineStorage } from '@/lib/offline-storage'
 import { offlineQueue } from '@/lib/offline-queue'
@@ -96,7 +95,6 @@ export default function LiveScoringPage() {
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [matchEnded, setMatchEnded] = useState(false)
-  const [showVideoRecorder, setShowVideoRecorder] = useState(true) // Always show video recorder
   const [recordedVideoId, setRecordedVideoId] = useState<string | null>(null)
   const [match, setMatch] = useState<LiveMatch>({
     id: 'match-1',
@@ -790,19 +788,6 @@ export default function LiveScoringPage() {
       <SyncManager matchId={matchId || undefined} />
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-4">
-        {/* Video Recorder Section - Always visible */}
-        <div className="mb-4">
-          <SimpleVideoRecorder
-            matchId={matchId || undefined}
-            autoStart={match.isRunning}
-            onRecordingComplete={(blob, url) => {
-              console.log('Recording complete', { size: blob.size, url })
-              setRecordedVideoId(`local-${Date.now()}`)
-            }}
-            className="max-w-4xl mx-auto"
-          />
-        </div>
-
         {/* Header Bar */}
         <div className="mb-4 flex justify-between items-center">
           <div className="flex gap-2">
