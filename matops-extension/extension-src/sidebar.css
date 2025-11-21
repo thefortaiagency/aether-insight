@@ -1,0 +1,590 @@
+/**
+ * Mat Ops Sidebar Styles
+ * Similar to AImpact IDE and Yoo Direct sidebars
+ */
+
+.matops-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: white;
+  transition: transform 0.3s ease;
+}
+
+.matops-sidebar-collapsed {
+  transform: translateX(340px);
+}
+
+/* Header */
+.matops-sidebar-header {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.matops-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.matops-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.matops-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.matops-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.matops-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.matops-btn-icon {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.matops-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.matops-btn-icon:active {
+  transform: scale(0.95);
+}
+
+/* Content */
+.matops-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.matops-sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.matops-sidebar-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.matops-sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.matops-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Sections */
+.matops-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.matops-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Stats Grid */
+.matops-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.matops-stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.matops-stat-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.matops-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: #fbbf24;
+}
+
+.matops-stat-label {
+  font-size: 11px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Wrestlers List */
+.matops-wrestlers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.matops-wrestlers-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.matops-wrestlers-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.matops-wrestlers-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.matops-wrestler-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.matops-wrestler-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(-4px);
+}
+
+.matops-wrestler-header {
+  margin-bottom: 8px;
+}
+
+.matops-wrestler-name {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.matops-wrestler-team {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.matops-wrestler-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.matops-record {
+  display: flex;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.matops-wins {
+  color: #10b981;
+}
+
+.matops-losses {
+  color: #ef4444;
+}
+
+.matops-matches {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.matops-weight-class {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.matops-weight {
+  font-weight: 600;
+}
+
+.matops-placement {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+/* Empty State */
+.matops-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  opacity: 0.6;
+}
+
+.matops-empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.matops-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Actions */
+.matops-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.matops-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.matops-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.matops-btn:active {
+  transform: translateY(0);
+}
+
+.matops-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.matops-btn-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.matops-btn-primary:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.matops-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.matops-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Status */
+.matops-status {
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.matops-status:empty {
+  display: none;
+}
+
+.matops-status-loading {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.matops-status-success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.matops-status-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Animations */
+@keyframes matops-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.matops-status-loading {
+  animation: matops-pulse 1.5s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .matops-sidebar {
+    width: 100%;
+  }
+
+  .matops-sidebar-collapsed {
+    transform: translateX(calc(100% - 40px));
+  }
+}
+
+/* Toggle tab when collapsed (real DOM element, not ::before) */
+.matops-toggle-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 80px;
+  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 999998; /* Just below sidebar */
+  transition: all 0.2s;
+}
+
+.matops-toggle-tab:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-50%) translateX(-2px);
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.4);
+}
+
+/* ========== AI MESSAGE FORMATTING (like aiimpact-health!) ========== */
+
+/* AI Message Containers */
+.matops-message {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+.matops-message-user {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left: 4px solid #3b82f6;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+  text-align: right;
+}
+
+.matops-message-assistant {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #f59e0b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+
+/* Section Headers (## Header) - Wrestling-themed */
+.matops-message .matops-section-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #dc2626;
+  margin-top: 14px;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #fecaca;
+  display: block;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Subsection Headers (### Header) */
+.matops-message .matops-subsection-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ea580c;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  display: block;
+  letter-spacing: 0.3px;
+}
+
+/* Bold/Italic */
+.matops-message strong {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.matops-message em {
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* Stat Value Highlighting - Wrestling-specific! */
+.matops-message .matops-value-high {
+  color: #dc2626;
+  font-weight: 600;
+  background: #fef2f2;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.matops-message .matops-value-low {
+  color: #ea580c;
+  font-weight: 600;
+  background: #fff7ed;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.matops-message .matops-value-good {
+  color: #059669;
+  font-weight: 600;
+  background: #f0fdf4;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.matops-message .matops-value-weak {
+  color: #d97706;
+  font-weight: 600;
+  background: #fffbeb;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.matops-message .matops-value-strong {
+  color: #16a34a;
+  font-weight: 700;
+  background: #f0fdf4;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* Wrestling-specific highlights */
+.matops-message .matops-value-pin {
+  color: #16a34a;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #22c55e;
+}
+
+.matops-message .matops-value-win {
+  color: #2563eb;
+  font-weight: 600;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.matops-message .matops-value-loss {
+  color: #dc2626;
+  font-weight: 600;
+  background: #fef2f2;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* Token Counter (at bottom of AI messages) */
+.matops-token-counter {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 11px;
+  color: #6b7280;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.matops-token-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.matops-token-stat {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Suggested Question Buttons (Quick Actions) */
+.matops-prompt-btn {
+  font-size: 11px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+  border: 1px solid #7c3aed;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #5b21b6;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.matops-prompt-btn:hover {
+  background: linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%);
+  border-color: #6d28d9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
+}
+
+.matops-prompt-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(124, 58, 237, 0.2);
+}

@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "Mat Ops - Wrestling Stats Tracker",
+  "version": "1.0.0",
+  "description": "Extract wrestling stats from USABracketing and sync to Aether platform",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "scripting",
+    "sidePanel",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://usabracketing.com/*",
+    "https://www.usabracketing.com/*",
+    "https://aethervtc.ai/*",
+    "https://wrestleai.com/*",
+    "http://localhost:3000/*",
+    "https://api.anthropic.com/*",
+    "https://*.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://usabracketing.com/*",
+        "https://www.usabracketing.com/*"
+      ],
+      "js": ["content-extractor.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/matops-icon-16.png",
+      "48": "icons/matops-icon-48.png",
+      "128": "icons/matops-icon-128.png"
+    },
+    "default_title": "Mat Ops - Wrestling Stats Tracker"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "icons": {
+    "16": "icons/matops-icon-16.png",
+    "48": "icons/matops-icon-48.png",
+    "128": "icons/matops-icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["matops-panel.html", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

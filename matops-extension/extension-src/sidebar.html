@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mat Ops - Wrestling Stats</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f3f4f6;
+      color: #1f2937;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: white;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo img {
+      width: 32px;
+      height: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #1f2937;
+    }
+
+    .clear-btn {
+      padding: 6px 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      transition: all 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      transform: scale(1.05);
+    }
+
+    .status {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 500;
+      margin-top: 6px;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .content::-webkit-scrollbar-track {
+      background: #f3f4f6;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .stat-card {
+      background: #f9fafb;
+      padding: 6px;
+      border-radius: 4px;
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #1f2937;
+    }
+
+    .stat-label {
+      font-size: 9px;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .messages {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 6px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .message-user {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      text-align: right;
+      color: white;
+    }
+
+    .message-assistant {
+      background: rgba(255, 255, 255, 0.95);
+      color: #1e293b;
+      border-left: 4px solid #f59e0b;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    #aiInput {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    #aiInput::placeholder {
+      color: #9ca3af;
+    }
+
+    #aiInput:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn {
+      padding: 6px 12px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #9ca3af;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 20px;
+      color: #6b7280;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+      opacity: 0.8;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stats-table-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }
+
+    .stats-table-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .stats-table-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #9ca3af;
+    }
+
+    .mode-switcher {
+      display: flex;
+      gap: 4px;
+      margin-top: 12px;
+      padding: 0 4px;
+      overflow-x: auto;
+    }
+
+    .mode-tab {
+      flex: 1;
+      min-width: 60px;
+      padding: 8px 6px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      color: #6b7280;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .mode-tab:hover {
+      background: #e5e7eb;
+      border-color: #d1d5db;
+    }
+
+    .mode-tab.active {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border-color: #2563eb;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+
+    .mode-tab-emoji {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    .mode-tab-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <div class="logo">
+        <img src="icons/aether-48.png" alt="Aether">
+        <span class="title">Mat Ops</span>
+      </div>
+      <button id="clearButton" class="clear-btn">🗑️ Clear</button>
+    </div>
+
+    <!-- Mode Switcher -->
+    <div class="mode-switcher">
+      <div class="mode-tab active" data-mode="usa-bracketing">
+        <span class="mode-tab-emoji">🇺🇸</span>
+        <span class="mode-tab-label">USA Bracketing</span>
+      </div>
+      <div class="mode-tab" data-mode="flo-arena">
+        <span class="mode-tab-emoji">🏟️</span>
+        <span class="mode-tab-label">Flo Arena</span>
+      </div>
+      <div class="mode-tab" data-mode="trackwrestling">
+        <span class="mode-tab-emoji">📍</span>
+        <span class="mode-tab-label">TrackWrestling</span>
+      </div>
+      <div class="mode-tab" data-mode="mat-ops-ai">
+        <span class="mode-tab-emoji">🤖</span>
+        <span class="mode-tab-label">Mat Ops AI</span>
+      </div>
+    </div>
+
+    <div class="status" id="status">Ready • USA Bracketing Mode</div>
+  </div>
+
+  <div class="content">
+    <!-- Stats Summary -->
+    <div class="section">
+      <div class="section-title">Stats Summary</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="wrestlerCount">-</div>
+          <div class="stat-label">Wrestlers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="matchCount">-</div>
+          <div class="stat-label">Matches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="winCount">-</div>
+          <div class="stat-label">Wins</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="lossCount">-</div>
+          <div class="stat-label">Losses</div>
+        </div>
+      </div>
+      <!-- Quick Stats Table Button -->
+      <button id="showStatsTableBtn" class="stats-table-btn" disabled>
+        📊 View Detailed Match Stats
+      </button>
+    </div>
+
+    <!-- AI Chat -->
+    <div class="section">
+      <div class="section-title">🤖 Ask AI About Stats</div>
+      <div class="messages" id="messages">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p>Extract stats from USABracketing, then ask questions!</p>
+        </div>
+      </div>
+      <div class="input-group">
+        <input type="text" id="aiInput" placeholder="Ask about stats..." />
+        <button class="btn" id="sendButton">Ask</button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="section">
+      <div class="section-title">Actions</div>
+      <div class="actions">
+        <button class="btn btn-secondary" id="expandButton">🔄 Auto-Expand All</button>
+        <button class="btn btn-secondary" id="extractButton">📊 Extract Stats</button>
+        <button class="btn btn-secondary" id="autoCaptureButton" disabled>🤖 Auto-Capture All Matches</button>
+        <button class="btn btn-secondary" id="exportButton" disabled>💾 Export JSON</button>
+      </div>
+      <div id="autoCaptureProgress" style="display: none; margin-top: 8px; padding: 8px; background: #dbeafe; border-radius: 4px; font-size: 11px; border: 1px solid #3b82f6;">
+        <div id="progressText" style="font-size: 11px; color: #374151; margin-bottom: 6px;">Starting...</div>
+        <div style="background: #e0e7ff; height: 8px; border-radius: 4px; overflow: hidden;">
+          <div id="progressBar" style="background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+      <div id="captureInstructions" style="display: none; margin-top: 8px; padding: 8px; background: #eff6ff; border-radius: 4px; font-size: 11px; border: 1px solid #bfdbfe; color: #1e40af;">
+        <div style="font-weight: 600; margin-bottom: 4px; color: #1e3a8a; font-size: 10px;">📋 Capture Detailed Stats:</div>
+        <div style="font-size: 10px; line-height: 1.5; color: #374151;">
+          1. Click match scores (e.g., "Dec 9-6")<br>
+          2. Auto-captures when modal opens<br>
+          3. Export includes all captured stats
+        </div>
+        <div id="capturedCount" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #bfdbfe; font-weight: 600; color: #059669; font-size: 11px;">
+          Captured: 0 matches
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sidebar-panel.js"></script>
+</body>
+</html>
