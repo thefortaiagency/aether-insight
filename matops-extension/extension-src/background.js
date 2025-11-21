@@ -209,12 +209,20 @@ async function syncToAether() {
 async function askAI(question, statsContext) {
   console.log('[Mat Ops] AI question:', question);
 
+  // Get API key from storage
+  const storage = await chrome.storage.local.get('anthropicApiKey');
+  const apiKey = storage.anthropicApiKey || CONFIG.anthropicApiKey;
+
+  if (!apiKey) {
+    throw new Error('Anthropic API key not configured. Please set it in extension settings.');
+  }
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': CONFIG.openaiApiKey,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
