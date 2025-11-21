@@ -37,8 +37,6 @@ export default function Navigation() {
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
     { name: 'Roster', href: '/roster', icon: <ClipboardList className="w-4 h-4 text-gold" /> },
     { name: 'Wrestlers', href: '/wrestlers', icon: <Users className="w-4 h-4" /> },
-    { name: 'Matches', href: '/matches', icon: <Trophy className="w-4 h-4" /> },
-    { name: 'Live Scoring', href: '/matches/live-scoring', icon: <Activity className="w-4 h-4 text-green-500" /> },
     { name: 'Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
     { name: 'Analytics', href: '/analytics', icon: <Award className="w-4 h-4" /> },
     { name: 'Calendar', href: '/calendar', icon: <Calendar className="w-4 h-4" /> },
@@ -103,28 +101,12 @@ export default function Navigation() {
               {showQuickActions && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-black/95 backdrop-blur-lg border border-gold/20 rounded-lg shadow-xl overflow-hidden">
                   <a
-                    href="/matches/live-scoring"
+                    href="/roster"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
-                    <Activity className="w-4 h-4" />
-                    <span>Start Live Scoring</span>
-                  </a>
-                  <a
-                    href="/matches/new"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
-                    onClick={() => setShowQuickActions(false)}
-                  >
-                    <Trophy className="w-4 h-4" />
-                    <span>Schedule Match</span>
-                  </a>
-                  <a
-                    href="/teams/new"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
-                    onClick={() => setShowQuickActions(false)}
-                  >
-                    <Users className="w-4 h-4" />
-                    <span>Add Team</span>
+                    <ClipboardList className="w-4 h-4" />
+                    <span>Roster Spreadsheet</span>
                   </a>
                   <a
                     href="/wrestlers/new"
@@ -176,36 +158,24 @@ export default function Navigation() {
                 )
               })}
               <div className="pt-3 mt-3 border-t border-gold/20 space-y-2">
-                <a href="/matches/live-scoring" onClick={() => setIsOpen(false)}>
-                  <Button 
+                <a href="/roster" onClick={() => setIsOpen(false)}>
+                  <Button
                     className="w-full bg-gold hover:bg-gold/90 text-black font-bold flex items-center justify-center gap-2"
                   >
-                    <Clock className="w-4 h-4" />
-                    Start Live Scoring
+                    <ClipboardList className="w-4 h-4" />
+                    Roster Spreadsheet
                   </Button>
                 </a>
-                <div className="grid grid-cols-2 gap-2">
-                  <a href="/teams/new" onClick={() => setIsOpen(false)}>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      className="w-full border-gold/50 text-gold hover:bg-gold/10"
-                    >
-                      <Users className="w-4 h-4 mr-1" />
-                      Add Team
-                    </Button>
-                  </a>
-                  <a href="/wrestlers/new" onClick={() => setIsOpen(false)}>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      className="w-full border-gold/50 text-gold hover:bg-gold/10"
-                    >
-                      <Award className="w-4 h-4 mr-1" />
-                      Add Wrestler
-                    </Button>
-                  </a>
-                </div>
+                <a href="/wrestlers/new" onClick={() => setIsOpen(false)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-gold/50 text-gold hover:bg-gold/10"
+                  >
+                    <Award className="w-4 h-4 mr-1" />
+                    Add Wrestler
+                  </Button>
+                </a>
               </div>
             </div>
           </div>
