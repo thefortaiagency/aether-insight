@@ -37,9 +37,9 @@ export default function Navigation() {
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
     { name: 'Roster', href: '/roster', icon: <ClipboardList className="w-4 h-4 text-gold" /> },
     { name: 'Wrestlers', href: '/wrestlers', icon: <Users className="w-4 h-4" /> },
-    { name: 'Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
-    { name: 'Analytics', href: '/analytics', icon: <Award className="w-4 h-4" /> },
     { name: 'Calendar', href: '/calendar', icon: <Calendar className="w-4 h-4" /> },
+    { name: "Coach's Corner", href: '/coach', icon: <Brain className="w-4 h-4" /> },
+    { name: 'Mat Ops AI', href: '/ai', icon: <Activity className="w-4 h-4" /> },
   ]
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,9 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Users, Plus, Save, Download, Upload, Trash2, Edit2, Check, X,
-  ChevronDown, ChevronUp, Filter, Search, RefreshCw
+  ChevronDown, ChevronUp, Filter, Search, RefreshCw, FileSpreadsheet
 } from 'lucide-react'
-import Navigation from '@/components/navigation'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
 
@@ -305,10 +304,107 @@ export default function RosterPage() {
     </th>
   )
 
+  // Download CSV template
+  const downloadTemplate = () => {
+    const headers = ['last_name', 'first_name', 'grade', 'weight_class', 'actual_weight', 'wins', 'losses', 'pins', 'tech_falls', 'major_decisions', 'takedowns', 'escapes', 'reversals', 'near_fall_2', 'near_fall_3', 'near_fall_4', 'team_points']
+    const exampleRow = ['Smith', 'John', '10', '145', '143', '5', '2', '2', '1', '1', '15', '8', '3', '4', '2', '1', '12']
+    const csv = [headers.join(','), exampleRow.join(',')].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'wrestler_roster_template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // Import from CSV
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result as string
+      const lines = text.split('\n').filter(line => line.trim())
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+
+      const imported: Wrestler[] = []
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim())
+        if (values.length < 2) continue
+
+        const wrestler: Wrestler = {
+          id: `new-${Date.now()}-${i}`,
+          first_name: values[headers.indexOf('first_name')] || '',
+          last_name: values[headers.indexOf('last_name')] || '',
+          grade: parseInt(values[headers.indexOf('grade')]) || null,
+          weight_class: parseInt(values[headers.indexOf('weight_class')]) || null,
+          actual_weight: parseInt(values[headers.indexOf('actual_weight')]) || null,
+          wins: parseInt(values[headers.indexOf('wins')]) || 0,
+          losses: parseInt(values[headers.indexOf('losses')]) || 0,
+          pins: parseInt(values[headers.indexOf('pins')]) || 0,
+          tech_falls: parseInt(values[headers.indexOf('tech_falls')]) || 0,
+          major_decisions: parseInt(values[headers.indexOf('major_decisions')]) || 0,
+          decisions: parseInt(values[headers.indexOf('decisions')]) || 0,
+          takedowns: parseInt(values[headers.indexOf('takedowns')]) || 0,
+          escapes: parseInt(values[headers.indexOf('escapes')]) || 0,
+          reversals: parseInt(values[headers.indexOf('reversals')]) || 0,
+          near_fall_2: parseInt(values[headers.indexOf('near_fall_2')]) || 0,
+          near_fall_3: parseInt(values[headers.indexOf('near_fall_3')]) || 0,
+          near_fall_4: parseInt(values[headers.indexOf('near_fall_4')]) || 0,
+          team_points: parseInt(values[headers.indexOf('team_points')]) || 0,
+          isNew: true
+        }
+
+        if (wrestler.first_name || wrestler.last_name) {
+          imported.push(wrestler)
+        }
+      }
+
+      if (imported.length > 0) {
+        setWrestlers(prev => [...imported, ...prev])
+        setHasChanges(true)
+        alert(`Imported ${imported.length} wrestlers. Click "Save All" to save.`)
+      } else {
+        alert('No wrestlers found in file. Check the format matches the template.')
+      }
+    }
+    reader.readAsText(file)
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  // Export current roster to CSV
+  const exportRoster = () => {
+    const headers = ['last_name', 'first_name', 'grade', 'weight_class', 'actual_weight', 'wins', 'losses', 'pins', 'tech_falls', 'major_decisions', 'takedowns', 'escapes', 'reversals', 'near_fall_2', 'near_fall_3', 'near_fall_4', 'team_points']
+    const rows = wrestlers.map(w => [
+      w.last_name, w.first_name, w.grade || '', w.weight_class || '', w.actual_weight || '',
+      w.wins, w.losses, w.pins, w.tech_falls, w.major_decisions, w.takedowns, w.escapes,
+      w.reversals, w.near_fall_2, w.near_fall_3, w.near_fall_4, w.team_points
+    ].join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `roster_export_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
-      <Navigation />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImport}
+        accept=".csv"
+        className="hidden"
+      />
 
       <div className="relative z-10 container mx-auto px-4 py-6">
         {/* Header */}
@@ -338,6 +434,33 @@ export default function RosterPage() {
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Wrestler
+            </Button>
+
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import CSV
+            </Button>
+
+            <Button
+              onClick={downloadTemplate}
+              variant="outline"
+              className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Template
+            </Button>
+
+            <Button
+              onClick={exportRoster}
+              variant="outline"
+              className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
             </Button>
 
             <Button
