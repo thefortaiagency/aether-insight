@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Menu, X, Video, Users, Trophy, BarChart3, Home,
-  Activity, Award, Settings, ChevronDown, Clock,
-  Calendar, FileText, PlusCircle, Play
+import {
+  Menu, X, Users, Trophy, BarChart3, Home,
+  Activity, Award, ChevronDown, Clock,
+  Calendar, PlusCircle, Brain, ClipboardList
 } from 'lucide-react'
 
 // A utility function for combining class names, often found in projects using Tailwind CSS.
@@ -35,18 +35,13 @@ export default function Navigation() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
-    { name: 'Calendar', href: '/calendar', icon: <Calendar className="w-4 h-4" /> },
-    { name: 'Live Scoring', href: '/matches/live-scoring', icon: <Activity className="w-4 h-4" /> },
-    { name: 'Live Matches', href: '/matches/live', icon: <Activity className="w-4 h-4 text-red-500" /> },
-    { name: 'Matches', href: '/matches', icon: <Trophy className="w-4 h-4" /> },
-    { name: 'Teams', href: '/teams', icon: <Users className="w-4 h-4" /> },
-    { name: 'Team Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
-    { name: 'Videos', href: '/wrestling-videos', icon: <Video className="w-4 h-4" /> },
-    { name: 'Video Analysis', href: '/matches/video-analysis', icon: <Video className="w-4 h-4 text-gold" /> },
-    { name: 'Video Review', href: '/matches/video-review', icon: <Play className="w-4 h-4 text-green-500" /> },
-    { name: 'Analytics', href: '/analytics', icon: <Award className="w-4 h-4" /> },
     { name: 'Wrestlers', href: '/wrestlers', icon: <Users className="w-4 h-4" /> },
-    { name: 'Test Recorder', href: '/test/video-recorder', icon: <Settings className="w-4 h-4 text-orange-500" /> }
+    { name: 'Teams', href: '/teams', icon: <Users className="w-4 h-4" /> },
+    { name: 'Matches', href: '/matches', icon: <Trophy className="w-4 h-4" /> },
+    { name: 'Live Scoring', href: '/matches/live-scoring', icon: <Activity className="w-4 h-4 text-green-500" /> },
+    { name: 'Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
+    { name: 'Analytics', href: '/analytics', icon: <Award className="w-4 h-4" /> },
+    { name: 'Calendar', href: '/calendar', icon: <Calendar className="w-4 h-4" /> },
   ]
 
   return (
@@ -107,7 +102,7 @@ export default function Navigation() {
               
               {showQuickActions && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-black/95 backdrop-blur-lg border border-gold/20 rounded-lg shadow-xl overflow-hidden">
-                  <a 
+                  <a
                     href="/matches/live-scoring"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
@@ -115,7 +110,7 @@ export default function Navigation() {
                     <Activity className="w-4 h-4" />
                     <span>Start Live Scoring</span>
                   </a>
-                  <a 
+                  <a
                     href="/matches/new"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
@@ -123,7 +118,7 @@ export default function Navigation() {
                     <Trophy className="w-4 h-4" />
                     <span>Schedule Match</span>
                   </a>
-                  <a 
+                  <a
                     href="/teams/new"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
@@ -131,21 +126,13 @@ export default function Navigation() {
                     <Users className="w-4 h-4" />
                     <span>Add Team</span>
                   </a>
-                  <a 
+                  <a
                     href="/wrestlers/new"
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
                     onClick={() => setShowQuickActions(false)}
                   >
                     <Award className="w-4 h-4" />
                     <span>Add Wrestler</span>
-                  </a>
-                  <a 
-                    href="/wrestling-videos/upload"
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gold/10 text-gray-300 hover:text-gold transition-all"
-                    onClick={() => setShowQuickActions(false)}
-                  >
-                    <Video className="w-4 h-4" />
-                    <span>Upload Video</span>
                   </a>
                 </div>
               )}
