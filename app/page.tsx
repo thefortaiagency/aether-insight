@@ -130,17 +130,14 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16">
-                <Image 
-                  src="/aether-logo.png" 
-                  alt="Aether Logo" 
-                  fill
+              <div className="relative h-12">
+                <Image
+                  src="/matopslogo.png"
+                  alt="Mat Ops Logo"
+                  width={200}
+                  height={48}
                   className="object-contain drop-shadow-[0_0_20px_rgba(212,175,56,0.5)]"
                 />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gold">Aether Insight</h1>
-                <p className="text-xs text-gray-400">Next-Gen Wrestling Analytics</p>
               </div>
             </div>
             <div className="flex items-center gap-4">

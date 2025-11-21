@@ -53,19 +53,15 @@ export default function Navigation() {
     <nav className="relative z-50 bg-black/60 backdrop-blur-lg border-b border-gold/20">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo - Replaced Next's Link with a standard <a> tag and Next's Image with <img> */}
+          {/* Logo - Mat Ops Branding */}
           <a href="/" className="flex items-center gap-3 h-10 flex-shrink-0">
-            <div className="relative w-10 h-10 flex-shrink-0">
-              <img 
-                src="/aether-logo.png" 
-                alt="Aether Logo" 
-                className="object-contain w-full h-full drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
-                onError={(e: any) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/000000/d4af37?text=AI'; }}
+            <div className="relative h-10 flex-shrink-0">
+              <img
+                src="/matopslogo.png"
+                alt="Mat Ops Logo"
+                className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(212,175,56,0.5)]"
+                onError={(e: any) => { e.target.onerror = null; e.target.src='https://placehold.co/200x40/000000/d4af37?text=MAT+OPS'; }}
               />
-            </div>
-            <div className="flex flex-col justify-center h-full">
-              <h1 className="text-xl font-bold text-gold leading-none">Aether Insight</h1>
-              <p className="text-xs text-gray-400 hidden md:block leading-none">Wrestling Analytics Platform</p>
             </div>
           </a>
 

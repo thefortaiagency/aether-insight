@@ -76,7 +76,7 @@ export default function DashboardPage() {
       <div className="relative z-10 p-4 md:p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gold mb-2">Wrestling Dashboard</h1>
+          <h1 className="text-4xl font-bold text-gold mb-2">Mat Ops Dashboard</h1>
           <p className="text-gray-400">Welcome back, Coach! Here's your team overview.</p>
         </div>
 
