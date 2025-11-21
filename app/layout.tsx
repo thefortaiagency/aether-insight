@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aether Insight - Wrestling Analytics Platform",
-  description: "Advanced wrestling analytics, live scoring, video analysis, and team management platform.",
+  title: "Mat Ops - Wrestling Analytics Platform",
+  description: "Advanced wrestling analytics, live scoring, video analysis, and team management powered by AI. Extract stats from USABracketing and sync automatically.",
 };
 
 export default function RootLayout({
