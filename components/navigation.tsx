@@ -35,8 +35,8 @@ export default function Navigation() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
+    { name: 'Roster', href: '/roster', icon: <ClipboardList className="w-4 h-4 text-gold" /> },
     { name: 'Wrestlers', href: '/wrestlers', icon: <Users className="w-4 h-4" /> },
-    { name: 'Teams', href: '/teams', icon: <Users className="w-4 h-4" /> },
     { name: 'Matches', href: '/matches', icon: <Trophy className="w-4 h-4" /> },
     { name: 'Live Scoring', href: '/matches/live-scoring', icon: <Activity className="w-4 h-4 text-green-500" /> },
     { name: 'Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
