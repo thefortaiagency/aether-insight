@@ -1607,13 +1607,33 @@ async function openMatchImportModal() {
 
     // Build matches array from extracted data
     const matches = [];
+
+    // Debug: Log what we have
+    const detailedStatsMap = new Map();
+    if (detailedResponse && detailedResponse.detailedStats) {
+      console.log('[Mat Ops Import] Detailed stats available:', detailedResponse.detailedStats.length);
+      detailedResponse.detailedStats.forEach(ds => {
+        detailedStatsMap.set(ds.id, ds);
+        console.log('[Mat Ops Import] Detailed stat ID:', ds.id, 'TD:', ds.takedowns, 'ESC:', ds.escapes);
+      });
+    } else {
+      console.log('[Mat Ops Import] NO detailed stats available');
+    }
+
     extractedData.forEach(wrestler => {
       wrestler.weightClasses.forEach(wc => {
         wc.matches.forEach(match => {
           // Find detailed stats for this match if available
           let detailedStats = null;
-          if (detailedResponse && detailedResponse.detailedStats) {
-            detailedStats = detailedResponse.detailedStats.find(ds => ds.id === match.matchId);
+          if (match.matchId) {
+            detailedStats = detailedStatsMap.get(match.matchId);
+            if (detailedStats) {
+              console.log('[Mat Ops Import] MATCHED:', match.matchId, '→ TD:', detailedStats.takedowns);
+            } else {
+              console.log('[Mat Ops Import] NO MATCH for matchId:', match.matchId);
+            }
+          } else {
+            console.log('[Mat Ops Import] Match has NO matchId:', wrestler.name, 'vs', match.opponent);
           }
 
           // Parse scores from score string if not already parsed

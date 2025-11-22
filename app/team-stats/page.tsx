@@ -85,10 +85,10 @@ export default function TeamStatsPage() {
         .eq('team_id', teamId)
 
       if (wrestlersData) {
-        setWrestlers(wrestlersData)
+        setWrestlers(wrestlersData as Wrestler[])
 
         // Load matches for all wrestlers
-        const wrestlerIds = wrestlersData.map(w => w.id)
+        const wrestlerIds = (wrestlersData as Wrestler[]).map((w: Wrestler) => w.id)
         if (wrestlerIds.length > 0) {
           const { data: matchesData } = await supabase
             .from('matches')
@@ -96,7 +96,7 @@ export default function TeamStatsPage() {
             .in('wrestler_id', wrestlerIds)
 
           if (matchesData) {
-            setMatches(matchesData)
+            setMatches(matchesData as Match[])
           }
         }
       }
