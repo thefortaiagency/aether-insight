@@ -206,12 +206,19 @@ export default function TeamStatsPage() {
   const totalTDAgainst = filteredMatches.reduce((sum, m) => sum + (m.takedowns_against || 0), 0)
   const totalEscAgainst = filteredMatches.reduce((sum, m) => sum + (m.escapes_against || 0), 0)
   const totalRevAgainst = filteredMatches.reduce((sum, m) => sum + (m.reversals_against || 0), 0)
+  const totalNF2Against = filteredMatches.reduce((sum, m) => sum + (m.nearfall_2_against || 0), 0)
+  const totalNF3Against = filteredMatches.reduce((sum, m) => sum + (m.nearfall_3_against || 0), 0)
+  const totalNF4Against = filteredMatches.reduce((sum, m) => sum + (m.nearfall_4_against || 0), 0)
+  const totalNearFallsAgainst = totalNF2Against + totalNF3Against + totalNF4Against
 
-  const totalPoints = (totalTakedowns * 2) + totalEscapes + (totalReversals * 2) +
+  // Points calculation uses TD=3 (2024+ rules)
+  const totalPoints = (totalTakedowns * 3) + totalEscapes + (totalReversals * 2) +
                       (totalNF2 * 2) + (totalNF3 * 3) + (totalNF4 * 4)
+  const totalPointsAgainst = (totalTDAgainst * 3) + totalEscAgainst + (totalRevAgainst * 2) +
+                             (totalNF2Against * 2) + (totalNF3Against * 3) + (totalNF4Against * 4)
 
   const scoringBreakdown = [
-    { type: 'Takedowns', count: totalTakedowns, percentage: totalPoints > 0 ? Math.round((totalTakedowns * 2 / totalPoints) * 100) : 0 },
+    { type: 'Takedowns', count: totalTakedowns, percentage: totalPoints > 0 ? Math.round((totalTakedowns * 3 / totalPoints) * 100) : 0 },
     { type: 'Escapes', count: totalEscapes, percentage: totalPoints > 0 ? Math.round((totalEscapes / totalPoints) * 100) : 0 },
     { type: 'Reversals', count: totalReversals, percentage: totalPoints > 0 ? Math.round((totalReversals * 2 / totalPoints) * 100) : 0 },
     { type: 'Near Falls', count: totalNearFalls, percentage: totalPoints > 0 ? Math.round(((totalNF2 * 2 + totalNF3 * 3 + totalNF4 * 4) / totalPoints) * 100) : 0 },
@@ -540,41 +547,164 @@ export default function TeamStatsPage() {
               </Card>
             </div>
 
-            {/* Scoring Stats */}
+            {/* Individual Wrestler Stats */}
+            <Card className="bg-black/80 backdrop-blur-sm border border-gold/30 mb-6">
+              <CardHeader>
+                <CardTitle className="text-gold flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Individual Wrestler Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gold/30">
+                        <th className="text-left py-2 px-2 text-gray-400">Wrestler</th>
+                        <th className="text-center py-2 px-2 text-gray-400">WC</th>
+                        <th className="text-center py-2 px-2 text-green-400">W</th>
+                        <th className="text-center py-2 px-2 text-red-400">L</th>
+                        <th className="text-center py-2 px-2 text-gold">Pins</th>
+                        <th className="text-center py-2 px-2 text-purple-400">TF</th>
+                        <th className="text-center py-2 px-2 text-blue-400">Maj</th>
+                        <th className="text-center py-2 px-2 text-gold">TD</th>
+                        <th className="text-center py-2 px-2 text-blue-400">Esc</th>
+                        <th className="text-center py-2 px-2 text-green-400">Rev</th>
+                        <th className="text-center py-2 px-2 text-purple-400">NF</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {wrestlers
+                        .map(w => {
+                          const wMatches = filteredMatches.filter(m => m.wrestler_id === w.id)
+                          const wins = wMatches.filter(m => m.result === 'win').length
+                          const losses = wMatches.filter(m => m.result === 'loss').length
+                          const pins = wMatches.filter(m =>
+                            m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+                          ).length
+                          const techFalls = wMatches.filter(m =>
+                            m.result === 'win' && (m.win_type === 'tech_fall' || m.win_type === 'Tech Fall' || m.win_type === 'TF')
+                          ).length
+                          const majors = wMatches.filter(m =>
+                            m.result === 'win' && (m.win_type === 'major' || m.win_type === 'Major Decision' || m.win_type === 'MD')
+                          ).length
+                          const takedowns = wMatches.reduce((sum, m) => sum + (m.takedowns_for || 0), 0)
+                          const escapes = wMatches.reduce((sum, m) => sum + (m.escapes_for || 0), 0)
+                          const reversals = wMatches.reduce((sum, m) => sum + (m.reversals_for || 0), 0)
+                          const nearfalls = wMatches.reduce((sum, m) =>
+                            sum + (m.nearfall_2_for || 0) + (m.nearfall_3_for || 0) + (m.nearfall_4_for || 0), 0)
+                          return { ...w, wins, losses, pins, techFalls, majors, takedowns, escapes, reversals, nearfalls }
+                        })
+                        .filter(w => w.wins > 0 || w.losses > 0)
+                        .sort((a, b) => b.wins - a.wins)
+                        .map(w => (
+                          <tr key={w.id} className="border-b border-gray-800 hover:bg-gold/5">
+                            <td className="py-2 px-2 text-white font-medium">{w.first_name} {w.last_name}</td>
+                            <td className="text-center py-2 px-2 text-gray-400">{w.weight_class || '-'}</td>
+                            <td className="text-center py-2 px-2 text-green-400 font-bold">{w.wins}</td>
+                            <td className="text-center py-2 px-2 text-red-400">{w.losses}</td>
+                            <td className="text-center py-2 px-2 text-gold font-bold">{w.pins}</td>
+                            <td className="text-center py-2 px-2 text-purple-400">{w.techFalls}</td>
+                            <td className="text-center py-2 px-2 text-blue-400">{w.majors}</td>
+                            <td className="text-center py-2 px-2 text-gold">{w.takedowns}</td>
+                            <td className="text-center py-2 px-2 text-blue-400">{w.escapes}</td>
+                            <td className="text-center py-2 px-2 text-green-400">{w.reversals}</td>
+                            <td className="text-center py-2 px-2 text-purple-400">{w.nearfalls}</td>
+                          </tr>
+                        ))}
+                      {/* Totals Row */}
+                      <tr className="bg-gold/10 font-bold">
+                        <td className="py-3 px-2 text-gold">TEAM TOTALS</td>
+                        <td className="text-center py-3 px-2 text-gray-400">-</td>
+                        <td className="text-center py-3 px-2 text-green-400">{totalWins}</td>
+                        <td className="text-center py-3 px-2 text-red-400">{totalLosses}</td>
+                        <td className="text-center py-3 px-2 text-gold">{totalPins}</td>
+                        <td className="text-center py-3 px-2 text-purple-400">{totalTechFalls}</td>
+                        <td className="text-center py-3 px-2 text-blue-400">{totalMajorDecisions}</td>
+                        <td className="text-center py-3 px-2 text-gold">{totalTakedowns}</td>
+                        <td className="text-center py-3 px-2 text-blue-400">{totalEscapes}</td>
+                        <td className="text-center py-3 px-2 text-green-400">{totalReversals}</td>
+                        <td className="text-center py-3 px-2 text-purple-400">{totalNearFalls}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Scoring Stats - Full Team View */}
             <Card className="bg-black/80 backdrop-blur-sm border border-gold/30">
               <CardHeader>
                 <CardTitle className="text-gold flex items-center gap-2">
                   <Star className="w-5 h-5" />
-                  Team Scoring Stats
+                  Team Scoring Stats (All {filteredMatches.length} Matches)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gold">{totalTakedowns}</p>
-                    <p className="text-xs text-gray-400">Takedowns</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-400">{totalEscapes}</p>
-                    <p className="text-xs text-gray-400">Escapes</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-400">{totalReversals}</p>
-                    <p className="text-xs text-gray-400">Reversals</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-400">{totalNF2}</p>
-                    <p className="text-xs text-gray-400">NF2</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-orange-400">{totalNF3}</p>
-                    <p className="text-xs text-gray-400">NF3</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-red-400">{totalNF4}</p>
-                    <p className="text-xs text-gray-400">NF4</p>
-                  </div>
+                {/* Stats Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gold/30">
+                        <th className="text-left py-2 px-2 text-gray-400"></th>
+                        <th className="text-center py-2 px-2 text-gold">TD</th>
+                        <th className="text-center py-2 px-2 text-blue-400">Esc</th>
+                        <th className="text-center py-2 px-2 text-green-400">Rev</th>
+                        <th className="text-center py-2 px-2 text-purple-400">NF2</th>
+                        <th className="text-center py-2 px-2 text-orange-400">NF3</th>
+                        <th className="text-center py-2 px-2 text-red-400">NF4</th>
+                        <th className="text-center py-2 px-2 text-white font-bold">Total Pts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-700">
+                        <td className="py-3 px-2 text-green-400 font-semibold">FOR (Us)</td>
+                        <td className="text-center py-3 px-2 text-gold font-bold">{totalTakedowns}</td>
+                        <td className="text-center py-3 px-2 text-blue-400">{totalEscapes}</td>
+                        <td className="text-center py-3 px-2 text-green-400">{totalReversals}</td>
+                        <td className="text-center py-3 px-2 text-purple-400">{totalNF2}</td>
+                        <td className="text-center py-3 px-2 text-orange-400">{totalNF3}</td>
+                        <td className="text-center py-3 px-2 text-red-400">{totalNF4}</td>
+                        <td className="text-center py-3 px-2 text-green-400 font-bold">{totalPoints}</td>
+                      </tr>
+                      <tr className="border-b border-gray-700">
+                        <td className="py-3 px-2 text-red-400 font-semibold">AGAINST</td>
+                        <td className="text-center py-3 px-2 text-gold">{totalTDAgainst}</td>
+                        <td className="text-center py-3 px-2 text-blue-400">{totalEscAgainst}</td>
+                        <td className="text-center py-3 px-2 text-green-400">{totalRevAgainst}</td>
+                        <td className="text-center py-3 px-2 text-purple-400">{totalNF2Against}</td>
+                        <td className="text-center py-3 px-2 text-orange-400">{totalNF3Against}</td>
+                        <td className="text-center py-3 px-2 text-red-400">{totalNF4Against}</td>
+                        <td className="text-center py-3 px-2 text-red-400 font-bold">{totalPointsAgainst}</td>
+                      </tr>
+                      <tr className="bg-gold/10">
+                        <td className="py-3 px-2 text-gold font-bold">DIFF (+/-)</td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalTakedowns - totalTDAgainst >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalTakedowns - totalTDAgainst >= 0 ? '+' : ''}{totalTakedowns - totalTDAgainst}
+                        </td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalEscapes - totalEscAgainst >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalEscapes - totalEscAgainst >= 0 ? '+' : ''}{totalEscapes - totalEscAgainst}
+                        </td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalReversals - totalRevAgainst >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalReversals - totalRevAgainst >= 0 ? '+' : ''}{totalReversals - totalRevAgainst}
+                        </td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalNF2 - totalNF2Against >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalNF2 - totalNF2Against >= 0 ? '+' : ''}{totalNF2 - totalNF2Against}
+                        </td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalNF3 - totalNF3Against >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalNF3 - totalNF3Against >= 0 ? '+' : ''}{totalNF3 - totalNF3Against}
+                        </td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalNF4 - totalNF4Against >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalNF4 - totalNF4Against >= 0 ? '+' : ''}{totalNF4 - totalNF4Against}
+                        </td>
+                        <td className="text-center py-3 px-2 font-bold" style={{ color: totalPoints - totalPointsAgainst >= 0 ? '#10B981' : '#EF4444' }}>
+                          {totalPoints - totalPointsAgainst >= 0 ? '+' : ''}{totalPoints - totalPointsAgainst}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
+                <p className="text-xs text-gray-500 mt-3">Scoring: TD=3pts, Esc=1pt, Rev=2pts, NF2=2pts, NF3=3pts, NF4=4pts</p>
               </CardContent>
             </Card>
           </>
