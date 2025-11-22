@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -50,6 +51,7 @@ const eventIcons = {
 }
 
 export default function CalendarPage() {
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [events, setEvents] = useState<Event[]>([])
@@ -59,6 +61,18 @@ export default function CalendarPage() {
   const [showSeasonSetup, setShowSeasonSetup] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month')
+
+  // Handle clicking on an event
+  const handleEventClick = (event: Event) => {
+    if (event.type === 'practice') {
+      // Navigate to practice execution page
+      router.push(`/practice/${event.id}`)
+    } else {
+      // For other events, show details or edit
+      setEditingEvent(event)
+      setShowEventModal(true)
+    }
+  }
 
   // Get team ID from session
   useEffect(() => {
@@ -567,7 +581,10 @@ export default function CalendarPage() {
                   {getEventsForDate(selectedDate).map(event => (
                     <div
                       key={event.id}
-                      className="flex items-start gap-3 p-3 bg-gray-900/50 rounded-lg border border-gray-800"
+                      onClick={() => event.type === 'practice' && handleEventClick(event)}
+                      className={`flex items-start gap-3 p-3 bg-gray-900/50 rounded-lg border border-gray-800 ${
+                        event.type === 'practice' ? 'cursor-pointer hover:border-blue-500/50 hover:bg-blue-900/20 transition-all' : ''
+                      }`}
                     >
                       <div className={`p-2 rounded-lg ${event.color}`}>
                         {eventIcons[event.type]}
@@ -575,7 +592,12 @@ export default function CalendarPage() {
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="text-white font-semibold">{event.title}</h4>
+                            <h4 className="text-white font-semibold flex items-center gap-2">
+                              {event.title}
+                              {event.type === 'practice' && (
+                                <Badge className="bg-blue-500/20 text-blue-400 text-xs">Tap to run</Badge>
+                              )}
+                            </h4>
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-xs text-gray-400 flex items-center gap-1">
                                 <Clock className="w-3 h-3" />

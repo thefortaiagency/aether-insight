@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Brain, Plus, Save, Trash2, Clock, Users, Target, Dumbbell,
   ChevronDown, ChevronUp, GripVertical, Play, Pause, RotateCcw,
-  BookOpen, Lightbulb, Calendar, CheckCircle2, Circle, Edit2
+  BookOpen, Lightbulb, Calendar, CheckCircle2, Circle, Edit2, Loader2
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
@@ -208,6 +208,23 @@ export default function CoachCornerPage() {
   const [editingDrill, setEditingDrill] = useState<string | null>(null)
   const [runningTimer, setRunningTimer] = useState<{ drillId: string; timeLeft: number } | null>(null)
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null)
+  const [teamId, setTeamId] = useState<string | null>(null)
+  const [scheduling, setScheduling] = useState(false)
+
+  // Get team ID from session
+  useEffect(() => {
+    const session = localStorage.getItem('aether-session')
+    if (session) {
+      try {
+        const parsed = JSON.parse(session)
+        if (parsed.team?.id) {
+          setTeamId(parsed.team.id)
+        }
+      } catch (e) {
+        console.error('Failed to parse session')
+      }
+    }
+  }, [])
 
   // Load saved plans from localStorage
   useEffect(() => {
@@ -303,7 +320,50 @@ export default function CoachCornerPage() {
       updatedPlans = [...plans, currentPlan]
     }
     savePlans(updatedPlans)
-    alert('Practice plan saved!')
+    alert('Practice plan saved locally!')
+  }
+
+  // Schedule practice to calendar (database)
+  const scheduleToCalendar = async () => {
+    if (!currentPlan || !teamId || !currentPlan.date) {
+      alert('Please select a date for the practice')
+      return
+    }
+
+    setScheduling(true)
+    try {
+      const { data, error } = await supabase
+        .from('practices')
+        .insert({
+          team_id: teamId,
+          date: currentPlan.date,
+          start_time: '15:30',
+          end_time: `${15 + Math.floor(currentPlan.totalDuration / 60)}:${(30 + currentPlan.totalDuration % 60) % 60}`.padStart(5, '0'),
+          type: 'regular',
+          location: 'Wrestling Room',
+          plan_name: currentPlan.name,
+          drill_plan: currentPlan.drills,
+          warmup_minutes: currentPlan.drills.filter(d => d.category === 'warmup').reduce((s, d) => s + d.duration, 0),
+          technique_minutes: currentPlan.drills.filter(d => d.category === 'technique').reduce((s, d) => s + d.duration, 0),
+          live_wrestling_minutes: currentPlan.drills.filter(d => d.category === 'live').reduce((s, d) => s + d.duration, 0),
+          conditioning_minutes: currentPlan.drills.filter(d => d.category === 'conditioning').reduce((s, d) => s + d.duration, 0),
+          cooldown_minutes: currentPlan.drills.filter(d => d.category === 'cooldown').reduce((s, d) => s + d.duration, 0),
+          notes: currentPlan.notes,
+          status: 'scheduled',
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      alert(`Practice scheduled for ${currentPlan.date}! You can now see it on the calendar.`)
+      // Also save locally
+      savePlan()
+    } catch (error: any) {
+      console.error('Error scheduling practice:', error)
+      alert('Failed to schedule practice: ' + error.message)
+    }
+    setScheduling(false)
   }
 
   const deletePlan = (planId: string) => {
@@ -376,11 +436,25 @@ export default function CoachCornerPage() {
                       <>
                         <Button
                           size="sm"
+                          onClick={scheduleToCalendar}
+                          disabled={scheduling || !teamId}
+                          className="bg-gold hover:bg-gold/90 text-black font-bold"
+                        >
+                          {scheduling ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <Calendar className="w-4 h-4 mr-1" />
+                          )}
+                          Schedule
+                        </Button>
+                        <Button
+                          size="sm"
                           onClick={savePlan}
-                          className="bg-green-600 hover:bg-green-700 text-white"
+                          variant="outline"
+                          className="border-green-500/30 text-green-400"
                         >
                           <Save className="w-4 h-4 mr-1" />
-                          Save
+                          Save Local
                         </Button>
                         <Button
                           size="sm"
