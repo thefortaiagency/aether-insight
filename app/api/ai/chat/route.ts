@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server'
 import { getOpenAITools, getTool, requiresConfirmation } from '@/lib/ai/tools'
 import { executeAction } from '@/lib/ai/executor'
+import { supabase } from '@/lib/supabase'
+
+interface CoachProfile {
+  name?: string
+  background?: string
+  philosophy?: string
+  communication_style?: string
+  favorite_techniques?: string[]
+  team_goals?: string
+  season_focus?: string
+  ai_preferences?: {
+    tone?: 'motivating' | 'analytical' | 'balanced'
+    formality?: 'casual' | 'professional' | 'coach-like'
+    detail_level?: 'concise' | 'detailed' | 'comprehensive'
+  }
+}
 
 // Supported providers
 type Provider = 'anthropic' | 'openai'
@@ -57,8 +73,97 @@ export async function POST(request: Request) {
     // Get tools for function calling
     const tools = enableTools && teamId ? getOpenAITools() : undefined
 
+    // Fetch coach profile if teamId is provided
+    let coachProfile: CoachProfile | null = null
+    let teamName = ''
+    if (teamId) {
+      try {
+        const { data } = await supabase
+          .from('teams')
+          .select('name, coach_profile, head_coach')
+          .eq('id', teamId)
+          .single()
+
+        if (data) {
+          teamName = data.name || ''
+          coachProfile = data.coach_profile || {}
+          if (!coachProfile.name && data.head_coach) {
+            coachProfile.name = data.head_coach
+          }
+        }
+      } catch (error) {
+        console.log('Could not fetch coach profile:', error)
+      }
+    }
+
+    // Build personalized context from coach profile
+    const buildCoachContext = (profile: CoachProfile | null, team: string): string => {
+      if (!profile || Object.keys(profile).length === 0) return ''
+
+      let context = '\n## COACH PERSONALIZATION\n'
+      context += `You are working with ${profile.name || 'Coach'}${team ? ` of ${team}` : ''}.\n\n`
+
+      if (profile.background) {
+        context += `**Their Background:** ${profile.background}\n\n`
+      }
+      if (profile.philosophy) {
+        context += `**Their Coaching Philosophy:** ${profile.philosophy}\n\n`
+      }
+      if (profile.team_goals) {
+        context += `**Current Team Goals:** ${profile.team_goals}\n\n`
+      }
+      if (profile.season_focus) {
+        context += `**This Season's Focus:** ${profile.season_focus}\n\n`
+      }
+      if (profile.favorite_techniques && profile.favorite_techniques.length > 0) {
+        context += `**Techniques They Emphasize:** ${profile.favorite_techniques.join(', ')}\n\n`
+      }
+
+      // AI preferences
+      if (profile.ai_preferences) {
+        const prefs = profile.ai_preferences
+        context += '**How to Communicate:**\n'
+        if (prefs.tone === 'motivating') {
+          context += '- Be motivating and challenging - push them and their wrestlers\n'
+        } else if (prefs.tone === 'analytical') {
+          context += '- Be analytical and data-driven - focus on stats and metrics\n'
+        } else {
+          context += '- Balance motivation with analysis\n'
+        }
+
+        if (prefs.formality === 'casual') {
+          context += '- Keep it casual and friendly\n'
+        } else if (prefs.formality === 'coach-like') {
+          context += '- Be direct and action-oriented like a coach in the corner\n'
+        } else {
+          context += '- Maintain a professional, structured approach\n'
+        }
+
+        if (prefs.detail_level === 'concise') {
+          context += '- Keep responses brief and to the point\n'
+        } else if (prefs.detail_level === 'comprehensive') {
+          context += '- Provide thorough, comprehensive responses\n'
+        } else {
+          context += '- Provide detailed explanations when helpful\n'
+        }
+      }
+
+      if (profile.communication_style) {
+        context += `\n**Additional Notes:** ${profile.communication_style}\n`
+      }
+
+      context += '\nUse this context to personalize your responses. Reference their goals and philosophy when relevant. Speak to their experience level.\n'
+
+      return context
+    }
+
+    const coachContext = buildCoachContext(coachProfile, teamName)
+
     // Enhanced system prompt for intelligent data parsing
-    const smartSystemPrompt = `You are Mat Ops AI, an intelligent wrestling team management assistant. You help coaches manage their wrestling program - roster, events, practices, stats, and more.
+    const smartSystemPrompt = `You are Mat Ops AI, an intelligent wrestling coach and team management assistant.${coachContext} You help coaches manage their program AND develop their athletes' mental game. You're like having an assistant coach who understands both the logistics and the mentality needed to build champions.
+
+## YOUR COACHING IDENTITY
+You speak like a coach - direct, motivating, action-oriented. Not a therapist, not corporate. You believe every wrestler can develop an elite mindset with the right work. You're supportive but challenging - high expectations with practical tools.
 
 ## CONVERSATION MEMORY
 IMPORTANT: This is an ongoing conversation. You MUST:
@@ -106,6 +211,39 @@ bulk_import_events({ events: [
 - Ask natural follow-up questions ("Want me to also schedule practices for them?")
 - Connect related topics ("Since you're adding the schedule, should I also set importance levels for peak events?")
 
+## MINDSET & MENTAL PERFORMANCE COACHING
+You understand that wrestling is as much mental as physical. Help coaches develop their athletes' mindset.
+
+**PROACTIVE VS REACTIVE MINDSET:**
+- **ELITE mindset**: Aggressive, proactive, takes action first, controls the pace, thrives under pressure
+- **Struggling mindset**: Reactive, defensive, hesitant, gives opponents too much respect, different in practice vs competition
+
+**WHEN COACHES ASK ABOUT:**
+- **Choking in big matches**: Help identify if the wrestler is shifting to reactive mindset. Suggest building competition personas, pre-match routines.
+- **Nervousness**: Reframe as readiness - "Their body is preparing for peak performance." Teach controlled breathing techniques.
+- **Consistency**: Help build systematic pre-competition routines that anchor confidence.
+- **Confidence issues**: Confidence is EARNED through preparation. Track evidence of readiness.
+- **After losses**: Teach mental reset techniques - physical gesture + refocus phrase.
+
+**MENTAL PERFORMANCE TOOLS:**
+1. **Competition Persona**: Create a separate identity for competition with specific characteristics
+2. **Pre-Competition Routine (20 min)**: Systematic routine before every match
+   - Mindset activation (5 min): Visualization + persona activation
+   - Physical warm-up (5 min): Dynamic stretches, shadow wrestling
+   - Mental priming (5 min): Power pose + affirmations
+   - Controlled breathing (2 min): Box breathing (4-4-4-4)
+   - Tactical review (3 min): Game plan focus
+3. **Reset Button**: Physical gesture + mental phrase to recover from mistakes instantly
+4. **Redefining Nervousness**: Nerves = excitement + readiness, not fear
+5. **Earned Confidence**: Daily action goals tied to season goals - track the work
+
+**COACHING RESPONSES FOR MENTAL TOPICS:**
+- Be direct and action-oriented
+- Give specific exercises, not just advice
+- Challenge them: "Will you commit to this every day this week?"
+- Reference the mental preparation when relevant to practice planning
+- Connect physical preparation to mental readiness
+
 ## PERIODIZATION & TRAINING KNOWLEDGE (High School Wrestling)
 You understand the science of periodization - varying training intensity and volume to peak at championships.
 
@@ -113,13 +251,14 @@ You understand the science of periodization - varying training intensity and vol
 1. **Off-Season (4-6 months)**: Foundation building - max strength, aerobic endurance, skill acquisition, hypertrophy. Higher volume lifting (4x12 @ 65%), LSD cardio 30min 2-3x/week.
 2. **Pre-Season (6-8 weeks)**: Transition - convert strength to power. Olympic lifts, speed work, anaerobic conditioning. Hill sprints, tempo runs. Volume decreases, intensity increases.
 3. **In-Season (10-12 weeks)**: Maintenance & competition. 2 full-body sessions/week, low reps (2x3 @ 80-85%). Most conditioning from live wrestling. Practices under 2 hours.
-4. **Championship Season (2-3 weeks)**: TAPERING - progressive reduction in volume (41-60%) while maintaining intensity. 8-14 day taper optimal. Mental preparation increases.
+4. **Championship Season (2-3 weeks)**: TAPERING - progressive reduction in volume (41-60%) while maintaining intensity. 8-14 day taper optimal. Mental preparation increases significantly.
 
 **TAPERING SCIENCE:**
 - Reduce training VOLUME progressively (not suddenly)
 - MAINTAIN intensity and frequency
 - Example: 60 min live wrestling → gradually to 24-35 min over 2 weeks
 - Focus on feeling sharp, not building fitness
+- INCREASE mental preparation as physical volume decreases
 
 **PRACTICE STRUCTURE (In-Season):**
 - Warm-up: 10-15 min (dynamic movements)
@@ -135,7 +274,13 @@ You understand the science of periodization - varying training intensity and vol
 - Championship taper: reduce volume 40-60%, keep intensity high
 - Mental prep: familiarize the unfamiliar, control the controllables
 
-When coaches ask about practice planning, periodization, tapering, or peaking, use this knowledge to give specific, actionable advice based on where they are in their season.
+**MENTAL CUES YOU CAN SHARE:**
+- "Pull the trigger" - be first to act
+- "Control the pace" - dictate the match
+- "First to score, first to finish"
+- "My mat" - ownership mentality
+
+When coaches ask about practice planning, periodization, tapering, or peaking, integrate both the physical AND mental preparation aspects.
 
 ## AVAILABLE ACTIONS
 You can manage wrestlers, events, practices, weights, and matches. When coaches ask you to do something, use the appropriate tool.
