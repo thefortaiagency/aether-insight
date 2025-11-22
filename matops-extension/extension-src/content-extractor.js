@@ -278,36 +278,55 @@ function parseMatchLine(text, li, wrestlerName) {
     }
   }
 
-  // Extract Win Type and Score - handle various formats like "Dec 8-4", "Dec. 8-4", "(Dec 8-4)"
-  const decMatch = text.match(/Dec\.?\s*(\d+)\s*[-–]\s*(\d+)/i);
-  const fallMatch = text.match(/Fall\s+([\d:]+)/i);
-  const techMatch = text.match(/Tech\.?\s*(?:Fall)?\s*(\d+)\s*[-–]\s*(\d+)/i);
-  const majMatch = text.match(/Maj\.?\s*(\d+)\s*[-–]\s*(\d+)/i);
-  const forMatch = text.match(/For(?:f|feit)?\.?/i);
+  // Debug: Log the raw text being parsed
+  console.log(`[Mat Ops] Parsing match text: "${text.substring(0, 150)}..."`);
 
-  if (decMatch) {
-    match.winType = 'Decision';
-    match.score = `Dec ${decMatch[1]}-${decMatch[2]}`;
-    parseScoreFromCaptures(decMatch[1], decMatch[2], match);
-  } else if (techMatch) {
+  // Extract Win Type and Score - check in order of specificity (most specific first)
+  // Tech Fall: "TF 18-2", "Tech 18-2", "Tech Fall 18-2", "T.F. 18-2"
+  const techMatch = text.match(/(?:Tech\.?\s*(?:Fall)?|TF|T\.F\.)\s*(\d+)\s*[-–]\s*(\d+)/i);
+  // Major Decision: "MD 12-3", "Maj 12-3", "Major 12-3"
+  const majMatch = text.match(/(?:Maj(?:or)?\.?|MD)\s*(\d+)\s*[-–]\s*(\d+)/i);
+  // Fall/Pin: "Fall 2:34", "Fall", "Pin 1:23" - with or without time
+  const fallMatch = text.match(/\b(?:Fall|Pin)\b\s*([\d:]*)/i);
+  // Decision: "Dec 8-4", "D 8-4", "SV-1 8-6" (sudden victory)
+  const decMatch = text.match(/(?:Dec\.?|D|SV-?\d?)\s*(\d+)\s*[-–]\s*(\d+)/i);
+  // Forfeit: "For", "Forfeit", "FF", "F.F."
+  const forMatch = text.match(/(?:Forf(?:eit)?|FF|F\.F\.)/i);
+  // Default decision: Just score like "8-4" without type prefix
+  const defaultScoreMatch = text.match(/\b(\d+)\s*[-–]\s*(\d+)\b/);
+
+  if (techMatch) {
     match.winType = 'Tech Fall';
     match.score = `Tech Fall ${techMatch[1]}-${techMatch[2]}`;
     parseScoreFromCaptures(techMatch[1], techMatch[2], match);
+    console.log(`[Mat Ops] ✓ Detected TECH FALL: ${match.score}`);
   } else if (majMatch) {
     match.winType = 'Major Decision';
     match.score = `Maj ${majMatch[1]}-${majMatch[2]}`;
     parseScoreFromCaptures(majMatch[1], majMatch[2], match);
-  } else if (fallMatch) {
+    console.log(`[Mat Ops] ✓ Detected MAJOR: ${match.score}`);
+  } else if (fallMatch && !forMatch) {
+    // Make sure it's Fall not Forfeit
     match.winType = 'Fall';
-    match.score = `Fall ${fallMatch[1]}`;
+    match.score = fallMatch[1] ? `Fall ${fallMatch[1]}` : 'Fall';
+    console.log(`[Mat Ops] ✓ Detected FALL/PIN: ${match.score}`);
   } else if (forMatch) {
     match.winType = 'Forfeit';
     match.score = 'Forfeit';
-  }
-
-  // Debug log the extracted score
-  if (match.score) {
-    console.log(`[Mat Ops] Extracted score for ${wrestlerName || 'unknown'}: ${match.score} (${match.wrestlerScore}-${match.opponentScore})`);
+    console.log(`[Mat Ops] ✓ Detected FORFEIT`);
+  } else if (decMatch) {
+    match.winType = 'Decision';
+    match.score = `Dec ${decMatch[1]}-${decMatch[2]}`;
+    parseScoreFromCaptures(decMatch[1], decMatch[2], match);
+    console.log(`[Mat Ops] ✓ Detected DECISION: ${match.score}`);
+  } else if (defaultScoreMatch) {
+    // If we just have a score without type, assume decision
+    match.winType = 'Decision';
+    match.score = `Dec ${defaultScoreMatch[1]}-${defaultScoreMatch[2]}`;
+    parseScoreFromCaptures(defaultScoreMatch[1], defaultScoreMatch[2], match);
+    console.log(`[Mat Ops] ✓ Detected score (assuming Decision): ${match.score}`);
+  } else {
+    console.log(`[Mat Ops] ⚠️ No win type detected in: "${text.substring(0, 100)}"`);
   }
 
   // Extract match ID from score link
