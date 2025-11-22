@@ -534,7 +534,7 @@ export default function RosterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
       <input
         type="file"

@@ -737,7 +737,7 @@ export default function LiveScoringPage() {
 
   if (showSetup) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
         <WrestlingStatsBackground />
         <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-8">
           <MatchSetup onStartMatch={handleStartMatch} />
@@ -782,7 +782,7 @@ export default function LiveScoringPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
       <OfflineStatus />
       <SyncManager matchId={matchId || undefined} />

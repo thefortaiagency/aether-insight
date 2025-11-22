@@ -159,7 +159,7 @@ export default function DashboardPage() {
   // Show loading state
   if (!session || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-gold mx-auto mb-4" />
           <p className="text-gray-400">Loading dashboard...</p>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
 
       <div className="relative z-10 p-4 md:p-6">

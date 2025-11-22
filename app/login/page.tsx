@@ -69,7 +69,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative flex items-center justify-center">
       <WrestlingStatsBackground />
 
       <Card className="relative z-10 w-full max-w-md bg-black/80 border-gold/30 backdrop-blur-lg">

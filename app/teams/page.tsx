@@ -211,7 +211,7 @@ export default function TeamsPage() {
   const grades = ['9', '10', '11', '12']
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
       
       <div className="relative z-10 p-4 md:p-6">

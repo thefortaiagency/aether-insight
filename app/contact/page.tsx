@@ -103,7 +103,7 @@ export default function ContactPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
         <WrestlingStatsBackground />
         
         <div className="relative z-10 container mx-auto px-4 py-16">
@@ -142,7 +142,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
       
       {/* Header */}

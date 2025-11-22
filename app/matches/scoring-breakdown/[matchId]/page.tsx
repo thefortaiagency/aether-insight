@@ -399,7 +399,7 @@ export default function ScoringBreakdownPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black flex items-center justify-center">
         <Loader2 className="h-8 w-8 text-gold animate-spin" />
       </div>
     )
@@ -407,7 +407,7 @@ export default function ScoringBreakdownPage() {
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black flex items-center justify-center">
         <p className="text-white">Match not found</p>
       </div>
     )
@@ -418,7 +418,7 @@ export default function ScoringBreakdownPage() {
   const videoInfo = getVideoInfo()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
       
       <div className="container mx-auto px-4 py-8 relative z-10">
