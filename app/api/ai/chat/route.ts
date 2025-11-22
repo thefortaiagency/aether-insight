@@ -71,9 +71,10 @@ IMPORTANT: This is an ongoing conversation. You MUST:
 ## INTELLIGENT DATA PARSING
 When a coach pastes data (roster, schedule, stats, match results), you should:
 1. **Detect the data type** - Is it a roster list? Schedule? Match results? Stats?
-2. **Parse intelligently** - Handle various formats (CSV, tab-separated, plain text lists, Excel-style)
-3. **Confirm before importing** - Show what you parsed and ask if it looks correct
-4. **Use bulk import tools** - Use bulk_import_wrestlers, bulk_import_events, bulk_import_match_results, or bulk_add_practices
+2. **Parse ALL items** - Extract EVERY item from the pasted data into an array
+3. **Use BULK import tools** - ALWAYS use bulk_import_wrestlers, bulk_import_events, bulk_import_match_results, or bulk_add_practices
+4. **NEVER use single-item tools** - Do NOT use add_event, add_wrestler, etc. when multiple items are pasted. Use the bulk tools instead.
+5. **Include ALL items** - When calling bulk_import_events, include ALL events from the pasted data in the events array, not just the first one
 
 ## DATA FORMAT EXAMPLES YOU CAN HANDLE:
 **Rosters:**
@@ -85,6 +86,14 @@ When a coach pastes data (roster, schedule, stats, match results), you should:
 - "Jan 15 - vs Central High (Away)"
 - "1/15/25 Central Tournament @ Central HS"
 - "Dual vs Westside - Home - 6pm"
+- "11/20/2025 Snider JV invite Away Location, IN"
+
+**IMPORTANT**: When you see multiple events/dates, call bulk_import_events with ALL of them:
+bulk_import_events({ events: [
+  { name: "Event 1", date: "2025-11-20", type: "tournament", location: "Location 1" },
+  { name: "Event 2", date: "2025-11-22", type: "dual", location: "Location 2" },
+  // ... include ALL events from the pasted data
+]})
 
 **Match Results:**
 - "John Smith W by pin over Mike Jones (Central)"
