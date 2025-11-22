@@ -1574,11 +1574,18 @@ async function openMatchImportModal() {
       return;
     }
 
-    // Get detailed stats for match data
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const detailedResponse = await chrome.tabs.sendMessage(tab.id, {
-      action: 'get_detailed_stats'
-    });
+    // Get detailed stats for match data (optional - may not be available)
+    let detailedResponse = null;
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        detailedResponse = await chrome.tabs.sendMessage(tab.id, {
+          action: 'get_detailed_stats'
+        });
+      }
+    } catch (e) {
+      console.log('[Mat Ops Import] Could not get detailed stats, continuing without:', e.message);
+    }
 
     // Build matches array from extracted data
     const matches = [];
