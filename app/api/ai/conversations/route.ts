@@ -128,12 +128,11 @@ export async function POST(request: Request) {
 
     if (msgError) throw msgError
 
-    // Update conversation last_message_at and message_count
+    // Update conversation last_message_at
     await supabase
       .from('ai_conversations')
       .update({
         last_message_at: new Date().toISOString(),
-        message_count: supabase.rpc ? undefined : undefined, // Would use RPC for increment
       })
       .eq('id', convId)
 
