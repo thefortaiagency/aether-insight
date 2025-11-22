@@ -367,7 +367,8 @@
     <div class="status" id="status">Ready • USA Bracketing Mode</div>
   </div>
 
-  <div class="content">
+  <!-- USA Bracketing Content -->
+  <div class="content" id="content-usa-bracketing">
     <!-- Stats Summary -->
     <div class="section">
       <div class="section-title">Stats Summary</div>
@@ -435,6 +436,91 @@
         <div id="capturedCount" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #bfdbfe; font-weight: 600; color: #059669; font-size: 11px;">
           Captured: 0 matches
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flo Arena Content -->
+  <div class="content" id="content-flo-arena" style="display: none;">
+    <div class="section">
+      <div class="empty-state">
+        <div class="empty-icon">🏟️</div>
+        <p style="font-weight: 600; color: #1f2937; margin-bottom: 8px;">Flo Arena Integration</p>
+        <p style="font-size: 12px; color: #6b7280;">Coming Soon! This will allow you to scrape and analyze stats from FloArena events.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TrackWrestling Content -->
+  <div class="content" id="content-trackwrestling" style="display: none;">
+    <div class="section">
+      <div class="empty-state">
+        <div class="empty-icon">📍</div>
+        <p style="font-weight: 600; color: #1f2937; margin-bottom: 8px;">TrackWrestling Integration</p>
+        <p style="font-size: 12px; color: #6b7280;">Coming Soon! This will allow you to scrape and analyze stats from TrackWrestling.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mat Ops AI Content -->
+  <div class="content" id="content-mat-ops-ai" style="display: none;">
+    <!-- Team Info -->
+    <div class="section" id="matops-team-section">
+      <div class="section-title">🤼 Your Team</div>
+      <div id="matops-team-info" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="matops-wrestler-count">-</div>
+          <div class="stat-label">Wrestlers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="matops-team-wins">-</div>
+          <div class="stat-label">Wins</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="matops-team-losses">-</div>
+          <div class="stat-label">Losses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="matops-win-pct">-</div>
+          <div class="stat-label">Win %</div>
+        </div>
+      </div>
+      <div id="matops-not-logged-in" style="display: none; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; margin-top: 8px;">
+        <p style="font-size: 12px; color: #92400e; margin: 0;">⚠️ Log in to Mat Ops to see your team data</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <div class="section-title">⚡ Quick Actions</div>
+      <div class="actions">
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Give me a summary of my team's season performance so far.">🏆 Season Overview</button>
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Who are my top 3 performing wrestlers based on win percentage and pins?">📈 Top Performers</button>
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Suggest a practice plan focusing on takedowns and escapes for tomorrow.">🏋️ Practice Plan</button>
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Analyze my roster and identify any weight classes where we might be weak.">👥 Roster Analysis</button>
+      </div>
+    </div>
+
+    <!-- AI Chat -->
+    <div class="section">
+      <div class="section-title">🤖 Mat Ops AI Coach</div>
+      <div class="messages" id="matops-messages">
+        <div class="empty-state">
+          <div class="empty-icon">🤼</div>
+          <p>Ask me anything about wrestling coaching, practice planning, or your team!</p>
+        </div>
+      </div>
+      <div class="input-group">
+        <input type="text" id="matops-ai-input" placeholder="Ask your wrestling AI coach..." />
+        <button class="btn" id="matops-send-btn">Ask</button>
+      </div>
+    </div>
+
+    <!-- Open Mat Ops Website -->
+    <div class="section">
+      <div class="section-title">🌐 Mat Ops Platform</div>
+      <div class="actions">
+        <button class="btn" id="open-matops-site" style="width: 100%;">Open Mat Ops Website</button>
       </div>
     </div>
   </div>

@@ -2,50 +2,126 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
+import {
   Trophy, Users, Video, BarChart3, Activity, Clock,
   TrendingUp, Award, Calendar, PlayCircle, Settings,
-  ChevronRight, Zap, Shield, Target, Star
+  ChevronRight, Zap, Shield, Target, Star, Loader2
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
+
+interface Wrestler {
+  id: string
+  first_name: string
+  last_name: string
+  weight_class: number | null
+  wins: number
+  losses: number
+  pins: number
+  tech_falls: number
+  major_decisions: number
+  takedowns: number
+  escapes: number
+  reversals: number
+}
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const { session, loading: authLoading } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [wrestlers, setWrestlers] = useState<Wrestler[]>([])
   const [stats, setStats] = useState({
-    totalMatches: 342,
-    activeWrestlers: 24,
-    winRate: 84,
-    upcomingMatches: 3,
-    recentVideos: 12,
-    teamRanking: 2
+    totalMatches: 0,
+    activeWrestlers: 0,
+    winRate: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    totalPins: 0
   })
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !session) {
+      router.push('/login')
+    }
+  }, [session, authLoading, router])
+
+  // Load real team data
+  useEffect(() => {
+    const loadTeamData = async () => {
+      if (!session?.team?.id) return
+
+      try {
+        const { data: wrestlersData, error } = await supabase
+          .from('wrestlers')
+          .select('*')
+          .eq('team_id', session.team.id)
+          .order('weight_class', { ascending: true })
+
+        if (error) throw error
+
+        if (wrestlersData) {
+          setWrestlers(wrestlersData)
+
+          // Calculate real stats
+          const totalWins = wrestlersData.reduce((sum, w) => sum + (w.wins || 0), 0)
+          const totalLosses = wrestlersData.reduce((sum, w) => sum + (w.losses || 0), 0)
+          const totalMatches = totalWins + totalLosses
+          const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0
+          const totalPins = wrestlersData.reduce((sum, w) => sum + (w.pins || 0), 0)
+
+          setStats({
+            totalMatches,
+            activeWrestlers: wrestlersData.length,
+            winRate,
+            totalWins,
+            totalLosses,
+            totalPins
+          })
+        }
+      } catch (error) {
+        console.error('Error loading team data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (session?.team?.id) {
+      loadTeamData()
+    } else if (!authLoading) {
+      setLoading(false)
+    }
+  }, [session, authLoading])
 
   const quickActions = [
     {
-      title: 'Start Live Match',
-      description: 'Score a match in real-time',
-      icon: <Activity className="w-6 h-6 text-green-400" />,
-      href: '/matches/live-scoring',
-      color: 'bg-green-500/20 hover:bg-green-500/30 border-green-500',
-      iconBg: 'bg-green-500/20 border border-green-500/30'
+      title: 'Mat Ops AI',
+      description: 'Ask your AI wrestling coach',
+      icon: <Zap className="w-6 h-6 text-gold" />,
+      href: '/ai',
+      color: 'bg-gold/20 hover:bg-gold/30 border-gold',
+      iconBg: 'bg-gold/20 border border-gold/30'
     },
     {
-      title: 'View Team Stats',
+      title: 'View Roster',
+      description: 'Manage your wrestlers',
+      icon: <Users className="w-6 h-6 text-blue-400" />,
+      href: '/roster',
+      color: 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500',
+      iconBg: 'bg-blue-500/20 border border-blue-500/30'
+    },
+    {
+      title: 'Team Stats',
       description: 'Analytics and performance',
       icon: <BarChart3 className="w-6 h-6 text-purple-400" />,
       href: '/team-stats',
       color: 'bg-purple-500/20 hover:bg-purple-500/30 border-purple-500',
       iconBg: 'bg-purple-500/20 border border-purple-500/30'
-    },
-    {
-      title: 'Manage Roster',
-      description: 'Team and wrestler management',
-      icon: <Users className="w-6 h-6 text-blue-400" />,
-      href: '/teams',
-      color: 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-500',
-      iconBg: 'bg-blue-500/20 border border-blue-500/30'
     },
     {
       title: 'Watch Videos',
@@ -57,27 +133,46 @@ export default function DashboardPage() {
     }
   ]
 
-  const recentMatches = [
-    { id: 1, wrestler: 'Jackson Martinez', opponent: 'Ryan Smith', result: 'W', type: 'Pin', time: '2:47' },
-    { id: 2, wrestler: 'Alex Thompson', opponent: 'Mike Johnson', result: 'W', type: 'Dec', score: '8-3' },
-    { id: 3, wrestler: 'Ryan Chen', opponent: 'Tom Wilson', result: 'L', type: 'Dec', score: '5-7' }
-  ]
+  // Get top performers from real data
+  const topPerformers = wrestlers
+    .filter(w => (w.wins || 0) + (w.losses || 0) > 0)
+    .map(w => ({
+      ...w,
+      totalMatches: (w.wins || 0) + (w.losses || 0),
+      winPct: ((w.wins || 0) / ((w.wins || 0) + (w.losses || 0))) * 100
+    }))
+    .sort((a, b) => b.winPct - a.winPct)
+    .slice(0, 5)
 
-  const upcomingEvents = [
-    { id: 1, name: 'Dual Meet vs Central', date: 'Tomorrow, 6:00 PM', type: 'dual' },
-    { id: 2, name: 'Regional Tournament', date: 'Saturday, 9:00 AM', type: 'tournament' },
-    { id: 3, name: 'Practice Match', date: 'Monday, 4:00 PM', type: 'practice' }
-  ]
+  // Show loading state
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gold mx-auto mb-4" />
+          <p className="text-gray-400">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login prompt if not logged in
+  if (!session) {
+    return null // Will redirect
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative">
       <WrestlingStatsBackground />
-      
+
       <div className="relative z-10 p-4 md:p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gold mb-2">Mat Ops Dashboard</h1>
-          <p className="text-gray-400">Welcome back, Coach! Here's your team overview.</p>
+          <p className="text-gray-400">
+            Welcome back, {session.coach?.first_name || 'Coach'}!
+            {session.team && <span> • {session.team.name}</span>}
+          </p>
         </div>
 
         {/* Stats Overview */}
@@ -86,7 +181,7 @@ export default function DashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Trophy className="w-5 h-5 text-gold" />
-                <span className="text-xs text-green-400">+12%</span>
+                <span className="text-xs text-green-400">{stats.totalWins}W</span>
               </div>
               <p className="text-2xl font-bold text-white">{stats.totalMatches}</p>
               <p className="text-xs text-gray-400">Total Matches</p>
@@ -108,7 +203,11 @@ export default function DashboardPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="w-5 h-5 text-gold" />
-                <span className="text-xs text-green-400">+5%</span>
+                {stats.winRate >= 50 ? (
+                  <span className="text-xs text-green-400">Good</span>
+                ) : (
+                  <span className="text-xs text-red-400">Improve</span>
+                )}
               </div>
               <p className="text-2xl font-bold text-white">{stats.winRate}%</p>
               <p className="text-xs text-gray-400">Win Rate</p>
@@ -118,33 +217,33 @@ export default function DashboardPage() {
           <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <Calendar className="w-5 h-5 text-gold" />
-                <Badge className="bg-red-500/20 text-red-400 text-xs">Soon</Badge>
-              </div>
-              <p className="text-2xl font-bold text-white">{stats.upcomingMatches}</p>
-              <p className="text-xs text-gray-400">Upcoming</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Video className="w-5 h-5 text-gold" />
-                <span className="text-xs text-blue-400">New</span>
-              </div>
-              <p className="text-2xl font-bold text-white">{stats.recentVideos}</p>
-              <p className="text-xs text-gray-400">Videos</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
                 <Award className="w-5 h-5 text-gold" />
                 <Star className="w-4 h-4 text-gold" />
               </div>
-              <p className="text-2xl font-bold text-white">#{stats.teamRanking}</p>
-              <p className="text-xs text-gray-400">State Rank</p>
+              <p className="text-2xl font-bold text-white">{stats.totalWins}</p>
+              <p className="text-xs text-gray-400">Total Wins</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Target className="w-5 h-5 text-gold" />
+                <span className="text-xs text-green-400">Bonus</span>
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.totalPins}</p>
+              <p className="text-xs text-gray-400">Total Pins</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Activity className="w-5 h-5 text-gold" />
+                <span className="text-xs text-red-400">{stats.totalLosses}L</span>
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.totalLosses}</p>
+              <p className="text-xs text-gray-400">Total Losses</p>
             </CardContent>
           </Card>
         </div>
@@ -170,15 +269,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Recent Matches */}
+          {/* Top Performers */}
           <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Trophy className="w-5 h-5" />
-                  Recent Matches
+                  Top Performers
                 </span>
-                <Link href="/matches">
+                <Link href="/roster">
                   <Button size="sm" variant="ghost" className="text-gold hover:text-gold/80">
                     View All
                     <ChevronRight className="w-4 h-4 ml-1" />
@@ -187,63 +286,92 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentMatches.map(match => (
-                  <div key={match.id} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{match.wrestler}</p>
-                      <p className="text-sm text-gray-400">vs {match.opponent}</p>
+              {topPerformers.length > 0 ? (
+                <div className="space-y-3">
+                  {topPerformers.map((wrestler, idx) => (
+                    <div key={wrestler.id} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-gold font-bold">#{idx + 1}</span>
+                        <div>
+                          <p className="text-white font-medium">{wrestler.first_name} {wrestler.last_name}</p>
+                          <p className="text-sm text-gray-400">{wrestler.weight_class || '?'} lbs</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500">
+                          {wrestler.wins}-{wrestler.losses}
+                        </Badge>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {wrestler.winPct.toFixed(0)}% • {wrestler.pins || 0} pins
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <Badge className={match.result === 'W' 
-                        ? 'bg-green-500/20 text-green-400 border-green-500' 
-                        : 'bg-red-500/20 text-red-400 border-red-500'
-                      }>
-                        {match.result} - {match.type}
-                      </Badge>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {match.score || match.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400">No wrestlers with matches yet</p>
+                  <Link href="/roster">
+                    <Button className="mt-4 bg-gold hover:bg-gold/90 text-black">
+                      Add Wrestlers
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Upcoming Events */}
+          {/* Roster Overview */}
           <Card className="bg-black/80 backdrop-blur-sm border border-[#D4AF38]/30">
             <CardHeader>
               <CardTitle className="text-gold flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Upcoming Events
+                  <Users className="w-5 h-5" />
+                  Roster Overview
                 </span>
                 <Badge className="bg-gold/20 text-gold border-gold">
-                  {upcomingEvents.length} Events
+                  {wrestlers.length} Wrestlers
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {upcomingEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium">{event.name}</p>
-                      <p className="text-sm text-gray-400">{event.date}</p>
+              {wrestlers.length > 0 ? (
+                <div className="space-y-3">
+                  {wrestlers.slice(0, 5).map(wrestler => (
+                    <div key={wrestler.id} className="flex items-center justify-between p-3 bg-black/80 rounded-lg">
+                      <div>
+                        <p className="text-white font-medium">{wrestler.first_name} {wrestler.last_name}</p>
+                        <p className="text-sm text-gray-400">{wrestler.weight_class || '?'} lbs</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-medium">{wrestler.wins || 0}-{wrestler.losses || 0}</p>
+                        <p className="text-xs text-gray-400">
+                          TD: {wrestler.takedowns || 0} • E: {wrestler.escapes || 0}
+                        </p>
+                      </div>
                     </div>
-                    <Badge className={
-                      event.type === 'dual' 
-                        ? 'bg-blue-500/20 text-blue-400 border-blue-500'
-                        : event.type === 'tournament'
-                        ? 'bg-purple-500/20 text-purple-400 border-purple-500'
-                        : 'bg-gray-500/20 text-gray-400 border-gray-500'
-                    }>
-                      {event.type}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                  {wrestlers.length > 5 && (
+                    <Link href="/roster">
+                      <Button variant="ghost" className="w-full text-gold hover:text-gold/80">
+                        View all {wrestlers.length} wrestlers
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400">No wrestlers on roster yet</p>
+                  <Link href="/roster">
+                    <Button className="mt-4 bg-gold hover:bg-gold/90 text-black">
+                      Add Wrestlers
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

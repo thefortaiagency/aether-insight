@@ -6,6 +6,13 @@ let conversationHistory = [];
 let currentMode = 'usa-bracketing'; // Default mode
 let targetTabId = null; // Store the tab we're working with
 
+// Mat Ops AI specific state
+let matOpsConversationHistory = [];
+let matOpsTeamData = null;
+
+// Mat Ops API base URL
+const MATOPS_API_BASE = 'https://insight.aethervtc.ai'; // Production Mat Ops URL
+
 // DOM elements
 const status = document.getElementById('status');
 const wrestlerCount = document.getElementById('wrestlerCount');
@@ -72,17 +79,46 @@ function setupModeSwitcher() {
         'usa-bracketing': 'USA Bracketing Mode',
         'flo-arena': 'Flo Arena Mode (Coming Soon)',
         'trackwrestling': 'TrackWrestling Mode (Coming Soon)',
-        'mat-ops-ai': 'Mat Ops AI Coach Mode (Coming Soon)'
+        'mat-ops-ai': 'Mat Ops AI Coach'
       };
 
       updateStatus(`Ready • ${modeLabels[mode]}`);
 
-      // Future: Show/hide mode-specific UI sections
-      // handleModeChange(mode);
+      // Show/hide mode-specific UI sections
+      handleModeChange(mode);
 
       console.log(`[Mat Ops] Switched to ${mode} mode`);
     });
   });
+}
+
+// Handle mode change - show/hide content sections
+function handleModeChange(mode) {
+  // Hide all content sections
+  const contentSections = [
+    'content-usa-bracketing',
+    'content-flo-arena',
+    'content-trackwrestling',
+    'content-mat-ops-ai'
+  ];
+
+  contentSections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = 'none';
+    }
+  });
+
+  // Show the selected mode's content
+  const selectedContent = document.getElementById(`content-${mode}`);
+  if (selectedContent) {
+    selectedContent.style.display = 'flex';
+  }
+
+  // If switching to Mat Ops AI mode, initialize it
+  if (mode === 'mat-ops-ai') {
+    initMatOpsAI();
+  }
 }
 
 // Check current page context
@@ -757,6 +793,407 @@ async function loadConversationHistory() {
     }
   } catch (error) {
     console.error('[Mat Ops] Error loading history:', error);
+  }
+}
+
+// =============================================
+// MAT OPS AI MODE FUNCTIONALITY
+// =============================================
+
+// Wrestling knowledge system prompt (same as web app)
+const WRESTLING_KNOWLEDGE = `You are Mat Ops AI, a wrestling coaching assistant. You have expertise in:
+- Wrestling techniques (takedowns, escapes, reversals, pins)
+- Practice planning and drill recommendations
+- Match strategy and opponent analysis
+- Weight management guidance
+- Team building and motivation
+- Wrestling rules and scoring
+- Conditioning and injury prevention
+
+Always be encouraging but realistic. Use wrestling terminology appropriately.
+When discussing stats, be specific about what the numbers mean for the wrestler's development.
+Suggest actionable improvements based on the data.`;
+
+// Initialize Mat Ops AI mode
+async function initMatOpsAI() {
+  console.log('[Mat Ops AI] Initializing...');
+
+  // Setup event listeners for Mat Ops AI
+  setupMatOpsAIListeners();
+
+  // Try to load team data
+  await loadMatOpsTeamData();
+
+  // Load conversation history
+  await loadMatOpsConversationHistory();
+}
+
+// Setup Mat Ops AI event listeners
+function setupMatOpsAIListeners() {
+  const matOpsInput = document.getElementById('matops-ai-input');
+  const matOpsSendBtn = document.getElementById('matops-send-btn');
+  const openMatOpsSiteBtn = document.getElementById('open-matops-site');
+  const quickActionBtns = document.querySelectorAll('.matops-quick-action');
+
+  if (matOpsSendBtn && !matOpsSendBtn.hasAttribute('data-listener-attached')) {
+    matOpsSendBtn.setAttribute('data-listener-attached', 'true');
+    matOpsSendBtn.addEventListener('click', sendMatOpsAIMessage);
+  }
+
+  if (matOpsInput && !matOpsInput.hasAttribute('data-listener-attached')) {
+    matOpsInput.setAttribute('data-listener-attached', 'true');
+    matOpsInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMatOpsAIMessage();
+    });
+  }
+
+  if (openMatOpsSiteBtn && !openMatOpsSiteBtn.hasAttribute('data-listener-attached')) {
+    openMatOpsSiteBtn.setAttribute('data-listener-attached', 'true');
+    openMatOpsSiteBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: MATOPS_API_BASE });
+    });
+  }
+
+  quickActionBtns.forEach(btn => {
+    if (!btn.hasAttribute('data-listener-attached')) {
+      btn.setAttribute('data-listener-attached', 'true');
+      btn.addEventListener('click', () => {
+        const prompt = btn.dataset.prompt;
+        if (prompt) {
+          const matOpsInput = document.getElementById('matops-ai-input');
+          if (matOpsInput) {
+            matOpsInput.value = prompt;
+            sendMatOpsAIMessage();
+          }
+        }
+      });
+    }
+  });
+}
+
+// Load team data from Mat Ops
+async function loadMatOpsTeamData() {
+  try {
+    // Try to get session from content script (if on Mat Ops site)
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (tab.url.includes('aethervtc.ai') || tab.url.includes('wrestleai.com') || tab.url.includes('localhost:3000')) {
+      // Try to get session data from the page
+      try {
+        const result = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const session = localStorage.getItem('aether-session');
+            return session ? JSON.parse(session) : null;
+          }
+        });
+
+        if (result && result[0] && result[0].result) {
+          const session = result[0].result;
+          if (session.team) {
+            // Fetch wrestlers from API
+            const response = await fetch(`${MATOPS_API_BASE}/api/extension/wrestlers?teamId=${session.team.id}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.wrestlers) {
+                matOpsTeamData = processTeamData(session.team, data.wrestlers);
+                updateMatOpsTeamDisplay();
+                console.log('[Mat Ops AI] Team data loaded:', matOpsTeamData);
+                return;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.log('[Mat Ops AI] Could not get session from page:', e);
+      }
+    }
+
+    // Try loading from storage
+    const stored = await chrome.storage.local.get(['matOpsTeamData']);
+    if (stored.matOpsTeamData) {
+      matOpsTeamData = stored.matOpsTeamData;
+      updateMatOpsTeamDisplay();
+      console.log('[Mat Ops AI] Team data loaded from storage');
+      return;
+    }
+
+    // No team data available
+    showMatOpsNotLoggedIn();
+  } catch (error) {
+    console.error('[Mat Ops AI] Error loading team data:', error);
+    showMatOpsNotLoggedIn();
+  }
+}
+
+// Process team data for AI context
+function processTeamData(team, wrestlers) {
+  const totalWins = wrestlers.reduce((sum, w) => sum + (w.wins || 0), 0);
+  const totalLosses = wrestlers.reduce((sum, w) => sum + (w.losses || 0), 0);
+  const totalPins = wrestlers.reduce((sum, w) => sum + (w.pins || 0), 0);
+  const totalTechFalls = wrestlers.reduce((sum, w) => sum + (w.tech_falls || 0), 0);
+  const totalMajors = wrestlers.reduce((sum, w) => sum + (w.major_decisions || 0), 0);
+  const totalTakedowns = wrestlers.reduce((sum, w) => sum + (w.takedowns || 0), 0);
+  const totalEscapes = wrestlers.reduce((sum, w) => sum + (w.escapes || 0), 0);
+  const totalReversals = wrestlers.reduce((sum, w) => sum + (w.reversals || 0), 0);
+
+  return {
+    teamName: team.name,
+    wrestlers,
+    wrestlerCount: wrestlers.length,
+    totalWins,
+    totalLosses,
+    winPercentage: totalWins + totalLosses > 0
+      ? ((totalWins / (totalWins + totalLosses)) * 100).toFixed(1)
+      : 0,
+    totalPins,
+    totalTechFalls,
+    totalMajors,
+    totalTakedowns,
+    totalEscapes,
+    totalReversals
+  };
+}
+
+// Update Mat Ops team display
+function updateMatOpsTeamDisplay() {
+  const wrestlerCountEl = document.getElementById('matops-wrestler-count');
+  const winsEl = document.getElementById('matops-team-wins');
+  const lossesEl = document.getElementById('matops-team-losses');
+  const winPctEl = document.getElementById('matops-win-pct');
+  const notLoggedInEl = document.getElementById('matops-not-logged-in');
+
+  if (matOpsTeamData) {
+    if (wrestlerCountEl) wrestlerCountEl.textContent = matOpsTeamData.wrestlerCount;
+    if (winsEl) winsEl.textContent = matOpsTeamData.totalWins;
+    if (lossesEl) lossesEl.textContent = matOpsTeamData.totalLosses;
+    if (winPctEl) winPctEl.textContent = `${matOpsTeamData.winPercentage}%`;
+    if (notLoggedInEl) notLoggedInEl.style.display = 'none';
+  }
+}
+
+// Show not logged in message
+function showMatOpsNotLoggedIn() {
+  const notLoggedInEl = document.getElementById('matops-not-logged-in');
+  if (notLoggedInEl) {
+    notLoggedInEl.style.display = 'block';
+  }
+}
+
+// Send Mat Ops AI message
+async function sendMatOpsAIMessage() {
+  const matOpsInput = document.getElementById('matops-ai-input');
+  const matOpsMessages = document.getElementById('matops-messages');
+  const matOpsSendBtn = document.getElementById('matops-send-btn');
+
+  const question = matOpsInput.value.trim();
+  if (!question) return;
+
+  // Add user message
+  addMatOpsMessage(question, 'user');
+  matOpsInput.value = '';
+  matOpsSendBtn.disabled = true;
+
+  updateStatus('Mat Ops AI thinking...');
+
+  // Add thinking indicator
+  const thinkingId = 'matops-thinking-' + Date.now();
+  addMatOpsMessage('🤔 Thinking...', 'assistant', thinkingId);
+
+  try {
+    // Build context with team data
+    let context = WRESTLING_KNOWLEDGE;
+    if (matOpsTeamData && matOpsTeamData.wrestlers?.length > 0) {
+      context += buildTeamContext(matOpsTeamData);
+    }
+
+    // Call Mat Ops AI API
+    const response = await fetch(`${MATOPS_API_BASE}/api/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: context },
+          ...matOpsConversationHistory.map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          { role: 'user', content: question }
+        ]
+      })
+    });
+
+    // Remove thinking indicator
+    const thinkingEl = document.getElementById(thinkingId);
+    if (thinkingEl) thinkingEl.remove();
+
+    if (response.ok) {
+      const data = await response.json();
+      const assistantMessage = data.message || data.content || 'Sorry, I had trouble processing that.';
+
+      addMatOpsMessage(assistantMessage, 'assistant');
+
+      // Update conversation history
+      matOpsConversationHistory.push({ role: 'user', content: question });
+      matOpsConversationHistory.push({ role: 'assistant', content: assistantMessage });
+      saveMatOpsConversationHistory();
+    } else {
+      throw new Error('API request failed');
+    }
+
+    updateStatus('Ready • Mat Ops AI Coach');
+  } catch (error) {
+    console.error('[Mat Ops AI] Error:', error);
+
+    // Remove thinking indicator
+    const thinkingEl = document.getElementById(thinkingId);
+    if (thinkingEl) thinkingEl.remove();
+
+    // Fallback response
+    const fallbackResponse = generateMatOpsFallbackResponse(question, matOpsTeamData);
+    addMatOpsMessage(fallbackResponse, 'assistant');
+
+    updateStatus('Ready • Mat Ops AI Coach (offline)');
+  } finally {
+    matOpsSendBtn.disabled = false;
+  }
+}
+
+// Build team context for AI
+function buildTeamContext(teamData) {
+  return `
+
+=== TEAM DATA: ${teamData.teamName} ===
+
+TEAM OVERVIEW:
+- Roster Size: ${teamData.wrestlerCount} wrestlers
+- Season Record: ${teamData.totalWins}-${teamData.totalLosses} (${teamData.winPercentage}% win rate)
+- Total Pins: ${teamData.totalPins} | Tech Falls: ${teamData.totalTechFalls} | Major Decisions: ${teamData.totalMajors}
+- Total Takedowns: ${teamData.totalTakedowns} | Escapes: ${teamData.totalEscapes} | Reversals: ${teamData.totalReversals}
+
+FULL ROSTER (by weight class):
+${teamData.wrestlers.map(w => {
+  const matches = (w.wins || 0) + (w.losses || 0);
+  const winPct = matches > 0 ? ((w.wins / matches) * 100).toFixed(0) : 'N/A';
+  return `- ${w.first_name} ${w.last_name} | ${w.weight_class || '?'}lbs | Grade ${w.grade || '?'} | ${w.wins || 0}-${w.losses || 0} (${winPct}%) | ${w.pins || 0} pins | TD: ${w.takedowns || 0} | E: ${w.escapes || 0} | R: ${w.reversals || 0}`;
+}).join('\n')}
+
+When answering questions about specific wrestlers, reference their actual stats. Be specific with names and numbers.`;
+}
+
+// Add message to Mat Ops AI chat
+function addMatOpsMessage(text, type, id = null) {
+  const matOpsMessages = document.getElementById('matops-messages');
+  if (!matOpsMessages) return;
+
+  // Clear empty state if present
+  const emptyState = matOpsMessages.querySelector('.empty-state');
+  if (emptyState) emptyState.remove();
+
+  const messageDiv = document.createElement('div');
+  if (id) messageDiv.id = id;
+  messageDiv.className = `message message-${type}`;
+
+  // Format message with markdown support
+  let formattedText = text
+    .replace(/\n{2,}/g, '\n')
+    .replace(/^##\s+(.+)$/gm, '<strong style="font-size: 16px; color: #d4af37;">$1</strong><br>')
+    .replace(/^###\s+(.+)$/gm, '<strong style="font-size: 14px; color: #f59e0b;">$1</strong><br>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^[•\-\*]\s+(.+)$/gm, '<span style="display:block; margin-left: 12px;">• $1</span>')
+    .replace(/\n/g, '<br>');
+
+  messageDiv.innerHTML = formattedText;
+  matOpsMessages.appendChild(messageDiv);
+  matOpsMessages.scrollTop = matOpsMessages.scrollHeight;
+}
+
+// Generate fallback response when API is not available
+function generateMatOpsFallbackResponse(input, teamData) {
+  const lower = input.toLowerCase();
+
+  if (lower.includes('practice') || lower.includes('drill')) {
+    return `**Practice Plan Suggestion:**
+
+**Warm-up (15 min)**
+- Light jog, dynamic stretching
+- Stance and motion drills
+
+**Technique Block (30 min)**
+- Focus on one takedown (single leg chain)
+- Partner drilling with resistance progression
+
+**Live Wrestling (25 min)**
+- Situation wrestling from various positions
+- Full 6-minute matches
+
+**Conditioning (10 min)**
+- Buddy carries, sprawl sprints
+
+**Cool Down (10 min)**
+- Static stretching, team huddle
+
+Want me to elaborate on any specific drill?`;
+  }
+
+  if (lower.includes('weight') || lower.includes('cut')) {
+    return `**Weight Management Tips:**
+
+• **Gradual cuts** - Max 2-3 lbs per week safely
+• **Hydration tracking** - Monitor urine color
+• **Smart eating** - Lean proteins, complex carbs
+• **Avoid drastic measures** - No saunas right before weigh-ins
+
+What specific weight class are you concerned about?`;
+  }
+
+  if (lower.includes('season') || lower.includes('performance') || lower.includes('overview')) {
+    if (teamData) {
+      return `**${teamData.teamName} Season Overview**
+
+📊 **Record**: ${teamData.totalWins}-${teamData.totalLosses} (${teamData.winPercentage}%)
+👥 **Roster Size**: ${teamData.wrestlerCount} wrestlers
+🏆 **Pins**: ${teamData.totalPins} | Tech Falls: ${teamData.totalTechFalls}
+
+Focus areas to improve:
+• Increase pin rate for bonus points
+• Work on escape percentage from bottom
+• Develop depth at key weight classes
+
+Want me to analyze specific wrestlers?`;
+    }
+    return `I'd love to give you a season overview! Log in to Mat Ops to see your team data.`;
+  }
+
+  // Default response
+  return `Great question, Coach! 🤼
+
+I'm here to help with:
+• **Practice planning** - Drills, workouts, technique focus
+• **Team analysis** - Performance trends, roster evaluation
+• **Match strategy** - Preparation and game plans
+• **Wrestling knowledge** - Rules, techniques, best practices
+
+${teamData ? `I have your ${teamData.teamName} data loaded with ${teamData.wrestlerCount} wrestlers.` : 'Log in to Mat Ops to access your team data.'}
+
+What specific area would you like to explore?`;
+}
+
+// Save Mat Ops conversation history
+function saveMatOpsConversationHistory() {
+  chrome.storage.local.set({ matOpsConversationHistory });
+}
+
+// Load Mat Ops conversation history
+async function loadMatOpsConversationHistory() {
+  try {
+    const result = await chrome.storage.local.get(['matOpsConversationHistory']);
+    if (result.matOpsConversationHistory) {
+      matOpsConversationHistory = result.matOpsConversationHistory;
+    }
+  } catch (error) {
+    console.error('[Mat Ops AI] Error loading history:', error);
   }
 }
 

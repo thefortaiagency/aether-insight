@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mat Ops - Wrestling Stats Tracker",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Extract wrestling stats from USABracketing and sync to Aether platform",
   "permissions": [
     "storage",
@@ -15,8 +15,13 @@
     "https://usabracketing.com/*",
     "https://www.usabracketing.com/*",
     "https://aethervtc.ai/*",
+    "https://*.aethervtc.ai/*",
     "https://wrestleai.com/*",
+    "https://*.wrestleai.com/*",
+    "https://*.matops.com/*",
+    "https://*.matops.ai/*",
     "http://localhost:3000/*",
+    "http://localhost:3001/*",
     "https://api.anthropic.com/*",
     "https://*.vercel.app/*"
   ],
