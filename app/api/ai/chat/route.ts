@@ -87,7 +87,7 @@ export async function POST(request: Request) {
         if (data) {
           teamName = data.name || ''
           coachProfile = data.coach_profile || {}
-          if (!coachProfile.name && data.head_coach) {
+          if (coachProfile && !coachProfile.name && data.head_coach) {
             coachProfile.name = data.head_coach
           }
         }
