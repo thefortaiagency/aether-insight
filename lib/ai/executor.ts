@@ -1080,6 +1080,258 @@ async function suggestPracticePlan(teamId: string, params: any): Promise<ActionR
   }
 }
 
+// ============== BULK IMPORT FUNCTIONS ==============
+
+async function bulkImportWrestlers(teamId: string, params: any): Promise<ActionResult> {
+  const { wrestlers } = params
+
+  if (!wrestlers || !Array.isArray(wrestlers) || wrestlers.length === 0) {
+    return { success: false, message: 'No wrestlers provided to import.' }
+  }
+
+  const results: string[] = []
+  let imported = 0
+  let skipped = 0
+
+  for (const w of wrestlers) {
+    // Parse the wrestler data - handle various formats
+    const firstName = w.first_name || w.firstName || w.name?.split(' ')[0] || ''
+    const lastName = w.last_name || w.lastName || w.name?.split(' ').slice(1).join(' ') || ''
+    const weightClass = parseInt(w.weight_class || w.weightClass || w.weight || '0') || null
+    const grade = parseInt(w.grade || '0') || null
+
+    if (!firstName || !lastName) {
+      results.push(`Skipped: Invalid name "${w.name || w.first_name || 'unknown'}"`)
+      skipped++
+      continue
+    }
+
+    // Check if wrestler already exists
+    const { data: existing } = await supabase
+      .from('wrestlers')
+      .select('id')
+      .eq('team_id', teamId)
+      .ilike('first_name', firstName)
+      .ilike('last_name', lastName)
+      .single()
+
+    if (existing) {
+      results.push(`Skipped: ${firstName} ${lastName} (already exists)`)
+      skipped++
+      continue
+    }
+
+    // Insert wrestler
+    const { error } = await supabase
+      .from('wrestlers')
+      .insert({
+        team_id: teamId,
+        first_name: firstName,
+        last_name: lastName,
+        weight_class: weightClass,
+        grade,
+        active: true,
+      })
+
+    if (error) {
+      results.push(`Failed: ${firstName} ${lastName} - ${error.message}`)
+      skipped++
+    } else {
+      results.push(`Imported: ${firstName} ${lastName}${weightClass ? ` (${weightClass} lbs)` : ''}`)
+      imported++
+    }
+  }
+
+  return {
+    success: imported > 0,
+    message: `**Roster Import Complete**\n✅ Imported: ${imported}\n⏭️ Skipped: ${skipped}\n\n${results.join('\n')}`,
+    data: { imported, skipped, results },
+    mutated: imported > 0
+  }
+}
+
+async function bulkImportEvents(teamId: string, params: any): Promise<ActionResult> {
+  const { events } = params
+
+  if (!events || !Array.isArray(events) || events.length === 0) {
+    return { success: false, message: 'No events provided to import.' }
+  }
+
+  const results: string[] = []
+  let imported = 0
+  let skipped = 0
+
+  for (const e of events) {
+    const name = e.name || e.title || ''
+    const type = e.type || 'dual'
+    const date = e.date || ''
+    const location = e.location || e.venue || ''
+    const opponent = e.opponent_team || e.opponent || e.vs || ''
+
+    if (!name || !date) {
+      results.push(`Skipped: Missing name or date for event`)
+      skipped++
+      continue
+    }
+
+    // Validate date format
+    const dateMatch = date.match(/(\d{4}-\d{2}-\d{2})|(\d{1,2}\/\d{1,2}\/\d{2,4})/)
+    let formattedDate = date
+    if (dateMatch && dateMatch[2]) {
+      // Convert MM/DD/YYYY to YYYY-MM-DD
+      const parts = dateMatch[2].split('/')
+      const year = parts[2].length === 2 ? '20' + parts[2] : parts[2]
+      formattedDate = `${year}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`
+    }
+
+    const { error } = await supabase
+      .from('events')
+      .insert({
+        team_id: teamId,
+        name,
+        type,
+        date: formattedDate,
+        location,
+        opponent_team: opponent || null,
+        home_away: e.home_away || (e.home ? 'home' : 'away'),
+        importance: e.importance || 3,
+      })
+
+    if (error) {
+      results.push(`Failed: ${name} - ${error.message}`)
+      skipped++
+    } else {
+      results.push(`Imported: ${name} on ${formattedDate}`)
+      imported++
+    }
+  }
+
+  return {
+    success: imported > 0,
+    message: `**Schedule Import Complete**\n✅ Imported: ${imported}\n⏭️ Skipped: ${skipped}\n\n${results.join('\n')}`,
+    data: { imported, skipped, results },
+    mutated: imported > 0
+  }
+}
+
+async function bulkImportMatchResults(teamId: string, params: any): Promise<ActionResult> {
+  const { matches } = params
+
+  if (!matches || !Array.isArray(matches) || matches.length === 0) {
+    return { success: false, message: 'No matches provided to import.' }
+  }
+
+  const results: string[] = []
+  let imported = 0
+  let skipped = 0
+
+  for (const m of matches) {
+    const wrestlerName = m.wrestler_name || m.wrestler || ''
+    const opponentName = m.opponent_name || m.opponent || ''
+    const result = (m.result || '').toLowerCase()
+
+    if (!wrestlerName || !result) {
+      results.push(`Skipped: Missing wrestler name or result`)
+      skipped++
+      continue
+    }
+
+    // Find wrestler
+    const wrestler = await findWrestler(teamId, wrestlerName)
+    if (!wrestler) {
+      results.push(`Skipped: ${wrestlerName} not found on roster`)
+      skipped++
+      continue
+    }
+
+    const { error } = await supabase
+      .from('matches')
+      .insert({
+        team_id: teamId,
+        wrestler_id: wrestler.id,
+        opponent_name: opponentName || 'Unknown',
+        opponent_team: m.opponent_team || m.team || null,
+        result: result === 'w' || result === 'win' ? 'win' : 'loss',
+        win_type: m.win_type || m.method || null,
+        match_date: m.date || new Date().toISOString().split('T')[0],
+        event_name: m.event_name || m.event || null,
+      })
+
+    if (error) {
+      results.push(`Failed: ${wrestlerName} vs ${opponentName} - ${error.message}`)
+      skipped++
+    } else {
+      const res = result === 'w' || result === 'win' ? 'W' : 'L'
+      results.push(`Imported: ${wrestlerName} ${res} vs ${opponentName}`)
+      imported++
+    }
+  }
+
+  return {
+    success: imported > 0,
+    message: `**Match Results Import Complete**\n✅ Imported: ${imported}\n⏭️ Skipped: ${skipped}\n\n${results.join('\n')}`,
+    data: { imported, skipped, results },
+    mutated: imported > 0
+  }
+}
+
+async function bulkAddPractices(teamId: string, params: any): Promise<ActionResult> {
+  const { practices } = params
+
+  if (!practices || !Array.isArray(practices) || practices.length === 0) {
+    return { success: false, message: 'No practices provided to schedule.' }
+  }
+
+  const results: string[] = []
+  let scheduled = 0
+  let skipped = 0
+
+  for (const p of practices) {
+    const date = p.date || ''
+
+    if (!date) {
+      results.push(`Skipped: Missing date`)
+      skipped++
+      continue
+    }
+
+    // Check if practice already exists
+    const existing = await findPractice(teamId, date)
+    if (existing) {
+      results.push(`Skipped: Practice already exists on ${date}`)
+      skipped++
+      continue
+    }
+
+    const { error } = await supabase
+      .from('practices')
+      .insert({
+        team_id: teamId,
+        date,
+        start_time: p.start_time || '15:30',
+        end_time: p.end_time || '17:30',
+        type: p.type || 'regular',
+        location: p.location || 'Wrestling Room',
+        focus_areas: p.focus_areas || null,
+      })
+
+    if (error) {
+      results.push(`Failed: ${date} - ${error.message}`)
+      skipped++
+    } else {
+      results.push(`Scheduled: Practice on ${date}`)
+      scheduled++
+    }
+  }
+
+  return {
+    success: scheduled > 0,
+    message: `**Practice Schedule Complete**\n✅ Scheduled: ${scheduled}\n⏭️ Skipped: ${skipped}\n\n${results.join('\n')}`,
+    data: { scheduled, skipped, results },
+    mutated: scheduled > 0
+  }
+}
+
 // ============== MAIN EXECUTOR ==============
 
 const ACTION_MAP: Record<string, (teamId: string, params: any) => Promise<ActionResult>> = {
@@ -1120,6 +1372,12 @@ const ACTION_MAP: Record<string, (teamId: string, params: any) => Promise<Action
   get_wrestler_matches: getWrestlerMatches,
   get_peak_events: getPeakEvents,
   suggest_practice_plan: suggestPracticePlan,
+
+  // Bulk Import
+  bulk_import_wrestlers: bulkImportWrestlers,
+  bulk_import_events: bulkImportEvents,
+  bulk_import_match_results: bulkImportMatchResults,
+  bulk_add_practices: bulkAddPractices,
 }
 
 export async function executeAction(

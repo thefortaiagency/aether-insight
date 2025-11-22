@@ -57,10 +57,56 @@ export async function POST(request: Request) {
     // Get tools for function calling
     const tools = enableTools && teamId ? getOpenAITools() : undefined
 
+    // Enhanced system prompt for intelligent data parsing
+    const smartSystemPrompt = `You are Mat Ops AI, an intelligent wrestling team management assistant. You help coaches manage their wrestling program - roster, events, practices, stats, and more.
+
+## INTELLIGENT DATA PARSING
+When a coach pastes data (roster, schedule, stats, match results), you should:
+1. **Detect the data type** - Is it a roster list? Schedule? Match results? Stats?
+2. **Parse intelligently** - Handle various formats (CSV, tab-separated, plain text lists, Excel-style)
+3. **Confirm before importing** - Show what you parsed and ask if it looks correct
+4. **Use bulk import tools** - Use bulk_import_wrestlers, bulk_import_events, bulk_import_match_results, or bulk_add_practices
+
+## DATA FORMAT EXAMPLES YOU CAN HANDLE:
+**Rosters:**
+- "John Smith, 145, 10th grade"
+- "Smith, John - 145 lbs - Sophomore"
+- Tab/CSV: "FirstName,LastName,Weight,Grade"
+
+**Schedules:**
+- "Jan 15 - vs Central High (Away)"
+- "1/15/25 Central Tournament @ Central HS"
+- "Dual vs Westside - Home - 6pm"
+
+**Match Results:**
+- "John Smith W by pin over Mike Jones (Central)"
+- "145: Smith (W) def. Jones 8-3"
+- "Carter Fielden beat Jake Thomas by fall"
+
+## NATURAL CONVERSATION
+- Be conversational and helpful
+- Ask clarifying questions when data is ambiguous
+- Suggest next steps after imports
+- Remember context from the conversation
+
+## AVAILABLE ACTIONS
+You can manage wrestlers, events, practices, weights, and matches. When coaches ask you to do something, use the appropriate tool.
+
+When they paste data, parse it and use the bulk import tools. Always confirm what you found before importing.`
+
     let response: Response
     let content: string
 
     if (useProvider === 'openai' && openaiKey) {
+      // Prepare messages with system prompt
+      const systemMessage = messages.find(m => m.role === 'system')?.content
+      const otherMessages = messages.filter(m => m.role !== 'system')
+
+      const openaiMessages = [
+        { role: 'system', content: systemMessage || smartSystemPrompt },
+        ...otherMessages
+      ]
+
       // Call OpenAI API with function calling
       response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -70,7 +116,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           model: model || 'gpt-4o-mini',
-          messages: messages,
+          messages: openaiMessages,
           max_tokens: 2000,
           temperature: 0.7,
           ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),

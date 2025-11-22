@@ -4,7 +4,7 @@
 export interface AITool {
   name: string
   description: string
-  category: 'wrestlers' | 'events' | 'practices' | 'weight' | 'matches' | 'query'
+  category: 'wrestlers' | 'events' | 'practices' | 'weight' | 'matches' | 'query' | 'import'
   dangerous: boolean // Requires confirmation
   parameters: {
     name: string
@@ -327,6 +327,44 @@ export const AI_TOOLS: AITool[] = [
     parameters: [
       { name: 'date', type: 'date', description: 'Date for the practice (YYYY-MM-DD)', required: true },
       { name: 'duration_minutes', type: 'number', description: 'Total practice duration in minutes', required: false },
+    ]
+  },
+
+  // ============== SMART IMPORT TOOLS ==============
+  {
+    name: 'bulk_import_wrestlers',
+    description: 'Import multiple wrestlers at once from parsed data. Use this when a coach pastes a roster or list of wrestlers.',
+    category: 'import',
+    dangerous: false,
+    parameters: [
+      { name: 'wrestlers', type: 'array', description: 'Array of wrestler objects with first_name, last_name, weight_class, grade (optional)', required: true },
+    ]
+  },
+  {
+    name: 'bulk_import_events',
+    description: 'Import multiple events/matches at once from parsed schedule data. Use this when a coach pastes a schedule.',
+    category: 'import',
+    dangerous: false,
+    parameters: [
+      { name: 'events', type: 'array', description: 'Array of event objects with name, type, date, location, opponent_team (for duals)', required: true },
+    ]
+  },
+  {
+    name: 'bulk_import_match_results',
+    description: 'Import multiple match results at once. Use when a coach pastes match results from a tournament or dual.',
+    category: 'import',
+    dangerous: false,
+    parameters: [
+      { name: 'matches', type: 'array', description: 'Array of match objects with wrestler_name, opponent_name, result (win/loss), win_type, event_name', required: true },
+    ]
+  },
+  {
+    name: 'bulk_add_practices',
+    description: 'Schedule multiple practices at once. Use when a coach wants to set up a week or month of practices.',
+    category: 'import',
+    dangerous: false,
+    parameters: [
+      { name: 'practices', type: 'array', description: 'Array of practice objects with date, start_time, end_time, type, focus_areas', required: true },
     ]
   },
 ]
