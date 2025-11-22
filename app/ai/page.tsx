@@ -551,13 +551,8 @@ When answering questions about specific wrestlers, reference their actual stats.
         // Save assistant message to database
         saveMessage(assistantMessage)
 
-        // Only reload for write actions (mutations), not read-only queries
-        if (data.actionResult?.success && data.actionResult?.mutated) {
-          // Small delay then refresh
-          setTimeout(() => {
-            window.location.reload()
-          }, 1500)
-        }
+        // Don't auto-reload - let the conversation continue
+        // User can refresh manually to see changes
       }
     } catch (error) {
       console.error('Chat error:', error)
@@ -612,11 +607,7 @@ When answering questions about specific wrestlers, reference their actual stats.
         actionResult: data.actionResult,
       }
       setMessages(prev => [...prev, resultMessage])
-
-      // Refresh if successful
-      if (data.actionResult?.success) {
-        setTimeout(() => window.location.reload(), 1500)
-      }
+      // Don't auto-reload - let conversation continue
     } catch (error) {
       console.error('Action error:', error)
       const errorMessage: Message = {
