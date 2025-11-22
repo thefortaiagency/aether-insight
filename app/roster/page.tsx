@@ -31,16 +31,24 @@ interface Match {
   opponent_last_name: string
   opponent_team: string | null
   weight_class: number
-  outcome: string
-  outcome_type: string | null
-  wrestler_score: number
-  opponent_score: number
-  takedowns_scored: number
-  escapes_scored: number
-  reversals_scored: number
-  nearfall_2_scored: number
-  nearfall_3_scored: number
-  penalty_points_scored: number
+  result: string
+  win_type: string | null
+  final_score_for: number
+  final_score_against: number
+  takedowns_for: number
+  takedowns_against: number
+  escapes_for: number
+  escapes_against: number
+  reversals_for: number
+  reversals_against: number
+  nearfall_2_for: number
+  nearfall_2_against: number
+  nearfall_3_for: number
+  nearfall_3_against: number
+  nearfall_4_for: number
+  nearfall_4_against: number
+  penalties_for: number
+  penalties_against: number
   notes: string | null
   isNew?: boolean
 }
@@ -141,22 +149,30 @@ export default function RosterPage() {
             id: m.id,
             created_at: m.created_at,
             wrestler_id: m.wrestler_id,
-            match_date: m.scheduled_time || m.actual_start_time || m.created_at?.split('T')[0],
+            match_date: m.match_date || m.created_at?.split('T')[0],
             opponent_first_name: opponentFirstName,
             opponent_last_name: opponentLastName,
             opponent_team: m.opponent_team,
             weight_class: m.weight_class || 0,
-            outcome: m.outcome || '',
-            outcome_type: m.outcome_type,
-            wrestler_score: m.wrestler_score || 0,
-            opponent_score: m.opponent_score || 0,
-            takedowns_scored: m.takedowns_scored || 0,
-            escapes_scored: m.escapes_scored || 0,
-            reversals_scored: m.reversals_scored || 0,
-            nearfall_2_scored: m.nearfall_2_scored || 0,
-            nearfall_3_scored: m.nearfall_3_scored || 0,
-            penalty_points_scored: m.penalty_points_scored || 0,
-            notes: m.notes
+            result: m.result || '',
+            win_type: m.win_type,
+            final_score_for: m.final_score_for || 0,
+            final_score_against: m.final_score_against || 0,
+            takedowns_for: m.takedowns_for || 0,
+            takedowns_against: m.takedowns_against || 0,
+            escapes_for: m.escapes_for || 0,
+            escapes_against: m.escapes_against || 0,
+            reversals_for: m.reversals_for || 0,
+            reversals_against: m.reversals_against || 0,
+            nearfall_2_for: m.nearfall_2_for || 0,
+            nearfall_2_against: m.nearfall_2_against || 0,
+            nearfall_3_for: m.nearfall_3_for || 0,
+            nearfall_3_against: m.nearfall_3_against || 0,
+            nearfall_4_for: m.nearfall_4_for || 0,
+            nearfall_4_against: m.nearfall_4_against || 0,
+            penalties_for: m.penalties_for || 0,
+            penalties_against: m.penalties_against || 0,
+            notes: m.coach_notes
           }
         })
         setMatches(transformed)
@@ -181,16 +197,24 @@ export default function RosterPage() {
       opponent_last_name: '',
       opponent_team: '',
       weight_class: selectedWrestler.weight_class || 0,
-      outcome: 'win',
-      outcome_type: 'decision',
-      wrestler_score: 0,
-      opponent_score: 0,
-      takedowns_scored: 0,
-      escapes_scored: 0,
-      reversals_scored: 0,
-      nearfall_2_scored: 0,
-      nearfall_3_scored: 0,
-      penalty_points_scored: 0,
+      result: 'win',
+      win_type: 'decision',
+      final_score_for: 0,
+      final_score_against: 0,
+      takedowns_for: 0,
+      takedowns_against: 0,
+      escapes_for: 0,
+      escapes_against: 0,
+      reversals_for: 0,
+      reversals_against: 0,
+      nearfall_2_for: 0,
+      nearfall_2_against: 0,
+      nearfall_3_for: 0,
+      nearfall_3_against: 0,
+      nearfall_4_for: 0,
+      nearfall_4_against: 0,
+      penalties_for: 0,
+      penalties_against: 0,
       notes: '',
       isNew: true
     }
@@ -228,18 +252,26 @@ export default function RosterPage() {
           opponent_name: opponentName,
           opponent_team: match.opponent_team,
           weight_class: match.weight_class,
-          scheduled_time: match.match_date,
-          outcome: match.outcome,
-          outcome_type: match.outcome_type,
-          wrestler_score: match.wrestler_score,
-          opponent_score: match.opponent_score,
-          takedowns_scored: match.takedowns_scored,
-          escapes_scored: match.escapes_scored,
-          reversals_scored: match.reversals_scored,
-          nearfall_2_scored: match.nearfall_2_scored,
-          nearfall_3_scored: match.nearfall_3_scored,
-          penalty_points_scored: match.penalty_points_scored,
-          notes: match.notes
+          match_date: match.match_date,
+          result: match.result,
+          win_type: match.win_type,
+          final_score_for: match.final_score_for,
+          final_score_against: match.final_score_against,
+          takedowns_for: match.takedowns_for,
+          takedowns_against: match.takedowns_against,
+          escapes_for: match.escapes_for,
+          escapes_against: match.escapes_against,
+          reversals_for: match.reversals_for,
+          reversals_against: match.reversals_against,
+          nearfall_2_for: match.nearfall_2_for,
+          nearfall_2_against: match.nearfall_2_against,
+          nearfall_3_for: match.nearfall_3_for,
+          nearfall_3_against: match.nearfall_3_against,
+          nearfall_4_for: match.nearfall_4_for,
+          nearfall_4_against: match.nearfall_4_against,
+          penalties_for: match.penalties_for,
+          penalties_against: match.penalties_against,
+          coach_notes: match.notes
         }
 
         if (match.isNew) {
@@ -264,8 +296,8 @@ export default function RosterPage() {
       }
 
       // Recalculate wrestler wins/losses
-      const wins = matches.filter(m => m.outcome === 'win').length
-      const losses = matches.filter(m => m.outcome === 'loss').length
+      const wins = matches.filter(m => m.result === 'win').length
+      const losses = matches.filter(m => m.result === 'loss').length
       await supabase
         .from('wrestlers')
         .update({ wins, losses })
@@ -473,13 +505,16 @@ export default function RosterPage() {
   // Calculate stats for selected wrestler
   const wrestlerStats = {
     totalMatches: matches.length,
-    wins: matches.filter(m => m.outcome === 'win').length,
-    losses: matches.filter(m => m.outcome === 'loss').length,
-    pins: matches.filter(m => m.outcome === 'win' && m.outcome_type === 'pin').length,
-    techFalls: matches.filter(m => m.outcome === 'win' && m.outcome_type === 'tech_fall').length,
-    totalTakedowns: matches.reduce((sum, m) => sum + m.takedowns_scored, 0),
-    totalEscapes: matches.reduce((sum, m) => sum + m.escapes_scored, 0),
-    totalReversals: matches.reduce((sum, m) => sum + m.reversals_scored, 0)
+    wins: matches.filter(m => m.result === 'win').length,
+    losses: matches.filter(m => m.result === 'loss').length,
+    pins: matches.filter(m => m.result === 'win' && m.win_type === 'pin').length,
+    techFalls: matches.filter(m => m.result === 'win' && m.win_type === 'tech_fall').length,
+    totalTakedowns: matches.reduce((sum, m) => sum + m.takedowns_for, 0),
+    totalEscapes: matches.reduce((sum, m) => sum + m.escapes_for, 0),
+    totalReversals: matches.reduce((sum, m) => sum + m.reversals_for, 0),
+    totalNF2: matches.reduce((sum, m) => sum + m.nearfall_2_for, 0),
+    totalNF3: matches.reduce((sum, m) => sum + m.nearfall_3_for, 0),
+    totalNF4: matches.reduce((sum, m) => sum + m.nearfall_4_for, 0)
   }
 
   return (
@@ -660,15 +695,16 @@ export default function RosterPage() {
                     <SortHeader field="opponent_last_name" label="Last Name" />
                     <SortHeader field="opponent_team" label="Team" />
                     <SortHeader field="weight_class" label="WC" />
-                    <SortHeader field="outcome" label="Result" />
-                    <SortHeader field="outcome_type" label="Type" />
+                    <SortHeader field="result" label="Result" />
+                    <SortHeader field="win_type" label="Type" />
                     <th className="px-2 py-2 text-left text-xs font-medium text-gold whitespace-nowrap">Score</th>
-                    <SortHeader field="takedowns_scored" label="TD" />
-                    <SortHeader field="escapes_scored" label="Esc" />
-                    <SortHeader field="reversals_scored" label="Rev" />
-                    <SortHeader field="nearfall_2_scored" label="NF2" />
-                    <SortHeader field="nearfall_3_scored" label="NF3" />
-                    <SortHeader field="penalty_points_scored" label="Pen" />
+                    <SortHeader field="takedowns_for" label="TD" />
+                    <SortHeader field="escapes_for" label="Esc" />
+                    <SortHeader field="reversals_for" label="Rev" />
+                    <SortHeader field="nearfall_2_for" label="NF2" />
+                    <SortHeader field="nearfall_3_for" label="NF3" />
+                    <SortHeader field="nearfall_4_for" label="NF4" />
+                    <SortHeader field="penalties_for" label="Pen" />
                     <SortHeader field="notes" label="Notes" />
                     <th className="px-2 py-2 text-center text-xs font-medium text-gold w-12">Del</th>
                   </tr>
@@ -676,11 +712,11 @@ export default function RosterPage() {
                 <tbody className="divide-y divide-gold/10">
                   {loadingMatches ? (
                     <tr>
-                      <td colSpan={17} className="text-center py-8 text-gray-400">Loading matches...</td>
+                      <td colSpan={19} className="text-center py-8 text-gray-400">Loading matches...</td>
                     </tr>
                   ) : sortedMatches.length === 0 ? (
                     <tr>
-                      <td colSpan={17} className="text-center py-8 text-gray-400">
+                      <td colSpan={19} className="text-center py-8 text-gray-400">
                         No matches found. Click "Add Match" to get started.
                       </td>
                     </tr>
@@ -688,7 +724,7 @@ export default function RosterPage() {
                     sortedMatches.map((match, index) => (
                       <tr
                         key={match.id}
-                        className={`hover:bg-gold/5 ${match.isNew ? 'bg-green-500/10' : ''} ${match.outcome === 'win' ? '' : match.outcome === 'loss' ? 'bg-red-500/5' : ''}`}
+                        className={`hover:bg-gold/5 ${match.isNew ? 'bg-green-500/10' : ''} ${match.result === 'win' ? '' : match.result === 'loss' ? 'bg-red-500/5' : ''}`}
                       >
                         <td className="px-2 py-1 text-gray-500 text-xs">{index + 1}</td>
                         <td className="px-1 py-1 w-28">
@@ -709,7 +745,7 @@ export default function RosterPage() {
                         <td className="px-1 py-1 w-20">
                           <SelectCell
                             match={match}
-                            field="outcome"
+                            field="result"
                             options={['win', 'loss', 'draw']}
                             labels={{ win: 'Win', loss: 'Loss', draw: 'Draw' }}
                           />
@@ -717,7 +753,7 @@ export default function RosterPage() {
                         <td className="px-1 py-1 w-24">
                           <SelectCell
                             match={match}
-                            field="outcome_type"
+                            field="win_type"
                             options={OUTCOME_TYPES}
                             labels={{ pin: 'Pin', tech_fall: 'TF', major: 'MD', decision: 'Dec', forfeit: 'FF', injury: 'Inj', dq: 'DQ' }}
                           />
@@ -726,36 +762,39 @@ export default function RosterPage() {
                           <div className="flex items-center gap-1">
                             <Input
                               type="number"
-                              value={match.wrestler_score}
-                              onChange={(e) => updateMatch(match.id, 'wrestler_score', Number(e.target.value))}
+                              value={match.final_score_for}
+                              onChange={(e) => updateMatch(match.id, 'final_score_for', Number(e.target.value))}
                               className="h-7 w-10 bg-black/50 border-gold/30 text-white text-sm text-center p-1"
                             />
                             <span className="text-gray-500">-</span>
                             <Input
                               type="number"
-                              value={match.opponent_score}
-                              onChange={(e) => updateMatch(match.id, 'opponent_score', Number(e.target.value))}
+                              value={match.final_score_against}
+                              onChange={(e) => updateMatch(match.id, 'final_score_against', Number(e.target.value))}
                               className="h-7 w-10 bg-black/50 border-gold/30 text-white text-sm text-center p-1"
                             />
                           </div>
                         </td>
                         <td className="px-1 py-1 w-12">
-                          <EditableCell match={match} field="takedowns_scored" type="number" />
+                          <EditableCell match={match} field="takedowns_for" type="number" />
                         </td>
                         <td className="px-1 py-1 w-12">
-                          <EditableCell match={match} field="escapes_scored" type="number" />
+                          <EditableCell match={match} field="escapes_for" type="number" />
                         </td>
                         <td className="px-1 py-1 w-12">
-                          <EditableCell match={match} field="reversals_scored" type="number" />
+                          <EditableCell match={match} field="reversals_for" type="number" />
                         </td>
                         <td className="px-1 py-1 w-12">
-                          <EditableCell match={match} field="nearfall_2_scored" type="number" />
+                          <EditableCell match={match} field="nearfall_2_for" type="number" />
                         </td>
                         <td className="px-1 py-1 w-12">
-                          <EditableCell match={match} field="nearfall_3_scored" type="number" />
+                          <EditableCell match={match} field="nearfall_3_for" type="number" />
                         </td>
                         <td className="px-1 py-1 w-12">
-                          <EditableCell match={match} field="penalty_points_scored" type="number" />
+                          <EditableCell match={match} field="nearfall_4_for" type="number" />
+                        </td>
+                        <td className="px-1 py-1 w-12">
+                          <EditableCell match={match} field="penalties_for" type="number" />
                         </td>
                         <td className="px-1 py-1 min-w-[100px]">
                           <EditableCell match={match} field="notes" />
@@ -794,8 +833,8 @@ export default function RosterPage() {
             <span><strong>TD</strong> = Takedowns</span>
             <span><strong>Esc</strong> = Escapes</span>
             <span><strong>Rev</strong> = Reversals</span>
-            <span><strong>NF2/NF3</strong> = Near Fall Points</span>
-            <span><strong>Pen</strong> = Penalty Points</span>
+            <span><strong>NF2/NF3/NF4</strong> = Near Fall Points</span>
+            <span><strong>Pen</strong> = Penalties</span>
             <span><strong>TF</strong> = Tech Fall</span>
             <span><strong>MD</strong> = Major Decision</span>
             <span><strong>Dec</strong> = Decision</span>
