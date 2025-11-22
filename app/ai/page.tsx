@@ -401,6 +401,19 @@ ${teamData.wrestlers.map((w: any) => {
 When answering questions about specific wrestlers, reference their actual stats. Be specific with names and numbers.`
       }
 
+      // Build conversation history including action results
+      const conversationHistory = messages.filter(m => m.role !== 'system').map(m => {
+        let messageContent = m.content
+        // Include action results in context so AI remembers what it did
+        if (m.actionResult) {
+          messageContent += `\n\n[Action Result: ${m.actionResult.success ? 'SUCCESS' : 'FAILED'} - ${m.actionResult.message}]`
+        }
+        return {
+          role: m.role,
+          content: messageContent,
+        }
+      })
+
       // Call AI API with agentic capabilities
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -408,10 +421,7 @@ When answering questions about specific wrestlers, reference their actual stats.
         body: JSON.stringify({
           messages: [
             { role: 'system', content: context },
-            ...messages.filter(m => m.role !== 'system').map(m => ({
-              role: m.role,
-              content: m.content,
-            })),
+            ...conversationHistory,
             { role: 'user', content },
           ],
           teamId: teamId,
