@@ -214,49 +214,58 @@ export async function POST(request: Request) {
   }
 }
 
+interface MatchInput {
+  existingMatchId?: string // For updates
+  wrestlerId: string
+  opponent: string
+  opponentTeam: string
+  result: 'Win' | 'Loss'
+  winType: string
+  score: string
+  wrestlerScore?: number
+  opponentScore?: number
+  weightClass: number
+  round?: string
+  date?: string
+  // Stats
+  takedowns?: number
+  takedownsAgainst?: number
+  escapes?: number
+  escapesAgainst?: number
+  reversals?: number
+  reversalsAgainst?: number
+  nearfall2?: number
+  nearfall2Against?: number
+  nearfall3?: number
+  nearfall3Against?: number
+  nearfall4?: number
+  nearfall4Against?: number
+  penalties?: number
+  penaltiesAgainst?: number
+}
+
 // PUT - Actually import the matches
 export async function PUT(request: Request) {
   try {
-    const { teamId, matches } = await request.json() as {
+    const { teamId, matches, updates } = await request.json() as {
       teamId: string
-      matches: Array<{
-        wrestlerId: string
-        opponent: string
-        opponentTeam: string
-        result: 'Win' | 'Loss'
-        winType: string
-        score: string
-        wrestlerScore?: number
-        opponentScore?: number
-        weightClass: number
-        round?: string
-        date?: string
-        // Stats
-        takedowns?: number
-        takedownsAgainst?: number
-        escapes?: number
-        escapesAgainst?: number
-        reversals?: number
-        reversalsAgainst?: number
-        nearfall2?: number
-        nearfall2Against?: number
-        nearfall3?: number
-        nearfall3Against?: number
-        nearfall4?: number
-        nearfall4Against?: number
-        penalties?: number
-        penaltiesAgainst?: number
-      }>
+      matches: MatchInput[]
+      updates?: MatchInput[]
     }
 
-    if (!teamId || !matches || matches.length === 0) {
-      return NextResponse.json({ error: 'teamId and matches are required' }, { status: 400 })
+    if (!teamId) {
+      return NextResponse.json({ error: 'teamId is required' }, { status: 400 })
+    }
+
+    if ((!matches || matches.length === 0) && (!updates || updates.length === 0)) {
+      return NextResponse.json({ error: 'matches or updates are required' }, { status: 400 })
     }
 
     const added: string[] = []
     const errors: string[] = []
 
-    for (const match of matches) {
+    // Process new matches
+    for (const match of (matches || [])) {
       // Map win type to outcome_type
       let outcomeType = 'decision'
       if (match.winType === 'Fall' || match.winType === 'Pin') outcomeType = 'pin'
@@ -310,9 +319,63 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Process updates (existing matches to overwrite)
+    const updated: string[] = []
+    if (updates && updates.length > 0) {
+      for (const match of updates) {
+        if (!match.existingMatchId) continue
+
+        let outcomeType = 'decision'
+        if (match.winType === 'Fall' || match.winType === 'Pin') outcomeType = 'pin'
+        else if (match.winType === 'Tech Fall') outcomeType = 'tech_fall'
+        else if (match.winType === 'Major Decision') outcomeType = 'major'
+        else if (match.winType === 'Forfeit') outcomeType = 'forfeit'
+
+        const truncate = (str: string | undefined, max: number) => str ? str.substring(0, max) : null
+
+        const { error } = await supabase
+          .from('matches')
+          .update({
+            opponent_name: truncate(match.opponent, 100),
+            opponent_team: truncate(match.opponentTeam, 100),
+            weight_class: match.weightClass,
+            result: match.result.toLowerCase(),
+            win_type: outcomeType,
+            final_score_for: match.wrestlerScore || 0,
+            final_score_against: match.opponentScore || 0,
+            match_date: match.date || new Date().toISOString().split('T')[0],
+            round: truncate(match.round, 50),
+            // Stats
+            takedowns_for: match.takedowns || 0,
+            takedowns_against: match.takedownsAgainst || 0,
+            escapes_for: match.escapes || 0,
+            escapes_against: match.escapesAgainst || 0,
+            reversals_for: match.reversals || 0,
+            reversals_against: match.reversalsAgainst || 0,
+            nearfall_2_for: match.nearfall2 || 0,
+            nearfall_2_against: match.nearfall2Against || 0,
+            nearfall_3_for: match.nearfall3 || 0,
+            nearfall_3_against: match.nearfall3Against || 0,
+            nearfall_4_for: match.nearfall4 || 0,
+            nearfall_4_against: match.nearfall4Against || 0,
+            penalties_for: match.penalties || 0,
+            penalties_against: match.penaltiesAgainst || 0
+          })
+          .eq('id', match.existingMatchId)
+
+        if (error) {
+          console.error('Error updating match:', error)
+          errors.push(`Failed to update match vs ${match.opponent}: ${error.message}`)
+        } else {
+          updated.push(`${match.opponent} (${match.result})`)
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       added,
+      updated,
       errors
     })
 

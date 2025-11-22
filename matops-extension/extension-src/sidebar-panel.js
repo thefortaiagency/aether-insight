@@ -1803,53 +1803,68 @@ async function confirmMatchImport() {
     }
 
     const matchesToAdd = [];
+    const matchesToUpdate = [];
 
-    // Get selected matches
+    // Helper to build match object
+    const buildMatchObject = (r, existingMatchId = null) => ({
+      existingMatchId, // For updates
+      wrestlerId: r.wrestler.id,
+      opponent: r.imported.opponent,
+      opponentTeam: r.imported.opponentTeam,
+      result: r.imported.result,
+      winType: r.imported.winType,
+      score: r.imported.score,
+      wrestlerScore: r.imported.wrestlerScore,
+      opponentScore: r.imported.opponentScore,
+      weightClass: r.imported.weightClass,
+      round: r.imported.round,
+      // Stats for wrestler
+      takedowns: r.imported.takedowns,
+      escapes: r.imported.escapes,
+      reversals: r.imported.reversals,
+      nearfall2: r.imported.nearfall2,
+      nearfall3: r.imported.nearfall3,
+      nearfall4: r.imported.nearfall4,
+      penalties: r.imported.penalties,
+      // Stats against
+      takedownsAgainst: r.imported.takedownsAgainst,
+      escapesAgainst: r.imported.escapesAgainst,
+      reversalsAgainst: r.imported.reversalsAgainst,
+      nearfall2Against: r.imported.nearfall2Against,
+      nearfall3Against: r.imported.nearfall3Against,
+      nearfall4Against: r.imported.nearfall4Against,
+      penaltiesAgainst: r.imported.penaltiesAgainst
+    });
+
+    // Get selected NEW matches
     matchImportResults.results.newMatches.forEach((r, idx) => {
       const checkbox = document.getElementById(`match_${idx}`);
       if (checkbox && checkbox.checked && r.wrestler) {
-        matchesToAdd.push({
-          wrestlerId: r.wrestler.id,
-          opponent: r.imported.opponent,
-          opponentTeam: r.imported.opponentTeam,
-          result: r.imported.result,
-          winType: r.imported.winType,
-          score: r.imported.score,
-          wrestlerScore: r.imported.wrestlerScore,
-          opponentScore: r.imported.opponentScore,
-          weightClass: r.imported.weightClass,
-          round: r.imported.round,
-          // Stats for wrestler
-          takedowns: r.imported.takedowns,
-          escapes: r.imported.escapes,
-          reversals: r.imported.reversals,
-          nearfall2: r.imported.nearfall2,
-          nearfall3: r.imported.nearfall3,
-          nearfall4: r.imported.nearfall4,
-          penalties: r.imported.penalties,
-          // Stats against
-          takedownsAgainst: r.imported.takedownsAgainst,
-          escapesAgainst: r.imported.escapesAgainst,
-          reversalsAgainst: r.imported.reversalsAgainst,
-          nearfall2Against: r.imported.nearfall2Against,
-          nearfall3Against: r.imported.nearfall3Against,
-          nearfall4Against: r.imported.nearfall4Against,
-          penaltiesAgainst: r.imported.penaltiesAgainst
-        });
+        matchesToAdd.push(buildMatchObject(r));
       }
     });
 
-    if (matchesToAdd.length === 0) {
-      updateStatus('No matches selected to import');
+    // Check if we should update duplicates
+    const updateDuplicatesCheckbox = document.getElementById('updateDuplicates');
+    if (updateDuplicatesCheckbox && updateDuplicatesCheckbox.checked) {
+      matchImportResults.results.duplicates.forEach((r) => {
+        if (r.wrestler && r.duplicate) {
+          matchesToUpdate.push(buildMatchObject(r, r.duplicate.id));
+        }
+      });
+    }
+
+    if (matchesToAdd.length === 0 && matchesToUpdate.length === 0) {
+      updateStatus('No matches selected to import or update');
       document.getElementById('matchImportModal').style.display = 'none';
       return;
     }
 
-    // Call API to add matches
+    // Call API to add/update matches
     const response = await fetch(`${MATOPS_API_BASE}/api/extension/import-matches`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teamId, matches: matchesToAdd })
+      body: JSON.stringify({ teamId, matches: matchesToAdd, updates: matchesToUpdate })
     });
 
     if (!response.ok) {
@@ -1861,7 +1876,13 @@ async function confirmMatchImport() {
 
     // Close modal and show success
     document.getElementById('matchImportModal').style.display = 'none';
-    updateStatus(`✅ Imported ${result.added.length} matches`);
+    const addedCount = result.added?.length || 0;
+    const updatedCount = result.updated?.length || 0;
+    let statusMsg = `✅ Imported ${addedCount} matches`;
+    if (updatedCount > 0) {
+      statusMsg += `, updated ${updatedCount} matches`;
+    }
+    updateStatus(statusMsg);
 
     if (result.errors && result.errors.length > 0) {
       console.warn('[Mat Ops Import] Match errors:', result.errors);
