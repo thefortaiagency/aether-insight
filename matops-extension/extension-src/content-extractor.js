@@ -732,6 +732,31 @@ async function expandAllWeightClasses() {
   console.log('[Mat Ops] ✅ All weight classes expanded');
 }
 
+// Check if a match should be skipped (bye, forfeit, etc.) - no detailed stats to capture
+function shouldSkipMatch(link) {
+  // Get the parent match line text
+  const matchLine = link.closest('li')?.textContent || '';
+  const linkText = link.textContent || '';
+  const combinedText = (matchLine + ' ' + linkText).toLowerCase();
+
+  // Skip byes
+  if (combinedText.includes('bye') || combinedText.includes(' bye ')) {
+    return 'bye';
+  }
+
+  // Skip forfeits - they have no detailed stats
+  if (/\b(forfeit|forf|ff|f\.f\.)\b/i.test(combinedText)) {
+    return 'forfeit';
+  }
+
+  // Skip medical forfeits, defaults, disqualifications
+  if (/\b(med\.?\s*forf|default|d\.f\.|disq|dq)\b/i.test(combinedText)) {
+    return 'default';
+  }
+
+  return false;
+}
+
 // Auto-capture all match details
 async function autoCaptureAllMatches() {
   // First, make sure listeners are attached
@@ -782,10 +807,27 @@ async function autoCaptureAllMatches() {
       continue;
     }
 
+    // Skip byes and forfeits - no detailed stats to capture
+    const skipReason = shouldSkipMatch(link);
+    if (skipReason) {
+      console.log(`[Mat Ops] ⏭️ Skipping ${matchId} (${skipReason} - no stats)`);
+      skipped++;
+      // Send quick progress update
+      chrome.runtime.sendMessage({
+        action: 'auto_capture_progress',
+        progress: {
+          current: i + 1,
+          total: scoreLinks.length,
+          captured: captured,
+          skipped: skipped,
+          status: 'skipping',
+          matchId: matchId
+        }
+      });
+      continue;
+    }
+
     console.log(`[Mat Ops] 🎯 Auto-capturing match ${i + 1}/${scoreLinks.length}: ${matchId}`);
-    console.log(`[Mat Ops] 🔍 Link element:`, link.outerHTML.substring(0, 200));
-    console.log(`[Mat Ops] 🔍 Link visible:`, link.offsetParent !== null);
-    console.log(`[Mat Ops] 🔍 Link onclick:`, link.onclick);
 
     // Send status: Clicking
     chrome.runtime.sendMessage({
@@ -807,21 +849,18 @@ async function autoCaptureAllMatches() {
     startModalWatch();
 
     // Call fetchScoreSummary via background script (runs in MAIN world to bypass CSP)
-    console.log(`[Mat Ops] 📞 Calling fetchScoreSummary via background script`);
-
     try {
       await chrome.runtime.sendMessage({
         action: 'call_page_function',
         functionName: 'fetchScoreSummary',
         args: [matchId]
       });
-      console.log(`[Mat Ops] ✅ Function called successfully`);
     } catch (error) {
       console.error(`[Mat Ops] ❌ Failed to call function:`, error);
     }
 
-    // Wait for modal to appear
-    await sleep(1000);
+    // Wait for modal to appear (reduced from 1000ms)
+    await sleep(500);
 
     // Send status: Waiting for modal
     chrome.runtime.sendMessage({
@@ -836,8 +875,8 @@ async function autoCaptureAllMatches() {
       }
     });
 
-    // Wait for modal to appear and be captured (max 10 seconds)
-    const captureSuccess = await waitForCapture(matchId, 10000);
+    // Wait for modal to appear and be captured (reduced from 10s to 5s)
+    const captureSuccess = await waitForCapture(matchId, 5000);
 
     if (captureSuccess) {
       captured++;
@@ -859,13 +898,13 @@ async function autoCaptureAllMatches() {
       // Close the modal
       await closeModal();
 
-      // Wait longer before next click (let page breathe)
-      await sleep(1000);
+      // Wait before next click (reduced from 1000ms)
+      await sleep(400);
     } else {
       console.warn(`[Mat Ops] ⚠️ Failed to capture ${matchId}`);
       // Try to close modal anyway
       await closeModal();
-      await sleep(800);
+      await sleep(300);
     }
 
     // Send progress update to side panel
@@ -915,16 +954,15 @@ async function closeModal() {
     // Check if button or parent is visible
     const button = btn.tagName === 'BUTTON' ? btn : btn.closest('button');
     if (button && button.offsetParent !== null) {
-      console.log('[Mat Ops] 🚪 Closing modal');
       button.click();
-      await sleep(500); // Wait longer for modal to close
+      await sleep(200); // Reduced from 500ms
       return true;
     }
   }
 
   // Try ESC key as fallback
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27 }));
-  await sleep(500); // Wait longer for modal to close
+  await sleep(200); // Reduced from 500ms
   return false;
 }
 

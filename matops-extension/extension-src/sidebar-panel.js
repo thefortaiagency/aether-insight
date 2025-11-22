@@ -683,15 +683,19 @@ async function autoCaptureAllMatches() {
         switch (status) {
           case 'clicking':
             statusEmoji = '👆';
-            statusText = `Clicking match ${current}/${total}...`;
+            statusText = `Opening match ${current}/${total}...`;
             break;
           case 'capturing':
             statusEmoji = '📊';
-            statusText = `Capturing data from match ${current}/${total}...`;
+            statusText = `Capturing stats ${current}/${total}...`;
             break;
           case 'closing':
             statusEmoji = '🚪';
-            statusText = `Closing modal for match ${current}/${total}...`;
+            statusText = `Closing ${current}/${total}...`;
+            break;
+          case 'skipping':
+            statusEmoji = '⏭️';
+            statusText = `Skipped bye/forfeit ${current}/${total}`;
             break;
           case 'ready':
             statusEmoji = '✅';
