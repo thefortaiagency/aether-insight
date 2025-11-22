@@ -34,6 +34,10 @@ const autoCaptureProgress = document.getElementById('autoCaptureProgress');
 const progressText = document.getElementById('progressText');
 const progressBar = document.getElementById('progressBar');
 const modeTabs = document.querySelectorAll('.mode-tab');
+const importWrestlersBtn = document.getElementById('importWrestlersBtn');
+
+// Import state
+let importResults = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -56,6 +60,25 @@ function setupEventListeners() {
   exportButton.addEventListener('click', exportData);
   clearButton.addEventListener('click', clearConversation);
   showStatsTableBtn.addEventListener('click', showStatsTable);
+
+  // Import wrestlers button
+  if (importWrestlersBtn) {
+    importWrestlersBtn.addEventListener('click', openImportModal);
+  }
+
+  // Import modal close button
+  const closeImportModal = document.getElementById('closeImportModal');
+  if (closeImportModal) {
+    closeImportModal.addEventListener('click', () => {
+      document.getElementById('importModal').style.display = 'none';
+    });
+  }
+
+  // Confirm import button
+  const confirmImportBtn = document.getElementById('confirmImportBtn');
+  if (confirmImportBtn) {
+    confirmImportBtn.addEventListener('click', confirmImport);
+  }
 
   // Poll for captured count every 2 seconds when instructions visible
   setInterval(updateCapturedCount, 2000);
@@ -159,6 +182,7 @@ async function extractStats() {
       updateStatus(`✅ Extracted ${response.data.length} wrestlers`);
       exportButton.disabled = false;
       showStatsTableBtn.disabled = false;
+      if (importWrestlersBtn) importWrestlersBtn.disabled = false;
     } else {
       updateStatus('❌ Failed to extract stats');
     }
@@ -1181,6 +1205,317 @@ async function loadMatOpsConversationHistory() {
     }
   } catch (error) {
     console.error('[Mat Ops AI] Error loading history:', error);
+  }
+}
+
+// =============================================
+// WRESTLER IMPORT FUNCTIONALITY
+// =============================================
+
+// Open import modal and match wrestlers
+async function openImportModal() {
+  if (!extractedData || extractedData.length === 0) {
+    updateStatus('❌ Please extract stats first');
+    return;
+  }
+
+  // Show modal
+  const modal = document.getElementById('importModal');
+  const loading = document.getElementById('importLoading');
+  const results = document.getElementById('importResults');
+  const error = document.getElementById('importError');
+
+  modal.style.display = 'block';
+  loading.style.display = 'block';
+  results.style.display = 'none';
+  error.style.display = 'none';
+
+  try {
+    // Get team ID from session (try to get from Mat Ops tab or storage)
+    const teamId = await getTeamId();
+
+    if (!teamId) {
+      showImportError('Please log in to Mat Ops first to import wrestlers');
+      return;
+    }
+
+    // Prepare wrestlers for import
+    const wrestlers = extractedData.map(w => {
+      // Get the primary weight class
+      const weightClass = w.weightClasses && w.weightClasses.length > 0
+        ? w.weightClasses[0].weight
+        : null;
+
+      // Count wins/losses
+      let wins = 0, losses = 0;
+      if (w.weightClasses) {
+        w.weightClasses.forEach(wc => {
+          wc.matches.forEach(m => {
+            if (m.result === 'Win') wins++;
+            if (m.result === 'Loss') losses++;
+          });
+        });
+      }
+
+      return {
+        name: w.name,
+        team: w.team,
+        state: w.state,
+        athleteId: w.athleteId,
+        weightClass,
+        wins,
+        losses
+      };
+    });
+
+    // Call import API
+    const response = await fetch(`${MATOPS_API_BASE}/api/extension/import-wrestlers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamId, wrestlers })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to match wrestlers');
+    }
+
+    importResults = await response.json();
+    console.log('[Mat Ops Import] Results:', importResults);
+
+    // Show results
+    renderImportResults(importResults);
+
+  } catch (err) {
+    console.error('[Mat Ops Import] Error:', err);
+    showImportError(err.message || 'Failed to match wrestlers');
+  }
+}
+
+// Get team ID from various sources
+async function getTeamId() {
+  // Try to get from current tab if on Mat Ops
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (tab.url && (tab.url.includes('aethervtc.ai') || tab.url.includes('wrestleai.com') || tab.url.includes('localhost:3000'))) {
+      const result = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const session = localStorage.getItem('aether-session');
+          return session ? JSON.parse(session) : null;
+        }
+      });
+
+      if (result && result[0] && result[0].result && result[0].result.team) {
+        // Save for later use
+        await chrome.storage.local.set({ matOpsTeamId: result[0].result.team.id });
+        return result[0].result.team.id;
+      }
+    }
+  } catch (e) {
+    console.log('[Mat Ops Import] Could not get session from tab:', e);
+  }
+
+  // Try to get from storage
+  const stored = await chrome.storage.local.get(['matOpsTeamId']);
+  if (stored.matOpsTeamId) {
+    return stored.matOpsTeamId;
+  }
+
+  return null;
+}
+
+// Render import results
+function renderImportResults(data) {
+  const loading = document.getElementById('importLoading');
+  const results = document.getElementById('importResults');
+
+  loading.style.display = 'none';
+  results.style.display = 'block';
+
+  // Update summary counts
+  document.getElementById('matchedCount').textContent = data.summary.matched;
+  document.getElementById('reviewCount').textContent = data.summary.needsReview;
+  document.getElementById('newCount').textContent = data.summary.new;
+
+  // Render matched section
+  const matchedSection = document.getElementById('matchedSection');
+  const matchedList = document.getElementById('matchedList');
+  document.getElementById('matchedTotal').textContent = data.summary.matched;
+
+  if (data.results.matched.length > 0) {
+    matchedSection.style.display = 'block';
+    matchedList.innerHTML = data.results.matched.map(r =>
+      `<div style="padding: 4px 0; border-bottom: 1px solid #d1fae5;">
+        ✓ <strong>${r.imported.name}</strong> → ${r.matched.first_name} ${r.matched.last_name}
+        ${r.imported.weightClass ? `(${r.imported.weightClass}lbs)` : ''}
+      </div>`
+    ).join('');
+  } else {
+    matchedSection.style.display = 'none';
+  }
+
+  // Render needs review section
+  const reviewSection = document.getElementById('reviewSection');
+  const reviewList = document.getElementById('reviewList');
+  document.getElementById('reviewTotal').textContent = data.summary.needsReview;
+
+  if (data.results.needsReview.length > 0) {
+    reviewSection.style.display = 'block';
+    reviewList.innerHTML = data.results.needsReview.map((r, idx) => {
+      const options = r.potentialMatches.map(pm =>
+        `<option value="${pm.id}">${pm.first_name} ${pm.last_name} (${pm.weight_class || '?'}lbs) - ${Math.round(pm.similarity * 100)}% match</option>`
+      ).join('');
+
+      return `<div style="padding: 8px; margin-bottom: 8px; background: #fffbeb; border: 1px solid #fbbf24; border-radius: 4px;">
+        <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">${r.imported.name} ${r.imported.weightClass ? `(${r.imported.weightClass}lbs)` : ''}</div>
+        <div style="margin-bottom: 4px;">
+          <label style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+            <input type="radio" name="review_${idx}" value="link" checked data-idx="${idx}">
+            Link to existing:
+          </label>
+          <select id="review_select_${idx}" style="width: 100%; padding: 4px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px;">
+            ${options}
+          </select>
+        </div>
+        <label style="display: flex; align-items: center; gap: 4px;">
+          <input type="radio" name="review_${idx}" value="new" data-idx="${idx}">
+          Add as new wrestler
+        </label>
+        <label style="display: flex; align-items: center; gap: 4px;">
+          <input type="radio" name="review_${idx}" value="skip" data-idx="${idx}">
+          Skip this wrestler
+        </label>
+      </div>`;
+    }).join('');
+  } else {
+    reviewSection.style.display = 'none';
+  }
+
+  // Render new wrestlers section
+  const newSection = document.getElementById('newSection');
+  const newList = document.getElementById('newList');
+  document.getElementById('newTotal').textContent = data.summary.new;
+
+  if (data.results.newWrestlers.length > 0) {
+    newSection.style.display = 'block';
+    newList.innerHTML = data.results.newWrestlers.map((r, idx) =>
+      `<div style="padding: 8px; margin-bottom: 8px; background: #eff6ff; border: 1px solid #3b82f6; border-radius: 4px;">
+        <label style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="new_${idx}" checked>
+          <div>
+            <div style="font-weight: 600; color: #1e40af;">${r.imported.name}</div>
+            <div style="font-size: 10px; color: #6b7280;">${r.imported.weightClass ? `${r.imported.weightClass}lbs` : 'No weight'} • ${r.imported.wins || 0}W-${r.imported.losses || 0}L</div>
+          </div>
+        </label>
+        <div style="margin-top: 4px;">
+          <input type="text" id="new_name_${idx}" value="${r.imported.name}" placeholder="Correct name if needed" style="width: 100%; padding: 4px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px;">
+        </div>
+      </div>`
+    ).join('');
+  } else {
+    newSection.style.display = 'none';
+  }
+}
+
+// Show import error
+function showImportError(message) {
+  const loading = document.getElementById('importLoading');
+  const results = document.getElementById('importResults');
+  const error = document.getElementById('importError');
+
+  loading.style.display = 'none';
+  results.style.display = 'none';
+  error.style.display = 'block';
+  document.getElementById('importErrorText').textContent = message;
+}
+
+// Confirm and execute import
+async function confirmImport() {
+  if (!importResults) return;
+
+  const confirmBtn = document.getElementById('confirmImportBtn');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '⏳ Importing...';
+
+  try {
+    const teamId = await getTeamId();
+    if (!teamId) {
+      throw new Error('No team ID found');
+    }
+
+    const wrestlersToAdd = [];
+
+    // Process review selections
+    importResults.results.needsReview.forEach((r, idx) => {
+      const selected = document.querySelector(`input[name="review_${idx}"]:checked`);
+      if (selected) {
+        if (selected.value === 'new') {
+          wrestlersToAdd.push({
+            name: r.imported.name,
+            weightClass: r.imported.weightClass
+          });
+        } else if (selected.value === 'link') {
+          const selectEl = document.getElementById(`review_select_${idx}`);
+          if (selectEl && selectEl.value) {
+            wrestlersToAdd.push({
+              name: r.imported.name,
+              weightClass: r.imported.weightClass,
+              linkToExisting: selectEl.value
+            });
+          }
+        }
+        // 'skip' does nothing
+      }
+    });
+
+    // Process new wrestler selections
+    importResults.results.newWrestlers.forEach((r, idx) => {
+      const checkbox = document.getElementById(`new_${idx}`);
+      if (checkbox && checkbox.checked) {
+        const nameInput = document.getElementById(`new_name_${idx}`);
+        const name = nameInput ? nameInput.value.trim() : r.imported.name;
+        wrestlersToAdd.push({
+          name,
+          weightClass: r.imported.weightClass
+        });
+      }
+    });
+
+    if (wrestlersToAdd.length === 0) {
+      updateStatus('No wrestlers selected to import');
+      document.getElementById('importModal').style.display = 'none';
+      return;
+    }
+
+    // Call API to add wrestlers
+    const response = await fetch(`${MATOPS_API_BASE}/api/extension/import-wrestlers`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamId, wrestlers: wrestlersToAdd })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add wrestlers');
+    }
+
+    const result = await response.json();
+    console.log('[Mat Ops Import] Add result:', result);
+
+    // Close modal and show success
+    document.getElementById('importModal').style.display = 'none';
+    updateStatus(`✅ Added ${result.added.length} wrestlers to roster`);
+
+    if (result.errors && result.errors.length > 0) {
+      console.warn('[Mat Ops Import] Errors:', result.errors);
+    }
+
+  } catch (err) {
+    console.error('[Mat Ops Import] Confirm error:', err);
+    showImportError(err.message || 'Failed to add wrestlers');
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '✓ Add Selected to Roster';
   }
 }
 
