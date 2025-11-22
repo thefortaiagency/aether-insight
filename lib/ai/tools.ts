@@ -12,6 +12,7 @@ export interface AITool {
     description: string
     required: boolean
     enum?: string[]
+    items?: any // For array types - defines the schema of array items
   }[]
 }
 
@@ -342,11 +343,27 @@ export const AI_TOOLS: AITool[] = [
   },
   {
     name: 'bulk_import_events',
-    description: 'Import multiple events/matches at once from parsed schedule data. Use this when a coach pastes a schedule.',
+    description: 'Import multiple events/matches at once from parsed schedule data. ALWAYS use this when a coach pastes a schedule with multiple dates/events. Do NOT use add_event multiple times.',
     category: 'import',
     dangerous: false,
     parameters: [
-      { name: 'events', type: 'array', description: 'Array of event objects with name, type, date, location, opponent_team (for duals)', required: true },
+      {
+        name: 'events',
+        type: 'array',
+        description: 'Array of ALL events to import',
+        required: true,
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Event name' },
+            date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
+            type: { type: 'string', enum: ['tournament', 'dual', 'scrimmage', 'other'], description: 'Event type' },
+            location: { type: 'string', description: 'Event location' },
+            opponent_team: { type: 'string', description: 'Opponent team name (for duals)' },
+          },
+          required: ['name', 'date']
+        }
+      },
     ]
   },
   {
@@ -378,12 +395,12 @@ export function getOpenAITools() {
       description: tool.description,
       parameters: {
         type: 'object',
-        properties: tool.parameters.reduce((acc, param) => {
+        properties: tool.parameters.reduce((acc, param: any) => {
           if (param.type === 'array') {
-            // OpenAI requires items property for array types
+            // Handle arrays with proper item schema
             acc[param.name] = {
               type: 'array',
-              items: { type: 'string' },
+              items: param.items || { type: 'string' },
               description: param.description,
             }
           } else {
@@ -395,7 +412,7 @@ export function getOpenAITools() {
           }
           return acc
         }, {} as Record<string, any>),
-        required: tool.parameters.filter(p => p.required).map(p => p.name),
+        required: tool.parameters.filter((p: any) => p.required).map((p: any) => p.name),
       },
     },
   }))
