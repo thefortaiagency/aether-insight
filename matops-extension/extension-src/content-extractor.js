@@ -544,12 +544,12 @@ function parseMatchDetail(matchModal) {
     }
 
     // Calculate final scores from moves
-    // Wrestling scoring: TD=2, Esc=1, Rev=2, NF2=2, NF3=3, NF4=4, Penalty (opponent gets 1 or 2)
-    detail.finalScore = (detail.takedowns * 2) + detail.escapes + (detail.reversals * 2) +
+    // Wrestling scoring (2024+ rules): TD=3, Esc=1, Rev=2, NF2=2, NF3=3, NF4=4, Penalty (opponent gets 1 or 2)
+    detail.finalScore = (detail.takedowns * 3) + detail.escapes + (detail.reversals * 2) +
                         (detail.nearfall2 * 2) + (detail.nearfall3 * 3) + (detail.nearfall4 * 4) +
                         detail.penalty1Opp + (detail.penalty2Opp * 2);
 
-    detail.finalScoreOpp = (detail.takedownsOpp * 2) + detail.escapesOpp + (detail.reversalsOpp * 2) +
+    detail.finalScoreOpp = (detail.takedownsOpp * 3) + detail.escapesOpp + (detail.reversalsOpp * 2) +
                           (detail.nearfall2Opp * 2) + (detail.nearfall3Opp * 3) + (detail.nearfall4Opp * 4) +
                           detail.penalty1 + (detail.penalty2 * 2);
 
