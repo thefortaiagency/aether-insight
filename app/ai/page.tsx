@@ -225,38 +225,38 @@ export default function MatOpsAIPage() {
       })
 
       // Calculate team totals from calculated stats
-      const totalWins = wrestlersWithStats.reduce((sum, w) => sum + w.wins, 0)
-      const totalLosses = wrestlersWithStats.reduce((sum, w) => sum + w.losses, 0)
-      const totalPins = wrestlersWithStats.reduce((sum, w) => sum + w.pins, 0)
-      const totalTechFalls = wrestlersWithStats.reduce((sum, w) => sum + w.tech_falls, 0)
-      const totalMajors = wrestlersWithStats.reduce((sum, w) => sum + w.majors, 0)
-      const totalDecisions = wrestlersWithStats.reduce((sum, w) => sum + w.decisions, 0)
-      const totalTakedowns = wrestlersWithStats.reduce((sum, w) => sum + w.takedowns, 0)
-      const totalEscapes = wrestlersWithStats.reduce((sum, w) => sum + w.escapes, 0)
-      const totalReversals = wrestlersWithStats.reduce((sum, w) => sum + w.reversals, 0)
-      const totalNearfalls = wrestlersWithStats.reduce((sum, w) => sum + w.nearfalls, 0)
+      const totalWins = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.wins, 0)
+      const totalLosses = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.losses, 0)
+      const totalPins = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.pins, 0)
+      const totalTechFalls = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.tech_falls, 0)
+      const totalMajors = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.majors, 0)
+      const totalDecisions = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.decisions, 0)
+      const totalTakedowns = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.takedowns, 0)
+      const totalEscapes = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.escapes, 0)
+      const totalReversals = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.reversals, 0)
+      const totalNearfalls = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.nearfalls, 0)
 
       // Calculate team points (6 for pin, 5 for TF, 4 for major, 3 for decision)
       const totalTeamPoints = (totalPins * 6) + (totalTechFalls * 5) + (totalMajors * 4) + (totalDecisions * 3)
 
       // Identify top performers
-      const wrestlersWithMatches = wrestlersWithStats.filter(w => w.wins + w.losses > 0)
+      const wrestlersWithMatches = wrestlersWithStats.filter((w: any) => w.wins + w.losses > 0)
       const topByWinPct = [...wrestlersWithMatches]
-        .map(w => ({
+        .map((w: any) => ({
           ...w,
           winPct: w.wins / (w.wins + w.losses) * 100
         }))
-        .sort((a, b) => b.winPct - a.winPct)
+        .sort((a: any, b: any) => b.winPct - a.winPct)
         .slice(0, 5)
 
       const topByPins = [...wrestlersWithStats]
-        .filter(w => w.pins > 0)
-        .sort((a, b) => b.pins - a.pins)
+        .filter((w: any) => w.pins > 0)
+        .sort((a: any, b: any) => b.pins - a.pins)
         .slice(0, 5)
 
       const topByTakedowns = [...wrestlersWithStats]
-        .filter(w => w.takedowns > 0)
-        .sort((a, b) => b.takedowns - a.takedowns)
+        .filter((w: any) => w.takedowns > 0)
+        .sort((a: any, b: any) => b.takedowns - a.takedowns)
         .slice(0, 5)
 
       // Weight class coverage

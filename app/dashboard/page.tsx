@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
         if (wrestlersData && wrestlersData.length > 0) {
           // Load all matches for these wrestlers
-          const wrestlerIds = wrestlersData.map(w => w.id)
+          const wrestlerIds = wrestlersData.map((w: any) => w.id)
           const { data: matchesData } = await supabase
             .from('matches')
             .select('wrestler_id, result, win_type, takedowns_for, escapes_for, reversals_for')
@@ -118,11 +118,11 @@ export default function DashboardPage() {
           setWrestlers(wrestlersWithStats)
 
           // Calculate team totals from calculated stats
-          const totalWins = wrestlersWithStats.reduce((sum, w) => sum + w.wins, 0)
-          const totalLosses = wrestlersWithStats.reduce((sum, w) => sum + w.losses, 0)
+          const totalWins = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.wins, 0)
+          const totalLosses = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.losses, 0)
           const totalMatches = totalWins + totalLosses
           const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0
-          const totalPins = wrestlersWithStats.reduce((sum, w) => sum + w.pins, 0)
+          const totalPins = wrestlersWithStats.reduce((sum: number, w: any) => sum + w.pins, 0)
 
           setStats({
             totalMatches,

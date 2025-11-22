@@ -118,7 +118,7 @@ export default function RosterPage() {
 
       if (wrestlersData && wrestlersData.length > 0) {
         // Load all matches to calculate wins/losses
-        const wrestlerIds = wrestlersData.map(w => w.id)
+        const wrestlerIds = wrestlersData.map((w: any) => w.id)
         const { data: matchesData } = await supabase
           .from('matches')
           .select('wrestler_id, result')
