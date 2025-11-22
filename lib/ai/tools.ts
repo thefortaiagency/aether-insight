@@ -320,10 +320,19 @@ export function getOpenAITools() {
       parameters: {
         type: 'object',
         properties: tool.parameters.reduce((acc, param) => {
-          acc[param.name] = {
-            type: param.type === 'date' ? 'string' : param.type === 'array' ? 'array' : param.type,
-            description: param.description,
-            ...(param.enum ? { enum: param.enum } : {}),
+          if (param.type === 'array') {
+            // OpenAI requires items property for array types
+            acc[param.name] = {
+              type: 'array',
+              items: { type: 'string' },
+              description: param.description,
+            }
+          } else {
+            acc[param.name] = {
+              type: param.type === 'date' ? 'string' : param.type,
+              description: param.description,
+              ...(param.enum ? { enum: param.enum } : {}),
+            }
           }
           return acc
         }, {} as Record<string, any>),
