@@ -200,6 +200,27 @@
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
+    #matops-ai-input {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    #matops-ai-input::placeholder {
+      color: #9ca3af;
+    }
+
+    #matops-ai-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
     .btn {
       padding: 6px 12px;
       background: #3b82f6;
@@ -483,9 +504,9 @@
           <p>Ask me anything about wrestling coaching, practice planning, or your team!</p>
         </div>
       </div>
-      <div class="input-group">
-        <input type="text" id="matops-ai-input" placeholder="Ask your wrestling AI coach..." />
-        <button class="btn" id="matops-send-btn">Ask</button>
+      <div class="input-group" style="gap: 6px;">
+        <input type="text" id="matops-ai-input" placeholder="Ask your wrestling AI coach..." style="flex: 1; min-width: 0;" />
+        <button class="btn" id="matops-send-btn" style="padding: 8px 12px; white-space: nowrap;">Ask</button>
       </div>
     </div>
 
