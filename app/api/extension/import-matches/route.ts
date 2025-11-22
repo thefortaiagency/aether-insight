@@ -264,19 +264,22 @@ export async function PUT(request: Request) {
       else if (match.winType === 'Major Decision') outcomeType = 'major'
       else if (match.winType === 'Forfeit') outcomeType = 'forfeit'
 
+      // Truncate string fields to fit database column limits (varchar 50)
+      const truncate = (str: string | undefined, max: number) => str ? str.substring(0, max) : null
+
       const { data, error } = await supabase
         .from('matches')
         .insert({
           wrestler_id: match.wrestlerId,
-          opponent_name: match.opponent,
-          opponent_team: match.opponentTeam,
+          opponent_name: truncate(match.opponent, 100),
+          opponent_team: truncate(match.opponentTeam, 100),
           weight_class: match.weightClass,
           result: match.result.toLowerCase(),
           win_type: outcomeType,
           final_score_for: match.wrestlerScore || 0,
           final_score_against: match.opponentScore || 0,
           match_date: match.date || new Date().toISOString().split('T')[0],
-          round: match.round,
+          round: truncate(match.round, 50),
           // Stats
           takedowns_for: match.takedowns || 0,
           takedowns_against: match.takedownsAgainst || 0,
