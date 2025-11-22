@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import {
   Menu, X, Users, Home,
   Activity, ChevronDown,
-  Calendar, Brain, ClipboardList, LogOut, User
+  Calendar, Brain, ClipboardList, LogOut, User, BarChart3
 } from 'lucide-react'
 
 // A utility function for combining class names, often found in projects using Tailwind CSS.
@@ -59,6 +59,7 @@ export default function Navigation() {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4" /> },
     { name: 'Roster', href: '/roster', icon: <ClipboardList className="w-4 h-4 text-gold" /> },
+    { name: 'Team Stats', href: '/team-stats', icon: <BarChart3 className="w-4 h-4" /> },
     { name: 'Wrestlers', href: '/wrestlers', icon: <Users className="w-4 h-4" /> },
     { name: 'Calendar', href: '/calendar', icon: <Calendar className="w-4 h-4" /> },
     { name: "Coach's Corner", href: '/coach', icon: <Brain className="w-4 h-4" /> },

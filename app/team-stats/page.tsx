@@ -32,12 +32,29 @@ interface Match {
   result: string
   win_type: string
   weight_class: number
+  match_date: string | null
+  opponent_team: string | null
   takedowns_for: number
+  takedowns_against: number
   escapes_for: number
+  escapes_against: number
   reversals_for: number
+  reversals_against: number
   nearfall_2_for: number
+  nearfall_2_against: number
   nearfall_3_for: number
+  nearfall_3_against: number
   nearfall_4_for: number
+  nearfall_4_against: number
+  final_score_for: number
+  final_score_against: number
+}
+
+interface Event {
+  id: string
+  name: string
+  date: string
+  matchCount: number
 }
 
 export default function TeamStatsPage() {
@@ -46,6 +63,8 @@ export default function TeamStatsPage() {
   const [teamName, setTeamName] = useState<string>('')
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([])
   const [matches, setMatches] = useState<Match[]>([])
+  const [selectedEvent, setSelectedEvent] = useState<string>('all')
+  const [events, setEvents] = useState<Event[]>([])
 
   // Get team ID from session
   useEffect(() => {
@@ -94,9 +113,35 @@ export default function TeamStatsPage() {
             .from('matches')
             .select('*')
             .in('wrestler_id', wrestlerIds)
+            .order('match_date', { ascending: false })
 
           if (matchesData) {
-            setMatches(matchesData as Match[])
+            const typedMatches = matchesData as Match[]
+            setMatches(typedMatches)
+
+            // Extract unique events (opponent_team + date combinations)
+            const eventMap = new Map<string, Event>()
+            typedMatches.forEach(m => {
+              if (m.opponent_team) {
+                const eventId = `${m.opponent_team}-${m.match_date || 'unknown'}`
+                if (!eventMap.has(eventId)) {
+                  eventMap.set(eventId, {
+                    id: eventId,
+                    name: m.opponent_team,
+                    date: m.match_date || 'Unknown Date',
+                    matchCount: 1
+                  })
+                } else {
+                  const existing = eventMap.get(eventId)!
+                  existing.matchCount++
+                }
+              }
+            })
+            // Sort events by date (most recent first)
+            const sortedEvents = Array.from(eventMap.values()).sort((a, b) =>
+              (b.date || '').localeCompare(a.date || '')
+            )
+            setEvents(sortedEvents)
           }
         }
       }
@@ -106,25 +151,52 @@ export default function TeamStatsPage() {
     setLoading(false)
   }
 
-  // Calculate stats from real data
-  const totalWins = wrestlers.reduce((sum, w) => sum + (w.wins || 0), 0)
-  const totalLosses = wrestlers.reduce((sum, w) => sum + (w.losses || 0), 0)
+  // Filter matches based on selected event
+  const filteredMatches = selectedEvent === 'all'
+    ? matches
+    : matches.filter(m => `${m.opponent_team}-${m.match_date || 'unknown'}` === selectedEvent)
+
+  // Calculate stats from filtered matches (for event view) or wrestler totals (for overall)
+  const isEventView = selectedEvent !== 'all'
+
+  // Event-specific stats from filtered matches
+  const eventWins = filteredMatches.filter(m => m.result === 'win').length
+  const eventLosses = filteredMatches.filter(m => m.result === 'loss').length
+  const eventPins = filteredMatches.filter(m => m.result === 'win' && m.win_type === 'pin').length
+  const eventTechFalls = filteredMatches.filter(m => m.result === 'win' && m.win_type === 'tech_fall').length
+  const eventMajorDecisions = filteredMatches.filter(m => m.result === 'win' && m.win_type === 'major').length
+
+  // Overall stats from wrestler records
+  const overallWins = wrestlers.reduce((sum, w) => sum + (w.wins || 0), 0)
+  const overallLosses = wrestlers.reduce((sum, w) => sum + (w.losses || 0), 0)
+  const overallPins = wrestlers.reduce((sum, w) => sum + (w.pins || 0), 0)
+  const overallTechFalls = wrestlers.reduce((sum, w) => sum + (w.tech_falls || 0), 0)
+  const overallMajorDecisions = wrestlers.reduce((sum, w) => sum + (w.major_decisions || 0), 0)
+
+  // Use event or overall stats based on view
+  const totalWins = isEventView ? eventWins : overallWins
+  const totalLosses = isEventView ? eventLosses : overallLosses
   const totalMatches = totalWins + totalLosses
   const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : '0.0'
 
-  const totalPins = wrestlers.reduce((sum, w) => sum + (w.pins || 0), 0)
-  const totalTechFalls = wrestlers.reduce((sum, w) => sum + (w.tech_falls || 0), 0)
-  const totalMajorDecisions = wrestlers.reduce((sum, w) => sum + (w.major_decisions || 0), 0)
+  const totalPins = isEventView ? eventPins : overallPins
+  const totalTechFalls = isEventView ? eventTechFalls : overallTechFalls
+  const totalMajorDecisions = isEventView ? eventMajorDecisions : overallMajorDecisions
   const pinRate = totalWins > 0 ? ((totalPins / totalWins) * 100).toFixed(1) : '0.0'
 
-  // Calculate scoring breakdown from matches
-  const totalTakedowns = matches.reduce((sum, m) => sum + (m.takedowns_for || 0), 0)
-  const totalEscapes = matches.reduce((sum, m) => sum + (m.escapes_for || 0), 0)
-  const totalReversals = matches.reduce((sum, m) => sum + (m.reversals_for || 0), 0)
-  const totalNF2 = matches.reduce((sum, m) => sum + (m.nearfall_2_for || 0), 0)
-  const totalNF3 = matches.reduce((sum, m) => sum + (m.nearfall_3_for || 0), 0)
-  const totalNF4 = matches.reduce((sum, m) => sum + (m.nearfall_4_for || 0), 0)
+  // Calculate scoring breakdown from filtered matches
+  const totalTakedowns = filteredMatches.reduce((sum, m) => sum + (m.takedowns_for || 0), 0)
+  const totalEscapes = filteredMatches.reduce((sum, m) => sum + (m.escapes_for || 0), 0)
+  const totalReversals = filteredMatches.reduce((sum, m) => sum + (m.reversals_for || 0), 0)
+  const totalNF2 = filteredMatches.reduce((sum, m) => sum + (m.nearfall_2_for || 0), 0)
+  const totalNF3 = filteredMatches.reduce((sum, m) => sum + (m.nearfall_3_for || 0), 0)
+  const totalNF4 = filteredMatches.reduce((sum, m) => sum + (m.nearfall_4_for || 0), 0)
   const totalNearFalls = totalNF2 + totalNF3 + totalNF4
+
+  // Calculate points against
+  const totalTDAgainst = filteredMatches.reduce((sum, m) => sum + (m.takedowns_against || 0), 0)
+  const totalEscAgainst = filteredMatches.reduce((sum, m) => sum + (m.escapes_against || 0), 0)
+  const totalRevAgainst = filteredMatches.reduce((sum, m) => sum + (m.reversals_against || 0), 0)
 
   const totalPoints = (totalTakedowns * 2) + totalEscapes + (totalReversals * 2) +
                       (totalNF2 * 2) + (totalNF3 * 3) + (totalNF4 * 4)
@@ -136,12 +208,12 @@ export default function TeamStatsPage() {
     { type: 'Near Falls', count: totalNearFalls, percentage: totalPoints > 0 ? Math.round(((totalNF2 * 2 + totalNF3 * 3 + totalNF4 * 4) / totalPoints) * 100) : 0 },
   ].filter(s => s.count > 0)
 
-  // Weight class performance
+  // Weight class performance from filtered matches
   const weightClasses = [106, 113, 120, 126, 132, 138, 144, 150, 157, 165, 175, 190, 215, 285]
   const weightClassPerformance = weightClasses.map(wc => {
-    const wcWrestlers = wrestlers.filter(w => w.weight_class === wc)
-    const wins = wcWrestlers.reduce((sum, w) => sum + (w.wins || 0), 0)
-    const losses = wcWrestlers.reduce((sum, w) => sum + (w.losses || 0), 0)
+    const wcMatches = filteredMatches.filter(m => m.weight_class === wc)
+    const wins = wcMatches.filter(m => m.result === 'win').length
+    const losses = wcMatches.filter(m => m.result === 'loss').length
     const total = wins + losses
     return {
       weight: wc.toString(),
@@ -150,6 +222,9 @@ export default function TeamStatsPage() {
       winRate: total > 0 ? Math.round((wins / total) * 100) : 0
     }
   }).filter(wc => wc.wins > 0 || wc.losses > 0)
+
+  // Get selected event details
+  const selectedEventDetails = events.find(e => e.id === selectedEvent)
 
   // Top performers
   const topWins = [...wrestlers].sort((a, b) => (b.wins || 0) - (a.wins || 0))[0]
@@ -174,9 +249,39 @@ export default function TeamStatsPage() {
 
       <div className="relative z-10 p-4 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gold mb-2">Team Statistics</h1>
-          <p className="text-gray-400">{teamName || 'Your Team'}</p>
+        <div className="mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gold mb-1">
+                {teamName || 'Team Statistics'}
+              </h1>
+              <p className="text-gray-400">
+                {isEventView && selectedEventDetails
+                  ? `vs ${selectedEventDetails.name} • ${selectedEventDetails.date}`
+                  : 'Season Overview'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Event Dropdown */}
+              <select
+                value={selectedEvent}
+                onChange={(e) => setSelectedEvent(e.target.value)}
+                className="bg-black/60 border border-gold/30 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-gold"
+              >
+                <option value="all">All Events (Season)</option>
+                {events.map(event => (
+                  <option key={event.id} value={event.id}>
+                    vs {event.name} ({event.date}) - {event.matchCount} matches
+                  </option>
+                ))}
+              </select>
+              {/* Season Badge */}
+              <div className="flex items-center gap-2 bg-black/60 border border-gold/30 rounded-lg px-4 py-2">
+                <Trophy className="w-4 h-4 text-gold" />
+                <span className="text-white font-semibold text-sm">2025-26 Season</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {wrestlers.length === 0 ? (
