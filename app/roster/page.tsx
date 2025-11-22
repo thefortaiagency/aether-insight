@@ -112,16 +112,30 @@ export default function RosterPage() {
     try {
       const { data: wrestlersData } = await supabase
         .from('wrestlers')
-        .select('id, first_name, last_name, weight_class, wins, losses')
+        .select('id, first_name, last_name, weight_class')
         .eq('team_id', teamId)
         .order('last_name')
 
-      if (wrestlersData) {
-        setWrestlers(wrestlersData.map((w: any) => ({
-          ...w,
-          wins: w.wins || 0,
-          losses: w.losses || 0
-        })))
+      if (wrestlersData && wrestlersData.length > 0) {
+        // Load all matches to calculate wins/losses
+        const wrestlerIds = wrestlersData.map(w => w.id)
+        const { data: matchesData } = await supabase
+          .from('matches')
+          .select('wrestler_id, result')
+          .in('wrestler_id', wrestlerIds)
+
+        const matchesByWrestler = matchesData || []
+
+        setWrestlers(wrestlersData.map((w: any) => {
+          const wMatches = matchesByWrestler.filter((m: any) => m.wrestler_id === w.id)
+          return {
+            ...w,
+            wins: wMatches.filter((m: any) => m.result === 'win').length,
+            losses: wMatches.filter((m: any) => m.result === 'loss').length
+          }
+        }))
+      } else {
+        setWrestlers([])
       }
     } catch (error) {
       console.error('Error loading wrestlers:', error)

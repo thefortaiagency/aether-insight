@@ -65,12 +65,13 @@ export default function DashboardPage() {
     }
   }, [])
 
-  // Load real team data
+  // Load real team data - CALCULATE FROM MATCHES TABLE
   useEffect(() => {
     const loadTeamData = async () => {
       if (!session?.team?.id) return
 
       try {
+        // Load wrestlers
         const { data: wrestlersData, error } = await supabase
           .from('wrestlers')
           .select('*')
@@ -79,15 +80,49 @@ export default function DashboardPage() {
 
         if (error) throw error
 
-        if (wrestlersData) {
-          setWrestlers(wrestlersData)
+        if (wrestlersData && wrestlersData.length > 0) {
+          // Load all matches for these wrestlers
+          const wrestlerIds = wrestlersData.map(w => w.id)
+          const { data: matchesData } = await supabase
+            .from('matches')
+            .select('wrestler_id, result, win_type, takedowns_for, escapes_for, reversals_for')
+            .in('wrestler_id', wrestlerIds)
 
-          // Calculate real stats
-          const totalWins = wrestlersData.reduce((sum: number, w: Wrestler) => sum + (w.wins || 0), 0)
-          const totalLosses = wrestlersData.reduce((sum: number, w: Wrestler) => sum + (w.losses || 0), 0)
+          const matches = matchesData || []
+
+          // Calculate stats for each wrestler from matches
+          const wrestlersWithStats = wrestlersData.map((w: any) => {
+            const wMatches = matches.filter((m: any) => m.wrestler_id === w.id)
+            const wins = wMatches.filter((m: any) => m.result === 'win').length
+            const losses = wMatches.filter((m: any) => m.result === 'loss').length
+            const pins = wMatches.filter((m: any) =>
+              m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+            ).length
+            const techFalls = wMatches.filter((m: any) =>
+              m.result === 'win' && (m.win_type === 'tech_fall' || m.win_type === 'TF')
+            ).length
+            const majors = wMatches.filter((m: any) =>
+              m.result === 'win' && (m.win_type === 'major' || m.win_type === 'MD')
+            ).length
+            const takedowns = wMatches.reduce((sum: number, m: any) => sum + (m.takedowns_for || 0), 0)
+            const escapes = wMatches.reduce((sum: number, m: any) => sum + (m.escapes_for || 0), 0)
+            const reversals = wMatches.reduce((sum: number, m: any) => sum + (m.reversals_for || 0), 0)
+
+            return {
+              ...w,
+              wins, losses, pins, tech_falls: techFalls, major_decisions: majors,
+              takedowns, escapes, reversals
+            }
+          })
+
+          setWrestlers(wrestlersWithStats)
+
+          // Calculate team totals from calculated stats
+          const totalWins = wrestlersWithStats.reduce((sum, w) => sum + w.wins, 0)
+          const totalLosses = wrestlersWithStats.reduce((sum, w) => sum + w.losses, 0)
           const totalMatches = totalWins + totalLosses
           const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0
-          const totalPins = wrestlersData.reduce((sum: number, w: Wrestler) => sum + (w.pins || 0), 0)
+          const totalPins = wrestlersWithStats.reduce((sum, w) => sum + w.pins, 0)
 
           setStats({
             totalMatches,
@@ -97,6 +132,8 @@ export default function DashboardPage() {
             totalLosses,
             totalPins
           })
+        } else {
+          setWrestlers([])
         }
       } catch (error) {
         console.error('Error loading team data:', error)

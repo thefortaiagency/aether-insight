@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import {
   Send, Bot, User, Sparkles, Zap, Brain, Trophy,
   Users, TrendingUp, Calendar, Dumbbell, Target, Loader2,
-  Plug, PlugZap, Lightbulb, MessageSquare
+  Plug, PlugZap, Lightbulb, MessageSquare, CheckCircle, XCircle,
+  AlertTriangle, Wrench, PlusCircle, Scale
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
@@ -18,6 +19,20 @@ interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: Date
+  pendingAction?: PendingAction
+  actionResult?: ActionResult
+}
+
+interface PendingAction {
+  name: string
+  params: Record<string, any>
+  description?: string
+}
+
+interface ActionResult {
+  success: boolean
+  message: string
+  data?: any
 }
 
 interface QuickAction {
@@ -59,18 +74,62 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
 ]
 
-const WRESTLING_KNOWLEDGE = `You are Mat Ops AI, a wrestling coaching assistant. You have expertise in:
+const WRESTLING_KNOWLEDGE = `You are Mat Ops AI, an AGENTIC wrestling coaching assistant. You can both answer questions AND take actions.
+
+EXPERTISE:
 - Wrestling techniques (takedowns, escapes, reversals, pins)
 - Practice planning and drill recommendations
 - Match strategy and opponent analysis
 - Weight management guidance
 - Team building and motivation
-- Wrestling rules and scoring
-- Conditioning and injury prevention
+- Wrestling rules and scoring (TD=3pts, Esc=1pt, Rev=2pts, NF2=2pts, NF3=3pts, NF4=4pts)
+
+ACTIONS YOU CAN TAKE:
+You have tools to modify the team's database. When the coach asks you to do something, USE THE APPROPRIATE TOOL:
+
+**Roster Management:**
+- add_wrestler: Add a new wrestler to the roster
+- update_wrestler: Update wrestler info (weight class, grade, notes, etc.)
+- move_weight_class: Move a wrestler to a different weight class
+- deactivate_wrestler: Remove a wrestler from active roster
+
+**Calendar & Events:**
+- add_event: Schedule tournaments, duals, scrimmages
+- update_event: Change event details
+- cancel_event: Remove an event
+- record_event_results: Log scores and placements
+
+**Practice Management:**
+- add_practice: Schedule a practice session
+- update_practice: Change practice details
+- cancel_practice: Cancel a practice
+- record_practice_details: Log what was done in practice
+- record_attendance: Track who showed up
+
+**Weight Tracking:**
+- record_weight: Log a wrestler's weight
+- bulk_record_weights: Log multiple weights at once
+
+**Match Results:**
+- add_match_result: Record a match outcome
+
+**Queries:**
+- get_upcoming_events: See what's coming up
+- get_upcoming_practices: See scheduled practices
+- get_wrestler_stats: Get detailed stats for a wrestler
+- get_weight_history: Check weight trends
+- get_roster_by_weight: See who's at a weight class
+- get_team_record: Get overall team record
+
+FORMATTING RULES:
+- Do NOT use ### or #### headers - use **bold** for emphasis instead
+- Keep responses concise and scannable
+- Use bullet points for lists
+- Reference specific wrestler names and stats when available
+- When you take an action, briefly confirm what you did
 
 Always be encouraging but realistic. Use wrestling terminology appropriately.
-When discussing stats, be specific about what the numbers mean for the wrestler's development.
-Suggest actionable improvements based on the data.`
+When discussing stats, be specific about what the numbers mean for the wrestler's development.`
 
 export default function MatOpsAIPage() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -78,6 +137,8 @@ export default function MatOpsAIPage() {
   const [loading, setLoading] = useState(false)
   const [extensionConnected, setExtensionConnected] = useState(false)
   const [teamData, setTeamData] = useState<any>(null)
+  const [teamId, setTeamId] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -102,7 +163,7 @@ export default function MatOpsAIPage() {
     }
   }, [])
 
-  // Load team data for context - DETAILED wrestler awareness
+  // Load team data for context - DETAILED wrestler awareness (calculated from matches!)
   useEffect(() => {
     const loadTeamData = async () => {
       const session = localStorage.getItem('aether-session')
@@ -111,41 +172,91 @@ export default function MatOpsAIPage() {
       const { team } = JSON.parse(session)
       if (!team?.id) return
 
+      // Store team ID for agentic actions
+      setTeamId(team.id)
+
+      // Load wrestlers
       const { data: wrestlers } = await supabase
         .from('wrestlers')
         .select('*')
         .eq('team_id', team.id)
         .order('weight_class', { ascending: true })
 
-      if (!wrestlers) return
+      if (!wrestlers || wrestlers.length === 0) return
 
-      // Calculate detailed stats for AI context
-      const totalWins = wrestlers.reduce((sum: number, w: any) => sum + (w.wins || 0), 0)
-      const totalLosses = wrestlers.reduce((sum: number, w: any) => sum + (w.losses || 0), 0)
-      const totalPins = wrestlers.reduce((sum: number, w: any) => sum + (w.pins || 0), 0)
-      const totalTechFalls = wrestlers.reduce((sum: number, w: any) => sum + (w.tech_falls || 0), 0)
-      const totalMajors = wrestlers.reduce((sum: number, w: any) => sum + (w.major_decisions || 0), 0)
-      const totalTakedowns = wrestlers.reduce((sum: number, w: any) => sum + (w.takedowns || 0), 0)
-      const totalEscapes = wrestlers.reduce((sum: number, w: any) => sum + (w.escapes || 0), 0)
-      const totalReversals = wrestlers.reduce((sum: number, w: any) => sum + (w.reversals || 0), 0)
-      const totalTeamPoints = wrestlers.reduce((sum: number, w: any) => sum + (w.team_points || 0), 0)
+      // Load all matches for these wrestlers
+      const wrestlerIds = wrestlers.map((w: any) => w.id)
+      const { data: matchesData } = await supabase
+        .from('matches')
+        .select('wrestler_id, result, win_type, takedowns_for, escapes_for, reversals_for, nearfall_2_for, nearfall_3_for, nearfall_4_for')
+        .in('wrestler_id', wrestlerIds)
+
+      const matches = matchesData || []
+
+      // Calculate stats for each wrestler from matches
+      const wrestlersWithStats = wrestlers.map((w: any) => {
+        const wMatches = matches.filter((m: any) => m.wrestler_id === w.id)
+        const wins = wMatches.filter((m: any) => m.result === 'win').length
+        const losses = wMatches.filter((m: any) => m.result === 'loss').length
+        const pins = wMatches.filter((m: any) =>
+          m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+        ).length
+        const techFalls = wMatches.filter((m: any) =>
+          m.result === 'win' && (m.win_type === 'tech_fall' || m.win_type === 'Tech Fall' || m.win_type === 'TF')
+        ).length
+        const majors = wMatches.filter((m: any) =>
+          m.result === 'win' && (m.win_type === 'major' || m.win_type === 'Major Decision' || m.win_type === 'MD')
+        ).length
+        const decisions = wMatches.filter((m: any) =>
+          m.result === 'win' && (m.win_type === 'decision' || m.win_type === 'Decision' || !m.win_type)
+        ).length
+        const takedowns = wMatches.reduce((sum: number, m: any) => sum + (m.takedowns_for || 0), 0)
+        const escapes = wMatches.reduce((sum: number, m: any) => sum + (m.escapes_for || 0), 0)
+        const reversals = wMatches.reduce((sum: number, m: any) => sum + (m.reversals_for || 0), 0)
+        const nearfalls = wMatches.reduce((sum: number, m: any) =>
+          sum + (m.nearfall_2_for || 0) + (m.nearfall_3_for || 0) + (m.nearfall_4_for || 0), 0)
+
+        return {
+          ...w,
+          wins, losses, pins, tech_falls: techFalls, majors, decisions,
+          takedowns, escapes, reversals, nearfalls,
+          matchCount: wMatches.length
+        }
+      })
+
+      // Calculate team totals from calculated stats
+      const totalWins = wrestlersWithStats.reduce((sum, w) => sum + w.wins, 0)
+      const totalLosses = wrestlersWithStats.reduce((sum, w) => sum + w.losses, 0)
+      const totalPins = wrestlersWithStats.reduce((sum, w) => sum + w.pins, 0)
+      const totalTechFalls = wrestlersWithStats.reduce((sum, w) => sum + w.tech_falls, 0)
+      const totalMajors = wrestlersWithStats.reduce((sum, w) => sum + w.majors, 0)
+      const totalDecisions = wrestlersWithStats.reduce((sum, w) => sum + w.decisions, 0)
+      const totalTakedowns = wrestlersWithStats.reduce((sum, w) => sum + w.takedowns, 0)
+      const totalEscapes = wrestlersWithStats.reduce((sum, w) => sum + w.escapes, 0)
+      const totalReversals = wrestlersWithStats.reduce((sum, w) => sum + w.reversals, 0)
+      const totalNearfalls = wrestlersWithStats.reduce((sum, w) => sum + w.nearfalls, 0)
+
+      // Calculate team points (6 for pin, 5 for TF, 4 for major, 3 for decision)
+      const totalTeamPoints = (totalPins * 6) + (totalTechFalls * 5) + (totalMajors * 4) + (totalDecisions * 3)
 
       // Identify top performers
-      const wrestlersWithMatches = wrestlers.filter((w: any) => (w.wins || 0) + (w.losses || 0) > 0)
+      const wrestlersWithMatches = wrestlersWithStats.filter(w => w.wins + w.losses > 0)
       const topByWinPct = [...wrestlersWithMatches]
-        .map((w: any) => ({
+        .map(w => ({
           ...w,
-          winPct: (w.wins || 0) / ((w.wins || 0) + (w.losses || 0)) * 100
+          winPct: w.wins / (w.wins + w.losses) * 100
         }))
         .sort((a, b) => b.winPct - a.winPct)
         .slice(0, 5)
 
-      const topByPins = [...wrestlers]
-        .sort((a: any, b: any) => (b.pins || 0) - (a.pins || 0))
+      const topByPins = [...wrestlersWithStats]
+        .filter(w => w.pins > 0)
+        .sort((a, b) => b.pins - a.pins)
         .slice(0, 5)
 
-      const topByTakedowns = [...wrestlers]
-        .sort((a: any, b: any) => (b.takedowns || 0) - (a.takedowns || 0))
+      const topByTakedowns = [...wrestlersWithStats]
+        .filter(w => w.takedowns > 0)
+        .sort((a, b) => b.takedowns - a.takedowns)
         .slice(0, 5)
 
       // Weight class coverage
@@ -163,7 +274,7 @@ export default function MatOpsAIPage() {
 
       setTeamData({
         teamName: team.name,
-        wrestlers,
+        wrestlers: wrestlersWithStats,
         wrestlerCount: wrestlers.length,
         totalWins,
         totalLosses,
@@ -173,12 +284,14 @@ export default function MatOpsAIPage() {
         totalPins,
         totalTechFalls,
         totalMajors,
+        totalDecisions,
         bonusPointPct: totalWins > 0
           ? (((totalPins + totalTechFalls + totalMajors) / totalWins) * 100).toFixed(1)
           : 0,
         totalTakedowns,
         totalEscapes,
         totalReversals,
+        totalNearfalls,
         totalTeamPoints,
         topByWinPct,
         topByPins,
@@ -198,10 +311,21 @@ export default function MatOpsAIPage() {
   // Welcome message
   useEffect(() => {
     if (messages.length === 0) {
+      const agenticInfo = teamId
+        ? `
+**AGENTIC MODE ACTIVE** - I can take actions for you:
+• Add/update wrestlers on your roster
+• Schedule practices and events
+• Record weights and attendance
+• Log match results
+
+Just tell me what you need!`
+        : ''
+
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Hey Coach! 👋 I'm Mat Ops AI, your wrestling assistant.
+        content: `Hey Coach! I'm Mat Ops AI, your wrestling assistant.
 
 I can help you with:
 • **Team analysis** - Review your roster and stats
@@ -210,12 +334,12 @@ I can help you with:
 • **Weight management** - Tracking and recommendations
 
 ${teamData ? `I see you have **${teamData.wrestlerCount} wrestlers** on your roster with a combined record of **${teamData.totalWins}-${teamData.totalLosses}**.` : 'Log in to see your team data here.'}
-
+${agenticInfo}
 What can I help you with today?`,
         timestamp: new Date(),
       }])
     }
-  }, [teamData])
+  }, [teamData, teamId])
 
   const sendMessage = async (content: string) => {
     if (!content.trim()) return
@@ -271,13 +395,13 @@ FULL ROSTER (by weight class):
 ${teamData.wrestlers.map((w: any) => {
   const matches = (w.wins || 0) + (w.losses || 0)
   const winPct = matches > 0 ? ((w.wins / matches) * 100).toFixed(0) : 'N/A'
-  return `- ${w.first_name} ${w.last_name} | ${w.weight_class || '?'}lbs | Grade ${w.grade || '?'} | ${w.wins || 0}-${w.losses || 0} (${winPct}%) | ${w.pins || 0} pins | TD: ${w.takedowns || 0} | E: ${w.escapes || 0} | R: ${w.reversals || 0}`
+  return `- ${w.first_name} ${w.last_name} | ${w.weight_class || '?'}lbs | Grade ${w.grade || '?'} | ${w.wins || 0}-${w.losses || 0} (${winPct}%) | Pins: ${w.pins || 0} | TF: ${w.tech_falls || 0} | Maj: ${w.majors || 0} | Dec: ${w.decisions || 0} | TD: ${w.takedowns || 0} | Esc: ${w.escapes || 0} | Rev: ${w.reversals || 0}`
 }).join('\n')}
 
 When answering questions about specific wrestlers, reference their actual stats. Be specific with names and numbers.`
       }
 
-      // Call AI API (using OpenAI-compatible endpoint)
+      // Call AI API with agentic capabilities
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,6 +414,8 @@ When answering questions about specific wrestlers, reference their actual stats.
             })),
             { role: 'user', content },
           ],
+          teamId: teamId,
+          enableTools: !!teamId,
         }),
       })
 
@@ -299,14 +425,36 @@ When answering questions about specific wrestlers, reference their actual stats.
 
       const data = await response.json()
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: data.message || data.content || 'Sorry, I had trouble processing that. Try again?',
-        timestamp: new Date(),
-      }
+      // Handle pending action that requires confirmation
+      if (data.requiresConfirmation && data.pendingAction) {
+        setPendingAction(data.pendingAction)
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+          pendingAction: data.pendingAction,
+        }
+        setMessages(prev => [...prev, assistantMessage])
+      } else {
+        // Regular response (possibly with action result)
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: data.message || data.content || 'Sorry, I had trouble processing that. Try again?',
+          timestamp: new Date(),
+          actionResult: data.actionResult,
+        }
+        setMessages(prev => [...prev, assistantMessage])
 
-      setMessages(prev => [...prev, assistantMessage])
+        // If action was successful, refresh team data
+        if (data.actionResult?.success) {
+          // Small delay then refresh
+          setTimeout(() => {
+            window.location.reload()
+          }, 1500)
+        }
+      }
     } catch (error) {
       console.error('Chat error:', error)
 
@@ -333,6 +481,65 @@ When answering questions about specific wrestlers, reference their actual stats.
     sendMessage(input)
   }
 
+  // Handle confirmation of pending action
+  const handleConfirmAction = async () => {
+    if (!pendingAction || !teamId) return
+
+    setLoading(true)
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId,
+          confirmedAction: pendingAction,
+        }),
+      })
+
+      const data = await response.json()
+
+      const resultMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: data.actionResult?.success
+          ? `Done! ${data.actionResult.message}`
+          : `Failed: ${data.actionResult?.message || 'Unknown error'}`,
+        timestamp: new Date(),
+        actionResult: data.actionResult,
+      }
+      setMessages(prev => [...prev, resultMessage])
+
+      // Refresh if successful
+      if (data.actionResult?.success) {
+        setTimeout(() => window.location.reload(), 1500)
+      }
+    } catch (error) {
+      console.error('Action error:', error)
+      const errorMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: 'Sorry, something went wrong executing that action.',
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, errorMessage])
+    }
+
+    setPendingAction(null)
+    setLoading(false)
+  }
+
+  // Handle cancellation of pending action
+  const handleCancelAction = () => {
+    setPendingAction(null)
+    const cancelMessage: Message = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: 'Action cancelled. Is there anything else I can help you with?',
+      timestamp: new Date(),
+    }
+    setMessages(prev => [...prev, cancelMessage])
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black relative">
       <WrestlingStatsBackground />
@@ -348,6 +555,12 @@ When answering questions about specific wrestlers, reference their actual stats.
             <p className="text-gray-400 text-sm">Your wrestling coaching assistant</p>
           </div>
           <div className="flex items-center gap-2">
+            {teamId && (
+              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 flex items-center gap-1">
+                <Wrench className="w-3 h-3" />
+                Agentic Mode
+              </Badge>
+            )}
             {extensionConnected ? (
               <Badge className="bg-green-500/20 text-green-400 border-green-500/30 flex items-center gap-1">
                 <PlugZap className="w-3 h-3" />
@@ -385,6 +598,53 @@ When answering questions about specific wrestlers, reference their actual stats.
                   </Button>
                 ))}
 
+                {teamId && (
+                  <div className="pt-4 border-t border-gold/10 mt-4">
+                    <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                      <Wrench className="w-3 h-3" />
+                      Agentic Actions
+                    </div>
+                    <div className="space-y-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => sendMessage("Add a new wrestler to my roster")}
+                        className="w-full justify-start text-xs text-gray-400 hover:text-green-400 hover:bg-green-500/10 h-7"
+                      >
+                        <PlusCircle className="w-3 h-3 mr-2" />
+                        Add Wrestler
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => sendMessage("Schedule a practice for this week")}
+                        className="w-full justify-start text-xs text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 h-7"
+                      >
+                        <Calendar className="w-3 h-3 mr-2" />
+                        Schedule Practice
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => sendMessage("Record today's weights for the team")}
+                        className="w-full justify-start text-xs text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 h-7"
+                      >
+                        <Scale className="w-3 h-3 mr-2" />
+                        Record Weights
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => sendMessage("What events do we have coming up?")}
+                        className="w-full justify-start text-xs text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 h-7"
+                      >
+                        <Calendar className="w-3 h-3 mr-2" />
+                        View Schedule
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-4 border-t border-gold/10 mt-4">
                   <div className="text-xs text-gray-500 mb-2">Tips</div>
                   <div className="text-xs text-gray-400 space-y-2">
@@ -394,11 +654,11 @@ When answering questions about specific wrestlers, reference their actual stats.
                     </p>
                     <p className="flex items-start gap-2">
                       <Lightbulb className="w-3 h-3 mt-0.5 text-gold" />
-                      Request drill variations for any technique
+                      {teamId ? 'Say "add wrestler John Smith at 145"' : 'Request drill variations for any technique'}
                     </p>
                     <p className="flex items-start gap-2">
                       <Lightbulb className="w-3 h-3 mt-0.5 text-gold" />
-                      Get weight cut strategies and timelines
+                      {teamId ? 'Say "schedule practice for Tuesday 3-5pm"' : 'Get weight cut strategies and timelines'}
                     </p>
                   </div>
                 </div>
@@ -427,13 +687,58 @@ When answering questions about specific wrestlers, reference their actual stats.
                       <div className={`rounded-lg p-3 ${
                         message.role === 'user'
                           ? 'bg-gold/20 text-white'
-                          : 'bg-black/40 text-gray-200 border border-gold/10'
+                          : message.actionResult?.success
+                            ? 'bg-green-900/30 text-gray-200 border border-green-500/30'
+                            : message.actionResult && !message.actionResult.success
+                              ? 'bg-red-900/30 text-gray-200 border border-red-500/30'
+                              : 'bg-black/40 text-gray-200 border border-gold/10'
                       }`}>
+                        {/* Action result indicator */}
+                        {message.actionResult && (
+                          <div className={`flex items-center gap-2 mb-2 pb-2 border-b ${
+                            message.actionResult.success ? 'border-green-500/30' : 'border-red-500/30'
+                          }`}>
+                            {message.actionResult.success ? (
+                              <CheckCircle className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-red-400" />
+                            )}
+                            <span className={`text-xs font-medium ${
+                              message.actionResult.success ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {message.actionResult.success ? 'Action Completed' : 'Action Failed'}
+                            </span>
+                          </div>
+                        )}
                         <div className="whitespace-pre-wrap text-sm leading-relaxed">
                           {message.content.split('**').map((part, i) =>
                             i % 2 === 1 ? <strong key={i} className="text-gold">{part}</strong> : part
                           )}
                         </div>
+                        {/* Confirmation buttons for pending actions */}
+                        {message.pendingAction && pendingAction?.name === message.pendingAction.name && (
+                          <div className="flex gap-2 mt-3 pt-3 border-t border-gold/20">
+                            <Button
+                              size="sm"
+                              onClick={handleConfirmAction}
+                              disabled={loading}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Confirm
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelAction}
+                              disabled={loading}
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -543,20 +848,27 @@ What specific weight class are you concerned about?`
 
   if (lower.includes('season') || lower.includes('performance') || lower.includes('overview')) {
     if (teamData) {
-      const winPct = teamData.totalWins + teamData.totalLosses > 0
-        ? ((teamData.totalWins / (teamData.totalWins + teamData.totalLosses)) * 100).toFixed(1)
-        : 0
       return `**${teamData.teamName} Season Overview**
 
-📊 **Record**: ${teamData.totalWins}-${teamData.totalLosses} (${winPct}%)
-👥 **Roster Size**: ${teamData.wrestlerCount} wrestlers
+**Record**: ${teamData.totalWins}-${teamData.totalLosses} (${teamData.winPercentage}% win rate)
+**Roster Size**: ${teamData.wrestlerCount} wrestlers
 
-The team is showing solid fundamentals. Focus areas to improve:
-- Increase pin rate for bonus points
-- Work on escape percentage from bottom
-- Develop depth at key weight classes
+**Win Types** (${teamData.bonusPointPct}% bonus point wins):
+- Pins: ${teamData.totalPins}
+- Tech Falls: ${teamData.totalTechFalls}
+- Major Decisions: ${teamData.totalMajors}
+- Decisions: ${teamData.totalDecisions}
 
-Want me to analyze specific wrestlers or weight classes?`
+**Team Points Potential**: ${teamData.totalTeamPoints} pts
+
+**Scoring Moves**:
+- Takedowns: ${teamData.totalTakedowns}
+- Escapes: ${teamData.totalEscapes}
+- Reversals: ${teamData.totalReversals}
+
+${teamData.emptyWeightClasses?.length > 0 ? `**Empty Weight Classes**: ${teamData.emptyWeightClasses.join(', ')} lbs` : 'All weight classes filled!'}
+
+Want me to analyze specific wrestlers or suggest practice focus areas?`
     }
     return `I'd love to give you a season overview, but I need access to your team data. Make sure you're logged in to see your roster stats!`
   }
