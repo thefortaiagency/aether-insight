@@ -519,9 +519,9 @@ export default function RosterPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-black/95 border-gold/30 max-h-80">
                   {loading ? (
-                    <SelectItem value="" disabled className="text-gray-400">Loading...</SelectItem>
+                    <div className="p-2 text-gray-400 text-sm">Loading...</div>
                   ) : wrestlers.length === 0 ? (
-                    <SelectItem value="" disabled className="text-gray-400">No wrestlers found</SelectItem>
+                    <div className="p-2 text-gray-400 text-sm">No wrestlers found</div>
                   ) : (
                     wrestlers.map(w => (
                       <SelectItem key={w.id} value={w.id} className="text-white hover:bg-gold/20">
