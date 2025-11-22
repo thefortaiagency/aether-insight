@@ -77,7 +77,7 @@ export const AI_TOOLS: AITool[] = [
   // ============== EVENT/CALENDAR MANAGEMENT ==============
   {
     name: 'add_event',
-    description: 'Add a new event (tournament, dual meet, scrimmage) to the calendar',
+    description: 'Add ONE SINGLE event to the calendar. WARNING: If user provides MULTIPLE events/dates, you MUST use bulk_import_events instead. This tool is ONLY for adding exactly one event.',
     category: 'events',
     dangerous: false,
     parameters: [
