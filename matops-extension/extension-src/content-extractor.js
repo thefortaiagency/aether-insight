@@ -301,10 +301,11 @@ function parseMatchLine(text, li, wrestlerName) {
   const techMatch = text.match(/(?:Tech\.?\s*(?:Fall)?|TF|T\.F\.)\s*(\d+)\s*[-–]\s*(\d+)/i);
   // Major Decision: "MD 12-3", "Maj 12-3", "Major 12-3"
   const majMatch = text.match(/(?:Maj(?:or)?\.?|MD)\s*(\d+)\s*[-–]\s*(\d+)/i);
-  // Fall/Pin: Multiple formats - "Fall 2:34", "Fall", "Pin 1:23", "F 2:34", "FL 2:34", time pattern like "(2:34)"
+  // Fall/Pin: Multiple formats - "Fall 2:34", "Fall", "Pin 1:23", "F 2:34", "FL 2:34", "(F 2:45)"
   const fallMatch = text.match(/\b(?:Fall|Pin|FL)\b\s*([\d:]*)/i) ||
-                    text.match(/\bF\s+(\d+:\d+)/i) ||
-                    text.match(/\(\s*(\d+:\d+)\s*\)(?!\s*\d)/);  // Time in parens not followed by score
+                    text.match(/\(\s*F\s+(\d+:\d+)\s*\)/i) ||      // "(F 2:45)" format from USA Bracketing
+                    text.match(/\bF\s+(\d+:\d+)/i) ||              // "F 2:34" without parens
+                    text.match(/\(\s*(\d+:\d+)\s*\)(?!\s*\d)/);    // Just time in parens "(2:34)"
   // Decision: "Dec 8-4", "D 8-4", "SV-1 8-6" (sudden victory)
   const decMatch = text.match(/(?:Dec\.?|SV-?\d?)\s*(\d+)\s*[-–]\s*(\d+)/i);
   // Forfeit: "For", "Forfeit", "FF", "F.F."
