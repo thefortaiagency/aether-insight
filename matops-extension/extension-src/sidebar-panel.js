@@ -1737,6 +1737,15 @@ async function openMatchImportModal() {
             console.log('[Mat Ops Import] Match has NO matchId:', wrestler.name, 'vs', match.opponent);
           }
 
+          // Debug: Log full match object
+          console.log(`[Mat Ops Import] Match data for ${wrestler.name} vs ${match.opponent}:`, {
+            score: match.score,
+            wrestlerScore: match.wrestlerScore,
+            opponentScore: match.opponentScore,
+            winType: match.winType,
+            weightClass: wc.weight
+          });
+
           // Parse scores from score string if not already parsed
           let wrestlerScore = match.wrestlerScore;
           let opponentScore = match.opponentScore;
@@ -1758,6 +1767,15 @@ async function openMatchImportModal() {
                 }
                 console.log(`[Mat Ops Import] Parsed score from "${match.score}": ${wrestlerScore}-${opponentScore}`);
               }
+            }
+          }
+
+          // If we still don't have scores, try to use calculated scores from detailed stats
+          if ((!wrestlerScore || wrestlerScore === 0) && detailedStats) {
+            if (detailedStats.finalScore !== undefined) {
+              wrestlerScore = detailedStats.finalScore;
+              opponentScore = detailedStats.finalScoreOpp || 0;
+              console.log(`[Mat Ops Import] Using calculated scores from detailed stats: ${wrestlerScore}-${opponentScore}`);
             }
           }
 
