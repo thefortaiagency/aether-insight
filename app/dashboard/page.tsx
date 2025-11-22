@@ -175,11 +175,20 @@ export default function DashboardPage() {
       <div className="relative z-10 p-4 md:p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gold mb-2">Mat Ops Dashboard</h1>
-          <p className="text-gray-400">
-            Welcome back, {session.coach?.first_name || 'Coach'}!
-            {session.team && <span> • {session.team.name}</span>}
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gold mb-1">
+                {session.team?.name || 'Mat Ops Dashboard'}
+              </h1>
+              <p className="text-gray-400">
+                Welcome back, {session.coach?.first_name || 'Coach'}!
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-black/60 border border-gold/30 rounded-lg px-4 py-2">
+              <Trophy className="w-5 h-5 text-gold" />
+              <span className="text-white font-semibold">2025-26 Season</span>
+            </div>
+          </div>
         </div>
 
         {/* Stats Overview */}
