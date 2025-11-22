@@ -44,6 +44,28 @@ interface MatchResult {
   wrestlerNotFound: boolean
 }
 
+// Standard high school weight classes
+const STANDARD_WEIGHT_CLASSES = [106, 113, 120, 126, 132, 138, 144, 150, 157, 165, 175, 190, 215, 285]
+
+// Map any weight to nearest standard weight class
+function mapToStandardWeight(weight: number): number {
+  if (!weight || weight <= 0) return 106
+
+  // Find the closest standard weight class
+  let closest = STANDARD_WEIGHT_CLASSES[0]
+  let minDiff = Math.abs(weight - closest)
+
+  for (const stdWeight of STANDARD_WEIGHT_CLASSES) {
+    const diff = Math.abs(weight - stdWeight)
+    if (diff < minDiff) {
+      minDiff = diff
+      closest = stdWeight
+    }
+  }
+
+  return closest
+}
+
 // Simple Levenshtein distance for fuzzy matching
 function levenshtein(a: string, b: string): number {
   const matrix: number[][] = []
@@ -277,13 +299,16 @@ export async function PUT(request: Request) {
       // Truncate string fields to fit database column limits (varchar 50)
       const truncate = (str: string | undefined, max: number) => str ? str.substring(0, max) : null
 
+      // Map to standard weight class
+      const standardWeight = mapToStandardWeight(match.weightClass)
+
       const { data, error } = await supabase
         .from('matches')
         .insert({
           wrestler_id: match.wrestlerId,
           opponent_name: truncate(match.opponent, 100),
           opponent_team: truncate(match.opponentTeam, 100),
-          weight_class: match.weightClass,
+          weight_class: standardWeight,
           result: match.result.toLowerCase(),
           win_type: outcomeType,
           final_score_for: match.wrestlerScore || 0,
@@ -333,13 +358,14 @@ export async function PUT(request: Request) {
         else if (match.winType === 'Forfeit') outcomeType = 'forfeit'
 
         const truncate = (str: string | undefined, max: number) => str ? str.substring(0, max) : null
+        const standardWeight = mapToStandardWeight(match.weightClass)
 
         const { error } = await supabase
           .from('matches')
           .update({
             opponent_name: truncate(match.opponent, 100),
             opponent_team: truncate(match.opponentTeam, 100),
-            weight_class: match.weightClass,
+            weight_class: standardWeight,
             result: match.result.toLowerCase(),
             win_type: outcomeType,
             final_score_for: match.wrestlerScore || 0,

@@ -11,6 +11,7 @@ let shouldPauseCapture = false; // Flag to pause auto-capture
 // Mat Ops AI specific state
 let matOpsConversationHistory = [];
 let matOpsTeamData = null;
+let matOpsTeamId = null; // Store team ID for agentic AI
 
 // Mat Ops API base URL
 const MATOPS_API_BASE = 'https://insight.aethervtc.ai'; // Production Mat Ops URL
@@ -1022,6 +1023,8 @@ async function loadMatOpsTeamData() {
         if (result && result[0] && result[0].result) {
           const session = result[0].result;
           if (session.team) {
+            // Store team ID for agentic AI
+            matOpsTeamId = session.team.id;
             // Fetch wrestlers from API
             const response = await fetch(`${MATOPS_API_BASE}/api/extension/wrestlers?teamId=${session.team.id}`);
             if (response.ok) {
@@ -1029,7 +1032,9 @@ async function loadMatOpsTeamData() {
               if (data.wrestlers) {
                 matOpsTeamData = processTeamData(session.team, data.wrestlers);
                 updateMatOpsTeamDisplay();
-                console.log('[Mat Ops AI] Team data loaded:', matOpsTeamData);
+                // Save to storage for offline use
+                chrome.storage.local.set({ matOpsTeamData, matOpsTeamId });
+                console.log('[Mat Ops AI] Team data loaded, teamId:', matOpsTeamId);
                 return;
               }
             }
@@ -1041,11 +1046,12 @@ async function loadMatOpsTeamData() {
     }
 
     // Try loading from storage
-    const stored = await chrome.storage.local.get(['matOpsTeamData']);
+    const stored = await chrome.storage.local.get(['matOpsTeamData', 'matOpsTeamId']);
     if (stored.matOpsTeamData) {
       matOpsTeamData = stored.matOpsTeamData;
+      matOpsTeamId = stored.matOpsTeamId || null;
       updateMatOpsTeamDisplay();
-      console.log('[Mat Ops AI] Team data loaded from storage');
+      console.log('[Mat Ops AI] Team data loaded from storage, teamId:', matOpsTeamId);
       return;
     }
 
@@ -1125,7 +1131,7 @@ async function sendMatOpsAIMessage() {
       context += buildTeamContext(matOpsTeamData);
     }
 
-    // Call Mat Ops AI API
+    // Call Mat Ops AI API with teamId for agentic tools
     const response = await fetch(`${MATOPS_API_BASE}/api/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1137,7 +1143,9 @@ async function sendMatOpsAIMessage() {
             content: m.content
           })),
           { role: 'user', content: question }
-        ]
+        ],
+        teamId: matOpsTeamId, // Enable agentic tools
+        enableTools: !!matOpsTeamId // Only enable if we have a team
       })
     });
 
