@@ -81,7 +81,7 @@ export const AI_TOOLS: AITool[] = [
     dangerous: false,
     parameters: [
       { name: 'name', type: 'string', description: 'Event name', required: true },
-      { name: 'type', type: 'string', description: 'Event type', required: true, enum: ['dual', 'tournament', 'scrimmage', 'conference', 'sectional', 'regional', 'state'] },
+      { name: 'type', type: 'string', description: 'Event type', required: true, enum: ['dual', 'tournament', 'scrimmage', 'conference', 'sectional', 'regional', 'state', 'camp', 'clinic'] },
       { name: 'date', type: 'date', description: 'Event date (YYYY-MM-DD)', required: true },
       { name: 'start_time', type: 'string', description: 'Start time (HH:MM)', required: false },
       { name: 'location', type: 'string', description: 'Venue/location name', required: false },
@@ -90,6 +90,8 @@ export const AI_TOOLS: AITool[] = [
       { name: 'home_away', type: 'string', description: 'Home or away', required: false, enum: ['home', 'away', 'neutral'] },
       { name: 'weigh_in_time', type: 'string', description: 'Weigh-in time', required: false },
       { name: 'bus_departure_time', type: 'string', description: 'Bus departure time', required: false },
+      { name: 'importance', type: 'number', description: 'Importance level 1-5 (1=JV/scrimmage, 3=regular, 5=state/peak)', required: false },
+      { name: 'peak_event', type: 'boolean', description: 'Mark as peak performance event (state, regionals)', required: false },
     ]
   },
   {
@@ -99,7 +101,7 @@ export const AI_TOOLS: AITool[] = [
     dangerous: false,
     parameters: [
       { name: 'event_name', type: 'string', description: 'Event name to find', required: true },
-      { name: 'field', type: 'string', description: 'Field to update', required: true, enum: ['name', 'date', 'start_time', 'end_time', 'location', 'address', 'opponent_team', 'weigh_in_time', 'bus_departure_time', 'notes'] },
+      { name: 'field', type: 'string', description: 'Field to update', required: true, enum: ['name', 'date', 'start_time', 'end_time', 'location', 'address', 'opponent_team', 'weigh_in_time', 'bus_departure_time', 'notes', 'importance', 'peak_event'] },
       { name: 'value', type: 'string', description: 'New value', required: true },
     ]
   },
@@ -306,6 +308,25 @@ export const AI_TOOLS: AITool[] = [
     parameters: [
       { name: 'wrestler_name', type: 'string', description: 'Wrestler name (first last)', required: true },
       { name: 'limit', type: 'number', description: 'Max number of matches to return (default all)', required: false },
+    ]
+  },
+  {
+    name: 'get_peak_events',
+    description: 'Get upcoming peak/important events for periodization planning',
+    category: 'query',
+    dangerous: false,
+    parameters: [
+      { name: 'min_importance', type: 'number', description: 'Minimum importance level 1-5 (default 4)', required: false },
+    ]
+  },
+  {
+    name: 'suggest_practice_plan',
+    description: 'Get AI-suggested practice plan based on upcoming events and periodization',
+    category: 'query',
+    dangerous: false,
+    parameters: [
+      { name: 'date', type: 'date', description: 'Date for the practice (YYYY-MM-DD)', required: true },
+      { name: 'duration_minutes', type: 'number', description: 'Total practice duration in minutes', required: false },
     ]
   },
 ]

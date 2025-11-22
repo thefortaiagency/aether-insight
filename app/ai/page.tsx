@@ -447,8 +447,8 @@ When answering questions about specific wrestlers, reference their actual stats.
         }
         setMessages(prev => [...prev, assistantMessage])
 
-        // If action was successful, refresh team data
-        if (data.actionResult?.success) {
+        // Only reload for write actions (mutations), not read-only queries
+        if (data.actionResult?.success && data.actionResult?.mutated) {
           // Small delay then refresh
           setTimeout(() => {
             window.location.reload()

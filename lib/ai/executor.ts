@@ -16,6 +16,7 @@ export interface ActionResult {
   data?: any
   requiresConfirmation?: boolean
   confirmationMessage?: string
+  mutated?: boolean // True if data was modified (triggers UI refresh)
 }
 
 // Helper to find wrestler by name
@@ -115,7 +116,8 @@ async function addWrestler(teamId: string, params: any): Promise<ActionResult> {
   return {
     success: true,
     message: `Added ${first_name} ${last_name} to the roster at ${weight_class || 'unassigned'} lbs.`,
-    data
+    data,
+    mutated: true
   }
 }
 
@@ -146,7 +148,8 @@ async function updateWrestler(teamId: string, params: any): Promise<ActionResult
 
   return {
     success: true,
-    message: `Updated ${wrestler.first_name} ${wrestler.last_name}'s ${field} to ${value}.`
+    message: `Updated ${wrestler.first_name} ${wrestler.last_name}'s ${field} to ${value}.`,
+    mutated: true
   }
 }
 
@@ -174,7 +177,8 @@ async function deactivateWrestler(teamId: string, params: any): Promise<ActionRe
 
   return {
     success: true,
-    message: `Deactivated ${wrestler.first_name} ${wrestler.last_name} from the roster.`
+    message: `Deactivated ${wrestler.first_name} ${wrestler.last_name} from the roster.`,
+    mutated: true
   }
 }
 
@@ -199,14 +203,28 @@ async function moveWeightClass(teamId: string, params: any): Promise<ActionResul
 
   return {
     success: true,
-    message: `Moved ${wrestler.first_name} ${wrestler.last_name} from ${oldWeight || 'unassigned'} to ${new_weight_class} lbs.`
+    message: `Moved ${wrestler.first_name} ${wrestler.last_name} from ${oldWeight || 'unassigned'} to ${new_weight_class} lbs.`,
+    mutated: true
   }
 }
 
 // ============== EVENT ACTIONS ==============
 
 async function addEvent(teamId: string, params: any): Promise<ActionResult> {
-  const { name, type, date, start_time, location, address, opponent_team, home_away, weigh_in_time, bus_departure_time } = params
+  const { name, type, date, start_time, location, address, opponent_team, home_away, weigh_in_time, bus_departure_time, importance, peak_event } = params
+
+  // Auto-set importance based on event type if not provided
+  let eventImportance = importance
+  if (!eventImportance) {
+    if (['state', 'regional', 'sectional'].includes(type)) eventImportance = 5
+    else if (['conference'].includes(type)) eventImportance = 4
+    else if (['tournament', 'dual'].includes(type)) eventImportance = 3
+    else if (['scrimmage'].includes(type)) eventImportance = 2
+    else eventImportance = 3
+  }
+
+  // Auto-set peak_event for high importance
+  const isPeakEvent = peak_event !== undefined ? peak_event : eventImportance >= 5
 
   const { data, error } = await supabase
     .from('events')
@@ -222,6 +240,8 @@ async function addEvent(teamId: string, params: any): Promise<ActionResult> {
       home_away: home_away || null,
       weigh_in_time: weigh_in_time || null,
       bus_departure_time: bus_departure_time || null,
+      importance: eventImportance,
+      peak_event: isPeakEvent,
     })
     .select()
     .single()
@@ -230,10 +250,12 @@ async function addEvent(teamId: string, params: any): Promise<ActionResult> {
     return { success: false, message: `Failed to add event: ${error.message}` }
   }
 
+  const importanceLabel = ['', 'Low', 'Med-Low', 'Medium', 'High', 'Peak'][eventImportance]
   return {
     success: true,
-    message: `Added "${name}" (${type}) on ${date}${location ? ` at ${location}` : ''}.`,
-    data
+    message: `Added "${name}" (${type}) on ${date}${location ? ` at ${location}` : ''}. Importance: ${importanceLabel}${isPeakEvent ? ' [PEAK EVENT]' : ''}.`,
+    data,
+    mutated: true
   }
 }
 
@@ -256,7 +278,8 @@ async function updateEvent(teamId: string, params: any): Promise<ActionResult> {
 
   return {
     success: true,
-    message: `Updated "${event.name}" - ${field} is now "${value}".`
+    message: `Updated "${event.name}" - ${field} is now "${value}".`,
+    mutated: true
   }
 }
 
@@ -279,7 +302,8 @@ async function cancelEvent(teamId: string, params: any): Promise<ActionResult> {
 
   return {
     success: true,
-    message: `Cancelled "${event.name}" on ${event.date}.${reason ? ` Reason: ${reason}` : ''}`
+    message: `Cancelled "${event.name}" on ${event.date}.${reason ? ` Reason: ${reason}` : ''}`,
+    mutated: true
   }
 }
 
@@ -314,7 +338,7 @@ async function recordEventResults(teamId: string, params: any): Promise<ActionRe
     resultMessage += ` (${team_placement}${getOrdinalSuffix(team_placement)} place)`
   }
 
-  return { success: true, message: resultMessage }
+  return { success: true, message: resultMessage, mutated: true }
 }
 
 // ============== PRACTICE ACTIONS ==============
@@ -349,7 +373,8 @@ async function addPractice(teamId: string, params: any): Promise<ActionResult> {
   return {
     success: true,
     message: `Scheduled ${type || 'regular'} practice for ${date} from ${start_time} to ${end_time}.`,
-    data
+    data,
+    mutated: true
   }
 }
 
@@ -377,7 +402,8 @@ async function updatePractice(teamId: string, params: any): Promise<ActionResult
 
   return {
     success: true,
-    message: `Updated practice on ${date} - ${field} is now "${value}".`
+    message: `Updated practice on ${date} - ${field} is now "${value}".`,
+    mutated: true
   }
 }
 
@@ -400,7 +426,8 @@ async function cancelPractice(teamId: string, params: any): Promise<ActionResult
 
   return {
     success: true,
-    message: `Cancelled practice on ${date}.${reason ? ` Reason: ${reason}` : ''}`
+    message: `Cancelled practice on ${date}.${reason ? ` Reason: ${reason}` : ''}`,
+    mutated: true
   }
 }
 
@@ -430,7 +457,8 @@ async function recordPracticeDetails(teamId: string, params: any): Promise<Actio
 
   return {
     success: true,
-    message: `Recorded details for practice on ${date}.`
+    message: `Recorded details for practice on ${date}.`,
+    mutated: true
   }
 }
 
@@ -459,7 +487,8 @@ async function recordAttendance(teamId: string, params: any): Promise<ActionResu
 
   return {
     success: true,
-    message: `Recorded attendance for ${date}: ${attendance.present.length} present, ${attendance.absent.length} absent, ${attendance.excused.length} excused.`
+    message: `Recorded attendance for ${date}: ${attendance.present.length} present, ${attendance.absent.length} absent, ${attendance.excused.length} excused.`,
+    mutated: true
   }
 }
 
@@ -501,7 +530,7 @@ async function recordWeight(teamId: string, params: any): Promise<ActionResult> 
     }
   }
 
-  return { success: true, message, data }
+  return { success: true, message, data, mutated: true }
 }
 
 async function bulkRecordWeights(teamId: string, params: any): Promise<ActionResult> {
@@ -535,7 +564,8 @@ async function bulkRecordWeights(teamId: string, params: any): Promise<ActionRes
 
   return {
     success: successCount > 0,
-    message: `Recorded weights for ${successCount}/${weights.length} wrestlers on ${recordDate}.`
+    message: `Recorded weights for ${successCount}/${weights.length} wrestlers on ${recordDate}.`,
+    mutated: successCount > 0
   }
 }
 
@@ -581,7 +611,8 @@ async function addMatchResult(teamId: string, params: any): Promise<ActionResult
   return {
     success: true,
     message: `Recorded ${result}${winTypeText} for ${wrestler.first_name} ${wrestler.last_name} vs ${opponent_name}.`,
-    data
+    data,
+    mutated: true
   }
 }
 
@@ -916,6 +947,131 @@ function getOrdinalSuffix(n: number): string {
   return s[(v - 20) % 10] || s[v] || s[0]
 }
 
+async function getPeakEvents(teamId: string, params: any): Promise<ActionResult> {
+  const { min_importance = 4 } = params
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('team_id', teamId)
+    .gte('date', today)
+    .gte('importance', min_importance)
+    .order('date', { ascending: true })
+
+  if (error) {
+    return { success: false, message: `Failed to fetch peak events: ${error.message}` }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: true, message: `No upcoming events with importance ${min_importance}+ found.`, data: [] }
+  }
+
+  const importanceLabels = ['', 'Low', 'Med-Low', 'Medium', 'High', 'Peak']
+  const eventList = data.map(e => {
+    const daysOut = Math.ceil((new Date(e.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    return `- **${e.name}** (${e.type}) - ${e.date} [${importanceLabels[e.importance]}] - ${daysOut} days out${e.peak_event ? ' ⭐ PEAK' : ''}`
+  }).join('\n')
+
+  return {
+    success: true,
+    message: `**Upcoming Important Events:**\n${eventList}`,
+    data
+  }
+}
+
+async function suggestPracticePlan(teamId: string, params: any): Promise<ActionResult> {
+  const { date, duration_minutes = 120 } = params
+
+  // Get next peak event
+  const { data: peakEvents } = await supabase
+    .from('events')
+    .select('*')
+    .eq('team_id', teamId)
+    .gte('date', date)
+    .gte('importance', 4)
+    .order('date', { ascending: true })
+    .limit(1)
+
+  const nextPeakEvent = peakEvents?.[0]
+  const daysOut = nextPeakEvent
+    ? Math.ceil((new Date(nextPeakEvent.date).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
+    : null
+
+  // Determine phase based on days out from peak
+  let phase = 'build'
+  let intensity = 3
+  let focusAreas: string[] = []
+
+  if (daysOut !== null) {
+    if (daysOut <= 2) {
+      phase = 'peak'
+      intensity = 2 // Light before competition
+      focusAreas = ['visualization', 'light technique', 'weight management', 'mental prep']
+    } else if (daysOut <= 7) {
+      phase = 'taper'
+      intensity = 3
+      focusAreas = ['sharpening', 'specific situations', 'game plan review']
+    } else if (daysOut <= 14) {
+      phase = 'competition'
+      intensity = 4
+      focusAreas = ['live wrestling', 'match simulation', 'conditioning maintenance']
+    } else {
+      phase = 'build'
+      intensity = 4
+      focusAreas = ['technique development', 'conditioning', 'drilling']
+    }
+  }
+
+  // Calculate time breakdown
+  const totalMinutes = duration_minutes
+  let warmup = 15
+  let technique = Math.round(totalMinutes * 0.25)
+  let drilling = Math.round(totalMinutes * 0.20)
+  let live = phase === 'peak' ? 0 : Math.round(totalMinutes * 0.20)
+  let conditioning = phase === 'taper' || phase === 'peak' ? 10 : Math.round(totalMinutes * 0.15)
+  let cooldown = 10
+
+  const plan = {
+    date,
+    phase,
+    intensity,
+    duration_minutes: totalMinutes,
+    target_event: nextPeakEvent?.name,
+    days_to_peak: daysOut,
+    focus_areas: focusAreas,
+    structure: {
+      warmup_minutes: warmup,
+      technique_minutes: technique,
+      drilling_minutes: drilling,
+      live_wrestling_minutes: live,
+      conditioning_minutes: conditioning,
+      cooldown_minutes: cooldown
+    }
+  }
+
+  const intensityLabels = ['', 'Recovery', 'Light', 'Medium', 'Hard', 'Max']
+
+  return {
+    success: true,
+    message: `**Suggested Practice Plan for ${date}**
+
+**Phase:** ${phase.toUpperCase()}${nextPeakEvent ? ` (${daysOut} days to ${nextPeakEvent.name})` : ''}
+**Intensity:** ${intensityLabels[intensity]}
+
+**Focus Areas:** ${focusAreas.join(', ')}
+
+**Structure (${totalMinutes} min total):**
+- Warmup: ${warmup} min
+- Technique: ${technique} min
+- Drilling: ${drilling} min
+- Live Wrestling: ${live} min
+- Conditioning: ${conditioning} min
+- Cooldown: ${cooldown} min`,
+    data: plan
+  }
+}
+
 // ============== MAIN EXECUTOR ==============
 
 const ACTION_MAP: Record<string, (teamId: string, params: any) => Promise<ActionResult>> = {
@@ -954,6 +1110,8 @@ const ACTION_MAP: Record<string, (teamId: string, params: any) => Promise<Action
   get_attendance_report: getAttendanceReport,
   get_team_record: getTeamRecord,
   get_wrestler_matches: getWrestlerMatches,
+  get_peak_events: getPeakEvents,
+  suggest_practice_plan: suggestPracticePlan,
 }
 
 export async function executeAction(
