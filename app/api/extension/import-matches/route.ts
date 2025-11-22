@@ -36,8 +36,8 @@ interface MatchResult {
   duplicate?: {
     id: string
     opponent_name: string
-    scheduled_time: string
-    outcome: string
+    match_date: string
+    result: string
   }
   isNew: boolean
   isDuplicate: boolean
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     if (wrestlerIds.length > 0) {
       const { data: matchesData } = await supabase
         .from('matches')
-        .select('id, wrestler_id, opponent_name, scheduled_time, outcome, wrestler_score, opponent_score, weight_class')
+        .select('id, wrestler_id, opponent_name, match_date, result, final_score_for, final_score_against, weight_class')
         .in('wrestler_id', wrestlerIds)
 
       existingMatches = matchesData || []
@@ -159,8 +159,8 @@ export async function POST(request: Request) {
 
         // Check if scores match (if available)
         if (imported.wrestlerScore !== undefined && imported.opponentScore !== undefined) {
-          if (existing.wrestler_score === imported.wrestlerScore &&
-            existing.opponent_score === imported.opponentScore) {
+          if (existing.final_score_for === imported.wrestlerScore &&
+            existing.final_score_against === imported.opponentScore) {
             return true
           }
         }
@@ -179,8 +179,8 @@ export async function POST(request: Request) {
         duplicate: duplicate ? {
           id: duplicate.id,
           opponent_name: duplicate.opponent_name,
-          scheduled_time: duplicate.scheduled_time,
-          outcome: duplicate.outcome
+          match_date: duplicate.match_date,
+          result: duplicate.result
         } : undefined,
         isNew: !duplicate,
         isDuplicate: !!duplicate,
@@ -261,17 +261,12 @@ export async function PUT(request: Request) {
           opponent_name: match.opponent,
           opponent_team: match.opponentTeam,
           weight_class: match.weightClass,
-          outcome: match.result.toLowerCase(),
-          outcome_type: outcomeType,
-          wrestler_score: match.wrestlerScore || 0,
-          opponent_score: match.opponentScore || 0,
-          scheduled_time: match.date || new Date().toISOString().split('T')[0],
-          round: match.round,
-          takedowns_scored: match.takedowns || 0,
-          escapes_scored: match.escapes || 0,
-          reversals_scored: match.reversals || 0,
-          nearfall_2_scored: match.nearfall2 || 0,
-          nearfall_3_scored: match.nearfall3 || 0
+          result: match.result.toLowerCase(),
+          win_type: outcomeType,
+          final_score_for: match.wrestlerScore || 0,
+          final_score_against: match.opponentScore || 0,
+          match_date: match.date || new Date().toISOString().split('T')[0],
+          round: match.round
         })
         .select()
         .single()
