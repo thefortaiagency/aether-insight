@@ -853,6 +853,62 @@ async function getTeamRecord(teamId: string, params: any): Promise<ActionResult>
   }
 }
 
+async function getWrestlerMatches(teamId: string, params: any): Promise<ActionResult> {
+  const { wrestler_name, limit } = params
+
+  const wrestler = await findWrestler(teamId, wrestler_name)
+  if (!wrestler) {
+    return { success: false, message: `Could not find wrestler: ${wrestler_name}` }
+  }
+
+  let query = supabase
+    .from('matches')
+    .select('*')
+    .eq('wrestler_id', wrestler.id)
+    .order('match_date', { ascending: false })
+
+  if (limit) {
+    query = query.limit(parseInt(limit))
+  }
+
+  const { data: matches, error } = await query
+
+  if (error) {
+    return { success: false, message: `Failed to fetch matches: ${error.message}` }
+  }
+
+  if (!matches || matches.length === 0) {
+    return {
+      success: true,
+      message: `No matches found for ${wrestler.first_name} ${wrestler.last_name}.`,
+      data: []
+    }
+  }
+
+  // Format match list
+  const matchList = matches.map((m, i) => {
+    const result = m.result === 'win' ? 'W' : 'L'
+    const winType = m.win_type ? ` (${m.win_type.replace('_', ' ')})` : ''
+    const score = m.final_score_for !== undefined && m.final_score_against !== undefined
+      ? ` ${m.final_score_for}-${m.final_score_against}`
+      : ''
+    const date = m.match_date || 'Unknown date'
+    const opponent = m.opponent_name || 'Unknown'
+    const team = m.opponent_team ? ` (${m.opponent_team})` : ''
+
+    return `${i + 1}. ${date}: **${result}**${winType}${score} vs ${opponent}${team}`
+  }).join('\n')
+
+  const wins = matches.filter(m => m.result === 'win').length
+  const losses = matches.filter(m => m.result === 'loss').length
+
+  return {
+    success: true,
+    message: `**${wrestler.first_name} ${wrestler.last_name}** - Match History (${wins}-${losses}):\n\n${matchList}`,
+    data: matches
+  }
+}
+
 // Helper function for ordinal suffix
 function getOrdinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd']
@@ -897,6 +953,7 @@ const ACTION_MAP: Record<string, (teamId: string, params: any) => Promise<Action
   get_roster_by_weight: getRosterByWeight,
   get_attendance_report: getAttendanceReport,
   get_team_record: getTeamRecord,
+  get_wrestler_matches: getWrestlerMatches,
 }
 
 export async function executeAction(

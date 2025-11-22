@@ -298,6 +298,16 @@ export const AI_TOOLS: AITool[] = [
     dangerous: false,
     parameters: []
   },
+  {
+    name: 'get_wrestler_matches',
+    description: 'Get all matches/match history for a specific wrestler',
+    category: 'query',
+    dangerous: false,
+    parameters: [
+      { name: 'wrestler_name', type: 'string', description: 'Wrestler name (first last)', required: true },
+      { name: 'limit', type: 'number', description: 'Max number of matches to return (default all)', required: false },
+    ]
+  },
 ]
 
 // Convert to OpenAI function calling format
