@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-  Trophy, Users, Video, BarChart3, Activity, Clock,
-  TrendingUp, Award, Calendar, PlayCircle, Settings,
-  ChevronRight, Zap, Shield, Target, Star, Loader2
+  Trophy, Users, BarChart3, Activity,
+  TrendingUp, Award, Calendar,
+  ChevronRight, Zap, Target, Star, Loader2
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
@@ -136,10 +136,10 @@ export default function DashboardPage() {
       iconBg: 'bg-purple-500/20 border border-purple-500/30'
     },
     {
-      title: 'Watch Videos',
-      description: 'Review match recordings',
-      icon: <Video className="w-6 h-6 text-orange-400" />,
-      href: '/wrestling-videos',
+      title: 'Calendar',
+      description: 'Schedule and events',
+      icon: <Calendar className="w-6 h-6 text-orange-400" />,
+      href: '/calendar',
       color: 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500',
       iconBg: 'bg-orange-500/20 border border-orange-500/30'
     }
@@ -383,38 +383,8 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Feature Cards */}
-        <div className="grid md:grid-cols-3 gap-4 mt-6">
-          <Card className="bg-gradient-to-br from-gold/20 to-gold/10 backdrop-blur border border-gold/30">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <Zap className="w-8 h-8 text-gold" />
-                <div>
-                  <h3 className="text-lg font-bold text-white">AI Video Analysis</h3>
-                  <p className="text-sm text-gray-300">Coming Soon</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-400">
-                Automatic move detection and scoring from video recordings.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500/20 to-purple-500/10 backdrop-blur border border-purple-500/30">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <Shield className="w-8 h-8 text-purple-400" />
-                <div>
-                  <h3 className="text-lg font-bold text-white">Tournament Mode</h3>
-                  <p className="text-sm text-gray-300">Coming Soon</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-400">
-                Complete bracket management and live tournament scoring.
-              </p>
-            </CardContent>
-          </Card>
-
+        {/* Feature Card */}
+        <div className="grid md:grid-cols-1 gap-4 mt-6 max-w-md">
           <Card className="bg-gradient-to-br from-green-500/20 to-green-500/10 backdrop-blur border border-green-500/30">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-3">
