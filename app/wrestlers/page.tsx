@@ -5,9 +5,24 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   User, Trophy, TrendingUp, Target,
-  Plus, Search, Download, ChevronRight
+  Plus, Search, Download, ChevronRight, Pencil, X, Save, Loader2
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
@@ -47,6 +62,17 @@ export default function WrestlersPage() {
   const [selectedWeightClass, setSelectedWeightClass] = useState<number | null>(null)
   const [teamId, setTeamId] = useState<string | null>(null)
   const [teamName, setTeamName] = useState<string>('')
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingWrestler, setEditingWrestler] = useState<Wrestler | null>(null)
+  const [editForm, setEditForm] = useState({
+    first_name: '',
+    last_name: '',
+    weight_class: '',
+    grade: '',
+  })
+  const [saving, setSaving] = useState(false)
 
   // Get team ID from session
   useEffect(() => {
@@ -178,6 +204,59 @@ export default function WrestlersPage() {
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase()
+  }
+
+  const openEditModal = (wrestler: Wrestler, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setEditingWrestler(wrestler)
+    setEditForm({
+      first_name: wrestler.first_name,
+      last_name: wrestler.last_name,
+      weight_class: wrestler.weight_class?.toString() || '',
+      grade: wrestler.grade?.toString() || '',
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleSaveWrestler = async () => {
+    if (!editingWrestler) return
+    setSaving(true)
+
+    try {
+      const { error } = await supabase
+        .from('wrestlers')
+        .update({
+          first_name: editForm.first_name,
+          last_name: editForm.last_name,
+          weight_class: editForm.weight_class ? parseInt(editForm.weight_class) : null,
+          grade: editForm.grade ? parseInt(editForm.grade) : null,
+        })
+        .eq('id', editingWrestler.id)
+
+      if (error) throw error
+
+      // Update local state
+      setWrestlers(prev => prev.map(w =>
+        w.id === editingWrestler.id
+          ? {
+              ...w,
+              first_name: editForm.first_name,
+              last_name: editForm.last_name,
+              weight_class: editForm.weight_class ? parseInt(editForm.weight_class) : null,
+              grade: editForm.grade ? parseInt(editForm.grade) : null,
+            }
+          : w
+      ))
+
+      setEditModalOpen(false)
+      setEditingWrestler(null)
+    } catch (error) {
+      console.error('Error saving wrestler:', error)
+      alert('Failed to save wrestler. Please try again.')
+    }
+
+    setSaving(false)
   }
 
   return (
@@ -342,7 +421,16 @@ export default function WrestlersPage() {
                           </p>
                         </div>
                       </div>
-                      <Badge className={`${
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-[#D4AF38] hover:bg-[#D4AF38]/20"
+                          onClick={(e) => openEditModal(wrestler, e)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Badge className={`${
                         Number(getWinPercentage(wrestler.wins, wrestler.losses)) >= 70
                           ? 'bg-green-600'
                           : Number(getWinPercentage(wrestler.wins, wrestler.losses)) >= 50
@@ -351,6 +439,7 @@ export default function WrestlersPage() {
                       }`}>
                         {getWinPercentage(wrestler.wins, wrestler.losses)}%
                       </Badge>
+                      </div>
                     </div>
 
                     <div className="space-y-3">
@@ -397,6 +486,104 @@ export default function WrestlersPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Wrestler Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="bg-gray-900 border border-[#D4AF38]/30 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#D4AF38]">Edit Wrestler</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name" className="text-gray-300">First Name</Label>
+                <Input
+                  id="first_name"
+                  value={editForm.first_name}
+                  onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                  className="bg-black/50 border-[#D4AF38]/30 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name" className="text-gray-300">Last Name</Label>
+                <Input
+                  id="last_name"
+                  value={editForm.last_name}
+                  onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                  className="bg-black/50 border-[#D4AF38]/30 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="weight_class" className="text-gray-300">Weight Class</Label>
+                <Select
+                  value={editForm.weight_class}
+                  onValueChange={(value) => setEditForm({ ...editForm, weight_class: value })}
+                >
+                  <SelectTrigger className="bg-black/50 border-[#D4AF38]/30 text-white">
+                    <SelectValue placeholder="Select weight" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-900 border-[#D4AF38]/30">
+                    {weightClasses.map(wc => (
+                      <SelectItem key={wc} value={wc.toString()} className="text-white hover:bg-[#D4AF38]/20">
+                        {wc} lbs
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="grade" className="text-gray-300">Grade</Label>
+                <Select
+                  value={editForm.grade}
+                  onValueChange={(value) => setEditForm({ ...editForm, grade: value })}
+                >
+                  <SelectTrigger className="bg-black/50 border-[#D4AF38]/30 text-white">
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-900 border-[#D4AF38]/30">
+                    {[9, 10, 11, 12].map(g => (
+                      <SelectItem key={g} value={g.toString()} className="text-white hover:bg-[#D4AF38]/20">
+                        Grade {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditModalOpen(false)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveWrestler}
+              disabled={saving}
+              className="bg-[#D4AF38] hover:bg-[#D4AF38]/90 text-black"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
