@@ -156,32 +156,32 @@ export default function TeamStatsPage() {
     ? matches
     : matches.filter(m => `${m.opponent_team}-${m.match_date || 'unknown'}` === selectedEvent)
 
-  // Calculate stats from filtered matches (for event view) or wrestler totals (for overall)
+  // Calculate ALL stats from matches table for accuracy
   const isEventView = selectedEvent !== 'all'
 
-  // Event-specific stats from filtered matches
-  const eventWins = filteredMatches.filter(m => m.result === 'win').length
-  const eventLosses = filteredMatches.filter(m => m.result === 'loss').length
-  const eventPins = filteredMatches.filter(m => m.result === 'win' && m.win_type === 'pin').length
-  const eventTechFalls = filteredMatches.filter(m => m.result === 'win' && m.win_type === 'tech_fall').length
-  const eventMajorDecisions = filteredMatches.filter(m => m.result === 'win' && m.win_type === 'major').length
-
-  // Overall stats from wrestler records
-  const overallWins = wrestlers.reduce((sum, w) => sum + (w.wins || 0), 0)
-  const overallLosses = wrestlers.reduce((sum, w) => sum + (w.losses || 0), 0)
-  const overallPins = wrestlers.reduce((sum, w) => sum + (w.pins || 0), 0)
-  const overallTechFalls = wrestlers.reduce((sum, w) => sum + (w.tech_falls || 0), 0)
-  const overallMajorDecisions = wrestlers.reduce((sum, w) => sum + (w.major_decisions || 0), 0)
-
-  // Use event or overall stats based on view
-  const totalWins = isEventView ? eventWins : overallWins
-  const totalLosses = isEventView ? eventLosses : overallLosses
+  // Calculate stats from filtered matches (works for both event view and overall)
+  const totalWins = filteredMatches.filter(m => m.result === 'win').length
+  const totalLosses = filteredMatches.filter(m => m.result === 'loss').length
   const totalMatches = totalWins + totalLosses
   const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : '0.0'
 
-  const totalPins = isEventView ? eventPins : overallPins
-  const totalTechFalls = isEventView ? eventTechFalls : overallTechFalls
-  const totalMajorDecisions = isEventView ? eventMajorDecisions : overallMajorDecisions
+  // Victory types from matches - check multiple possible values
+  const totalPins = filteredMatches.filter(m =>
+    m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+  ).length
+  const totalTechFalls = filteredMatches.filter(m =>
+    m.result === 'win' && (m.win_type === 'tech_fall' || m.win_type === 'Tech Fall' || m.win_type === 'TF')
+  ).length
+  const totalMajorDecisions = filteredMatches.filter(m =>
+    m.result === 'win' && (m.win_type === 'major' || m.win_type === 'Major Decision' || m.win_type === 'MD')
+  ).length
+  const totalDecisions = filteredMatches.filter(m =>
+    m.result === 'win' && (m.win_type === 'decision' || m.win_type === 'Decision' || m.win_type === 'Dec' || !m.win_type)
+  ).length
+  const totalForfeits = filteredMatches.filter(m =>
+    m.result === 'win' && (m.win_type === 'forfeit' || m.win_type === 'Forfeit' || m.win_type === 'FF')
+  ).length
+
   const pinRate = totalWins > 0 ? ((totalPins / totalWins) * 100).toFixed(1) : '0.0'
 
   // Calculate scoring breakdown from filtered matches
@@ -226,9 +226,20 @@ export default function TeamStatsPage() {
   // Get selected event details
   const selectedEventDetails = events.find(e => e.id === selectedEvent)
 
-  // Top performers
-  const topWins = [...wrestlers].sort((a, b) => (b.wins || 0) - (a.wins || 0))[0]
-  const topPins = [...wrestlers].sort((a, b) => (b.pins || 0) - (a.pins || 0))[0]
+  // Top performers - calculate from filtered matches
+  const wrestlerStats = wrestlers.map(w => {
+    const wMatches = filteredMatches.filter(m => m.wrestler_id === w.id)
+    const wins = wMatches.filter(m => m.result === 'win').length
+    const pins = wMatches.filter(m =>
+      m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+    ).length
+    const takedowns = wMatches.reduce((sum, m) => sum + (m.takedowns_for || 0), 0)
+    return { ...w, calculatedWins: wins, calculatedPins: pins, calculatedTakedowns: takedowns }
+  })
+
+  const topWins = [...wrestlerStats].sort((a, b) => b.calculatedWins - a.calculatedWins)[0]
+  const topPins = [...wrestlerStats].sort((a, b) => b.calculatedPins - a.calculatedPins)[0]
+  const topTakedowns = [...wrestlerStats].sort((a, b) => b.calculatedTakedowns - a.calculatedTakedowns)[0]
 
   const COLORS = ['#D4AF38', '#FFD700', '#FFA500', '#FF6B6B', '#4ECDC4', '#45B7D1']
 
@@ -354,11 +365,11 @@ export default function TeamStatsPage() {
               <CardHeader>
                 <CardTitle className="text-gold flex items-center gap-2">
                   <Activity className="w-5 h-5" />
-                  Victory Types
+                  Victory Types ({totalWins} wins)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="text-center p-4 bg-black/30 rounded-lg">
                     <Zap className="w-8 h-8 text-gold mx-auto mb-2" />
                     <p className="text-2xl font-bold text-white">{totalPins}</p>
@@ -372,12 +383,17 @@ export default function TeamStatsPage() {
                   <div className="text-center p-4 bg-black/30 rounded-lg">
                     <Trophy className="w-8 h-8 text-green-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-white">{totalMajorDecisions}</p>
-                    <p className="text-sm text-gray-400">Major Decisions</p>
+                    <p className="text-sm text-gray-400">Majors</p>
                   </div>
                   <div className="text-center p-4 bg-black/30 rounded-lg">
                     <Award className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-white">{totalWins - totalPins - totalTechFalls - totalMajorDecisions}</p>
+                    <p className="text-2xl font-bold text-white">{totalDecisions}</p>
                     <p className="text-sm text-gray-400">Decisions</p>
+                  </div>
+                  <div className="text-center p-4 bg-black/30 rounded-lg">
+                    <Star className="w-8 h-8 text-orange-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-white">{totalForfeits}</p>
+                    <p className="text-sm text-gray-400">Forfeits</p>
                   </div>
                 </div>
               </CardContent>
@@ -453,7 +469,7 @@ export default function TeamStatsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {topWins && topWins.wins > 0 && (
+                    {topWins && topWins.calculatedWins > 0 && (
                       <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
                         <div className="flex justify-between items-center">
                           <div>
@@ -461,13 +477,13 @@ export default function TeamStatsPage() {
                             <p className="text-lg font-bold text-white">{topWins.first_name} {topWins.last_name}</p>
                           </div>
                           <Badge className="bg-gold/20 text-gold border-gold">
-                            {topWins.wins} Wins
+                            {topWins.calculatedWins} Wins
                           </Badge>
                         </div>
                       </div>
                     )}
 
-                    {topPins && topPins.pins > 0 && (
+                    {topPins && topPins.calculatedPins > 0 && (
                       <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
                         <div className="flex justify-between items-center">
                           <div>
@@ -475,13 +491,27 @@ export default function TeamStatsPage() {
                             <p className="text-lg font-bold text-white">{topPins.first_name} {topPins.last_name}</p>
                           </div>
                           <Badge className="bg-purple-500/20 text-purple-400 border-purple-500">
-                            {topPins.pins} Pins
+                            {topPins.calculatedPins} Pins
                           </Badge>
                         </div>
                       </div>
                     )}
 
-                    {(!topWins || topWins.wins === 0) && (!topPins || topPins.pins === 0) && (
+                    {topTakedowns && topTakedowns.calculatedTakedowns > 0 && (
+                      <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm text-gray-400">Most Takedowns</p>
+                            <p className="text-lg font-bold text-white">{topTakedowns.first_name} {topTakedowns.last_name}</p>
+                          </div>
+                          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500">
+                            {topTakedowns.calculatedTakedowns} TDs
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
+                    {(!topWins || topWins.calculatedWins === 0) && (!topPins || topPins.calculatedPins === 0) && (
                       <p className="text-gray-400 text-center py-4">No match data yet</p>
                     )}
                   </div>
