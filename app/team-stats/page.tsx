@@ -159,6 +159,15 @@ export default function TeamStatsPage() {
   // Calculate ALL stats from matches table for accuracy
   const isEventView = selectedEvent !== 'all'
 
+  // Debug: Log unique win_type values to console
+  const uniqueWinTypes = [...new Set(filteredMatches.map(m => m.win_type))].filter(Boolean)
+  const winTypeBreakdown = uniqueWinTypes.map(wt => ({
+    type: wt,
+    count: filteredMatches.filter(m => m.win_type === wt).length
+  }))
+  console.log('[Team Stats] Win type breakdown:', winTypeBreakdown)
+  console.log('[Team Stats] Sample matches:', filteredMatches.slice(0, 3).map(m => ({ result: m.result, win_type: m.win_type })))
+
   // Calculate stats from filtered matches (works for both event view and overall)
   const totalWins = filteredMatches.filter(m => m.result === 'win').length
   const totalLosses = filteredMatches.filter(m => m.result === 'loss').length
@@ -359,6 +368,18 @@ export default function TeamStatsPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Debug: Win Type Values in Database */}
+            {winTypeBreakdown.length > 0 && (
+              <Card className="bg-yellow-500/10 backdrop-blur-sm border border-yellow-500/30 mb-4">
+                <CardContent className="p-3">
+                  <p className="text-xs text-yellow-400 font-semibold mb-1">Debug: Win types in database</p>
+                  <p className="text-xs text-gray-400">
+                    {winTypeBreakdown.map(w => `${w.type}: ${w.count}`).join(' | ')}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Victory Types */}
             <Card className="bg-black/80 backdrop-blur-sm border border-gold/30 mb-6">
