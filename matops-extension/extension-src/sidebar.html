@@ -439,7 +439,8 @@
         <button class="btn btn-secondary" id="expandButton">🔄 Auto-Expand All</button>
         <button class="btn btn-secondary" id="extractButton">📊 Extract Stats</button>
         <button class="btn btn-secondary" id="autoCaptureButton" disabled>🤖 Auto-Capture All Matches</button>
-        <button class="btn" id="importWrestlersBtn" disabled style="background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);">📥 Import to Roster</button>
+        <button class="btn" id="importWrestlersBtn" disabled style="background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);">📥 Import Wrestlers</button>
+        <button class="btn" id="importMatchesBtn" disabled style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">📊 Import Matches</button>
         <button class="btn btn-secondary" id="exportButton" disabled>💾 Export JSON</button>
       </div>
       <div id="autoCaptureProgress" style="display: none; margin-top: 8px; padding: 8px; background: #dbeafe; border-radius: 4px; font-size: 11px; border: 1px solid #3b82f6;">
@@ -568,6 +569,67 @@
         <div id="importError" style="display: none; padding: 16px; background: #fef2f2; border: 1px solid #ef4444; border-radius: 6px; color: #dc2626; text-align: center;">
           <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
           <p id="importErrorText">Error importing wrestlers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Match Import Modal -->
+  <div id="matchImportModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
+    <div style="background: white; margin: 20px; border-radius: 8px; max-height: calc(100vh - 40px); overflow-y: auto;">
+      <div style="padding: 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1;">
+        <h2 style="font-size: 16px; font-weight: 700; color: #1f2937; margin: 0;">📊 Import Matches</h2>
+        <button id="closeMatchImportModal" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280;">&times;</button>
+      </div>
+
+      <div id="matchImportContent" style="padding: 16px;">
+        <div id="matchImportLoading" style="text-align: center; padding: 40px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">🔍</div>
+          <p style="color: #6b7280;">Checking for duplicates...</p>
+        </div>
+
+        <div id="matchImportResults" style="display: none;">
+          <!-- Summary -->
+          <div id="matchImportSummary" style="padding: 12px; background: #f3f4f6; border-radius: 6px; margin-bottom: 16px;">
+            <div style="display: flex; gap: 16px; justify-content: center; text-align: center;">
+              <div><span id="newMatchCount" style="font-size: 20px; font-weight: 700; color: #059669;">0</span><br><span style="font-size: 10px; color: #6b7280;">New</span></div>
+              <div><span id="duplicateMatchCount" style="font-size: 20px; font-weight: 700; color: #f59e0b;">0</span><br><span style="font-size: 10px; color: #6b7280;">Duplicates</span></div>
+              <div><span id="notFoundMatchCount" style="font-size: 20px; font-weight: 700; color: #ef4444;">0</span><br><span style="font-size: 10px; color: #6b7280;">No Wrestler</span></div>
+            </div>
+          </div>
+
+          <!-- New Matches Section -->
+          <div id="newMatchesSection" style="margin-bottom: 16px; display: none;">
+            <div style="font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px;">✅ New Matches to Import (<span id="newMatchesTotal">0</span>)</div>
+            <div id="newMatchesList" style="font-size: 11px; max-height: 200px; overflow-y: auto;"></div>
+            <label style="display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: #374151;">
+              <input type="checkbox" id="selectAllNewMatches" checked>
+              <span>Select all new matches</span>
+            </label>
+          </div>
+
+          <!-- Duplicate Matches Section -->
+          <div id="duplicateMatchesSection" style="margin-bottom: 16px; display: none;">
+            <div style="font-size: 12px; font-weight: 600; color: #f59e0b; margin-bottom: 8px;">⚠️ Duplicate Matches - Already Imported (<span id="duplicateMatchesTotal">0</span>)</div>
+            <div id="duplicateMatchesList" style="font-size: 11px; max-height: 150px; overflow-y: auto; background: #fef3c7; padding: 8px; border-radius: 4px;"></div>
+          </div>
+
+          <!-- Wrestler Not Found Section -->
+          <div id="notFoundMatchesSection" style="margin-bottom: 16px; display: none;">
+            <div style="font-size: 12px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">❌ Wrestler Not Found (<span id="notFoundMatchesTotal">0</span>)</div>
+            <div id="notFoundMatchesList" style="font-size: 11px; max-height: 100px; overflow-y: auto; background: #fef2f2; padding: 8px; border-radius: 4px;"></div>
+            <p style="font-size: 10px; color: #6b7280; margin-top: 4px;">Import these wrestlers first using "Import Wrestlers" button.</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button id="confirmMatchImportBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">✓ Import Selected Matches</button>
+          </div>
+        </div>
+
+        <div id="matchImportError" style="display: none; padding: 16px; background: #fef2f2; border: 1px solid #ef4444; border-radius: 6px; color: #dc2626; text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 8px;">❌</div>
+          <p id="matchImportErrorText">Error importing matches</p>
         </div>
       </div>
     </div>

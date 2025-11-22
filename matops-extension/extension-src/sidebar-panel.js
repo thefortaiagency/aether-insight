@@ -80,6 +80,35 @@ function setupEventListeners() {
     confirmImportBtn.addEventListener('click', confirmImport);
   }
 
+  // Import matches button
+  const importMatchesBtn = document.getElementById('importMatchesBtn');
+  if (importMatchesBtn) {
+    importMatchesBtn.addEventListener('click', openMatchImportModal);
+  }
+
+  // Match import modal close button
+  const closeMatchImportModal = document.getElementById('closeMatchImportModal');
+  if (closeMatchImportModal) {
+    closeMatchImportModal.addEventListener('click', () => {
+      document.getElementById('matchImportModal').style.display = 'none';
+    });
+  }
+
+  // Confirm match import button
+  const confirmMatchImportBtn = document.getElementById('confirmMatchImportBtn');
+  if (confirmMatchImportBtn) {
+    confirmMatchImportBtn.addEventListener('click', confirmMatchImport);
+  }
+
+  // Select all new matches checkbox
+  const selectAllNewMatches = document.getElementById('selectAllNewMatches');
+  if (selectAllNewMatches) {
+    selectAllNewMatches.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.match-import-checkbox');
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
+    });
+  }
+
   // Poll for captured count every 2 seconds when instructions visible
   setInterval(updateCapturedCount, 2000);
 }
@@ -183,6 +212,8 @@ async function extractStats() {
       exportButton.disabled = false;
       showStatsTableBtn.disabled = false;
       if (importWrestlersBtn) importWrestlersBtn.disabled = false;
+      const importMatchesBtn = document.getElementById('importMatchesBtn');
+      if (importMatchesBtn) importMatchesBtn.disabled = false;
     } else {
       updateStatus('❌ Failed to extract stats');
     }
@@ -1516,6 +1547,245 @@ async function confirmImport() {
   } finally {
     confirmBtn.disabled = false;
     confirmBtn.textContent = '✓ Add Selected to Roster';
+  }
+}
+
+// ========== MATCH IMPORT FUNCTIONS ==========
+
+let matchImportResults = null;
+
+// Open match import modal
+async function openMatchImportModal() {
+  if (!extractedData || extractedData.length === 0) {
+    updateStatus('No data to import');
+    return;
+  }
+
+  // Show modal with loading state
+  document.getElementById('matchImportModal').style.display = 'block';
+  document.getElementById('matchImportLoading').style.display = 'block';
+  document.getElementById('matchImportResults').style.display = 'none';
+  document.getElementById('matchImportError').style.display = 'none';
+
+  try {
+    const teamId = await getTeamId();
+    if (!teamId) {
+      showMatchImportError('Please log in to Mat Ops first');
+      return;
+    }
+
+    // Get detailed stats for match data
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const detailedResponse = await chrome.tabs.sendMessage(tab.id, {
+      action: 'get_detailed_stats'
+    });
+
+    // Build matches array from extracted data
+    const matches = [];
+    extractedData.forEach(wrestler => {
+      wrestler.weightClasses.forEach(wc => {
+        wc.matches.forEach(match => {
+          // Find detailed stats for this match if available
+          let detailedStats = null;
+          if (detailedResponse && detailedResponse.detailedStats) {
+            detailedStats = detailedResponse.detailedStats.find(ds => ds.id === match.matchId);
+          }
+
+          matches.push({
+            wrestlerName: wrestler.name,
+            opponent: match.opponent || 'Unknown',
+            opponentTeam: match.opponentTeam || '',
+            result: match.result || 'Win',
+            winType: match.winType || 'Decision',
+            score: match.score || '',
+            wrestlerScore: match.wrestlerScore,
+            opponentScore: match.opponentScore,
+            weightClass: wc.weight,
+            round: match.round || '',
+            takedowns: detailedStats?.takedowns || 0,
+            escapes: detailedStats?.escapes || 0,
+            reversals: detailedStats?.reversals || 0,
+            nearfall2: detailedStats?.nearfall2 || 0,
+            nearfall3: detailedStats?.nearfall3 || 0
+          });
+        });
+      });
+    });
+
+    if (matches.length === 0) {
+      showMatchImportError('No matches found in extracted data');
+      return;
+    }
+
+    console.log('[Mat Ops Import] Sending', matches.length, 'matches for preview');
+
+    // Call API to check for duplicates
+    const response = await fetch(`${MATOPS_API_BASE}/api/extension/import-matches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamId, matches })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check matches');
+    }
+
+    matchImportResults = await response.json();
+    console.log('[Mat Ops Import] Match results:', matchImportResults);
+
+    renderMatchImportResults(matchImportResults);
+
+  } catch (err) {
+    console.error('[Mat Ops Import] Error:', err);
+    showMatchImportError(err.message || 'Failed to check matches');
+  }
+}
+
+// Render match import results
+function renderMatchImportResults(results) {
+  document.getElementById('matchImportLoading').style.display = 'none';
+  document.getElementById('matchImportResults').style.display = 'block';
+
+  // Update summary counts
+  document.getElementById('newMatchCount').textContent = results.summary.new;
+  document.getElementById('duplicateMatchCount').textContent = results.summary.duplicates;
+  document.getElementById('notFoundMatchCount').textContent = results.summary.wrestlerNotFound;
+
+  // New matches section
+  const newSection = document.getElementById('newMatchesSection');
+  const newList = document.getElementById('newMatchesList');
+  if (results.results.newMatches.length > 0) {
+    newSection.style.display = 'block';
+    document.getElementById('newMatchesTotal').textContent = results.results.newMatches.length;
+    newList.innerHTML = results.results.newMatches.map((r, idx) => `
+      <div style="padding: 6px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" class="match-import-checkbox" id="match_${idx}" data-index="${idx}" checked>
+        <label for="match_${idx}" style="flex: 1;">
+          <strong>${r.wrestler?.first_name} ${r.wrestler?.last_name}</strong> vs ${r.imported.opponent}
+          <span style="color: ${r.imported.result === 'Win' ? '#059669' : '#dc2626'};">(${r.imported.result})</span>
+          <br><span style="color: #6b7280; font-size: 10px;">${r.imported.winType} ${r.imported.score} • ${r.imported.weightClass} lbs</span>
+        </label>
+      </div>
+    `).join('');
+  } else {
+    newSection.style.display = 'none';
+  }
+
+  // Duplicate matches section
+  const dupSection = document.getElementById('duplicateMatchesSection');
+  const dupList = document.getElementById('duplicateMatchesList');
+  if (results.results.duplicates.length > 0) {
+    dupSection.style.display = 'block';
+    document.getElementById('duplicateMatchesTotal').textContent = results.results.duplicates.length;
+    dupList.innerHTML = results.results.duplicates.map(r => `
+      <div style="padding: 4px 0; border-bottom: 1px solid #fcd34d;">
+        <strong>${r.wrestler?.first_name} ${r.wrestler?.last_name}</strong> vs ${r.imported.opponent}
+        <span style="color: #92400e;">(Already imported)</span>
+      </div>
+    `).join('');
+  } else {
+    dupSection.style.display = 'none';
+  }
+
+  // Wrestler not found section
+  const notFoundSection = document.getElementById('notFoundMatchesSection');
+  const notFoundList = document.getElementById('notFoundMatchesList');
+  if (results.results.wrestlerNotFound.length > 0) {
+    notFoundSection.style.display = 'block';
+    document.getElementById('notFoundMatchesTotal').textContent = results.results.wrestlerNotFound.length;
+    notFoundList.innerHTML = results.results.wrestlerNotFound.map(r => `
+      <div style="padding: 4px 0; border-bottom: 1px solid #fca5a5;">
+        <strong>${r.imported.wrestlerName}</strong> vs ${r.imported.opponent}
+        <span style="color: #dc2626;">(Wrestler not in roster)</span>
+      </div>
+    `).join('');
+  } else {
+    notFoundSection.style.display = 'none';
+  }
+}
+
+// Show match import error
+function showMatchImportError(message) {
+  document.getElementById('matchImportLoading').style.display = 'none';
+  document.getElementById('matchImportResults').style.display = 'none';
+  document.getElementById('matchImportError').style.display = 'block';
+  document.getElementById('matchImportErrorText').textContent = message;
+}
+
+// Confirm and execute match import
+async function confirmMatchImport() {
+  if (!matchImportResults) return;
+
+  const confirmBtn = document.getElementById('confirmMatchImportBtn');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '⏳ Importing...';
+
+  try {
+    const teamId = await getTeamId();
+    if (!teamId) {
+      throw new Error('No team ID found');
+    }
+
+    const matchesToAdd = [];
+
+    // Get selected matches
+    matchImportResults.results.newMatches.forEach((r, idx) => {
+      const checkbox = document.getElementById(`match_${idx}`);
+      if (checkbox && checkbox.checked && r.wrestler) {
+        matchesToAdd.push({
+          wrestlerId: r.wrestler.id,
+          opponent: r.imported.opponent,
+          opponentTeam: r.imported.opponentTeam,
+          result: r.imported.result,
+          winType: r.imported.winType,
+          score: r.imported.score,
+          wrestlerScore: r.imported.wrestlerScore,
+          opponentScore: r.imported.opponentScore,
+          weightClass: r.imported.weightClass,
+          round: r.imported.round,
+          takedowns: r.imported.takedowns,
+          escapes: r.imported.escapes,
+          reversals: r.imported.reversals,
+          nearfall2: r.imported.nearfall2,
+          nearfall3: r.imported.nearfall3
+        });
+      }
+    });
+
+    if (matchesToAdd.length === 0) {
+      updateStatus('No matches selected to import');
+      document.getElementById('matchImportModal').style.display = 'none';
+      return;
+    }
+
+    // Call API to add matches
+    const response = await fetch(`${MATOPS_API_BASE}/api/extension/import-matches`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamId, matches: matchesToAdd })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add matches');
+    }
+
+    const result = await response.json();
+    console.log('[Mat Ops Import] Match add result:', result);
+
+    // Close modal and show success
+    document.getElementById('matchImportModal').style.display = 'none';
+    updateStatus(`✅ Imported ${result.added.length} matches`);
+
+    if (result.errors && result.errors.length > 0) {
+      console.warn('[Mat Ops Import] Match errors:', result.errors);
+    }
+
+  } catch (err) {
+    console.error('[Mat Ops Import] Match confirm error:', err);
+    showMatchImportError(err.message || 'Failed to add matches');
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '✓ Import Selected Matches';
   }
 }
 
