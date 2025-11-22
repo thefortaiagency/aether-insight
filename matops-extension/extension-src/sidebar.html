@@ -464,47 +464,20 @@
 
   <!-- Mat Ops AI Content -->
   <div class="content" id="content-mat-ops-ai" style="display: none;">
-    <!-- Team Info -->
-    <div class="section" id="matops-team-section">
-      <div class="section-title">🤼 Your Team</div>
-      <div id="matops-team-info" class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="matops-wrestler-count">-</div>
-          <div class="stat-label">Wrestlers</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="matops-team-wins">-</div>
-          <div class="stat-label">Wins</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="matops-team-losses">-</div>
-          <div class="stat-label">Losses</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="matops-win-pct">-</div>
-          <div class="stat-label">Win %</div>
-        </div>
-      </div>
-      <div id="matops-not-logged-in" style="display: none; padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; margin-top: 8px;">
-        <p style="font-size: 12px; color: #92400e; margin: 0;">⚠️ Log in to Mat Ops to see your team data</p>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="section">
-      <div class="section-title">⚡ Quick Actions</div>
-      <div class="actions">
-        <button class="btn btn-secondary matops-quick-action" data-prompt="Give me a summary of my team's season performance so far.">🏆 Season Overview</button>
-        <button class="btn btn-secondary matops-quick-action" data-prompt="Who are my top 3 performing wrestlers based on win percentage and pins?">📈 Top Performers</button>
-        <button class="btn btn-secondary matops-quick-action" data-prompt="Suggest a practice plan focusing on takedowns and escapes for tomorrow.">🏋️ Practice Plan</button>
-        <button class="btn btn-secondary matops-quick-action" data-prompt="Analyze my roster and identify any weight classes where we might be weak.">👥 Roster Analysis</button>
+    <!-- Quick Actions - Horizontal -->
+    <div class="section" style="padding: 8px;">
+      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Give me a summary of my team's season performance so far." style="flex: 1; min-width: 70px; padding: 6px 8px; font-size: 10px;">🏆 Season</button>
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Who are my top 3 performing wrestlers based on win percentage and pins?" style="flex: 1; min-width: 70px; padding: 6px 8px; font-size: 10px;">📈 Top</button>
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Suggest a practice plan focusing on takedowns and escapes for tomorrow." style="flex: 1; min-width: 70px; padding: 6px 8px; font-size: 10px;">🏋️ Practice</button>
+        <button class="btn btn-secondary matops-quick-action" data-prompt="Analyze my roster and identify any weight classes where we might be weak." style="flex: 1; min-width: 70px; padding: 6px 8px; font-size: 10px;">👥 Roster</button>
       </div>
     </div>
 
     <!-- AI Chat -->
-    <div class="section">
+    <div class="section" style="flex: 1; display: flex; flex-direction: column;">
       <div class="section-title">🤖 Mat Ops AI Coach</div>
-      <div class="messages" id="matops-messages">
+      <div class="messages" id="matops-messages" style="flex: 1; max-height: none;">
         <div class="empty-state">
           <div class="empty-icon">🤼</div>
           <p>Ask me anything about wrestling coaching, practice planning, or your team!</p>
@@ -517,11 +490,8 @@
     </div>
 
     <!-- Open Mat Ops Website -->
-    <div class="section">
-      <div class="section-title">🌐 Mat Ops Platform</div>
-      <div class="actions">
-        <button class="btn" id="open-matops-site" style="width: 100%;">Open Mat Ops Website</button>
-      </div>
+    <div class="section" style="padding: 8px;">
+      <button class="btn" id="open-matops-site" style="width: 100%; padding: 8px;">🌐 Open Mat Ops Website</button>
     </div>
   </div>
 

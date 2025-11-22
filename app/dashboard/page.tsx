@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +11,6 @@ import {
   ChevronRight, Zap, Shield, Target, Star, Loader2
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
-import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
 interface Wrestler {
@@ -30,9 +28,13 @@ interface Wrestler {
   reversals: number
 }
 
+interface Session {
+  coach?: { first_name?: string; last_name?: string }
+  team?: { id: string; name: string }
+}
+
 export default function DashboardPage() {
-  const router = useRouter()
-  const { session, loading: authLoading } = useAuth()
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([])
   const [stats, setStats] = useState({
@@ -44,12 +46,24 @@ export default function DashboardPage() {
     totalPins: 0
   })
 
-  // Redirect if not logged in
+  // Load session from localStorage
   useEffect(() => {
-    if (!authLoading && !session) {
-      router.push('/login')
+    const storedSession = localStorage.getItem('aether-session')
+    if (storedSession) {
+      try {
+        const parsed = JSON.parse(storedSession)
+        if (parsed.team?.id) {
+          setSession(parsed)
+        } else {
+          window.location.href = '/login'
+        }
+      } catch {
+        window.location.href = '/login'
+      }
+    } else {
+      window.location.href = '/login'
     }
-  }, [session, authLoading, router])
+  }, [])
 
   // Load real team data
   useEffect(() => {
@@ -69,11 +83,11 @@ export default function DashboardPage() {
           setWrestlers(wrestlersData)
 
           // Calculate real stats
-          const totalWins = wrestlersData.reduce((sum, w) => sum + (w.wins || 0), 0)
-          const totalLosses = wrestlersData.reduce((sum, w) => sum + (w.losses || 0), 0)
+          const totalWins = wrestlersData.reduce((sum: number, w: Wrestler) => sum + (w.wins || 0), 0)
+          const totalLosses = wrestlersData.reduce((sum: number, w: Wrestler) => sum + (w.losses || 0), 0)
           const totalMatches = totalWins + totalLosses
           const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0
-          const totalPins = wrestlersData.reduce((sum, w) => sum + (w.pins || 0), 0)
+          const totalPins = wrestlersData.reduce((sum: number, w: Wrestler) => sum + (w.pins || 0), 0)
 
           setStats({
             totalMatches,
@@ -93,10 +107,8 @@ export default function DashboardPage() {
 
     if (session?.team?.id) {
       loadTeamData()
-    } else if (!authLoading) {
-      setLoading(false)
     }
-  }, [session, authLoading])
+  }, [session])
 
   const quickActions = [
     {
@@ -145,7 +157,7 @@ export default function DashboardPage() {
     .slice(0, 5)
 
   // Show loading state
-  if (authLoading || loading) {
+  if (!session || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -154,11 +166,6 @@ export default function DashboardPage() {
         </div>
       </div>
     )
-  }
-
-  // Show login prompt if not logged in
-  if (!session) {
-    return null // Will redirect
   }
 
   return (

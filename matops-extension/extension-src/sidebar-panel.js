@@ -955,29 +955,16 @@ function processTeamData(team, wrestlers) {
   };
 }
 
-// Update Mat Ops team display
+// Update Mat Ops team display (data loaded for AI context)
 function updateMatOpsTeamDisplay() {
-  const wrestlerCountEl = document.getElementById('matops-wrestler-count');
-  const winsEl = document.getElementById('matops-team-wins');
-  const lossesEl = document.getElementById('matops-team-losses');
-  const winPctEl = document.getElementById('matops-win-pct');
-  const notLoggedInEl = document.getElementById('matops-not-logged-in');
-
-  if (matOpsTeamData) {
-    if (wrestlerCountEl) wrestlerCountEl.textContent = matOpsTeamData.wrestlerCount;
-    if (winsEl) winsEl.textContent = matOpsTeamData.totalWins;
-    if (lossesEl) lossesEl.textContent = matOpsTeamData.totalLosses;
-    if (winPctEl) winPctEl.textContent = `${matOpsTeamData.winPercentage}%`;
-    if (notLoggedInEl) notLoggedInEl.style.display = 'none';
-  }
+  // Team data is now only used for AI context, no UI display needed
+  console.log('[Mat Ops AI] Team data loaded for AI context');
 }
 
 // Show not logged in message
 function showMatOpsNotLoggedIn() {
-  const notLoggedInEl = document.getElementById('matops-not-logged-in');
-  if (notLoggedInEl) {
-    notLoggedInEl.style.display = 'block';
-  }
+  // No longer showing a UI message, team data is optional for AI
+  console.log('[Mat Ops AI] No team data available - AI will work without team context');
 }
 
 // Send Mat Ops AI message
