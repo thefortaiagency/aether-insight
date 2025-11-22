@@ -19,13 +19,25 @@ interface Wrestler {
   last_name: string
   grade: number | null
   weight_class: number | null
+  // Calculated from matches
   wins: number
   losses: number
   pins: number
   tech_falls: number
+  majors: number
   takedowns: number
   escapes: number
   reversals: number
+}
+
+interface Match {
+  id: string
+  wrestler_id: string
+  result: string
+  win_type: string
+  takedowns_for: number
+  escapes_for: number
+  reversals_for: number
 }
 
 export default function WrestlersPage() {
@@ -67,6 +79,7 @@ export default function WrestlersPage() {
     if (!teamId) return
     setLoading(true)
     try {
+      // Load wrestlers
       const { data: wrestlersData, error } = await supabase
         .from('wrestlers')
         .select('*')
@@ -75,22 +88,59 @@ export default function WrestlersPage() {
 
       if (error) {
         console.error('Error loading wrestlers:', error)
-      } else if (wrestlersData) {
-        setWrestlers(wrestlersData.map((w: any) => ({
+        setLoading(false)
+        return
+      }
+
+      if (!wrestlersData || wrestlersData.length === 0) {
+        setWrestlers([])
+        setLoading(false)
+        return
+      }
+
+      // Load all matches for these wrestlers
+      const wrestlerIds = wrestlersData.map((w: any) => w.id)
+      const { data: matchesData } = await supabase
+        .from('matches')
+        .select('wrestler_id, result, win_type, takedowns_for, escapes_for, reversals_for')
+        .in('wrestler_id', wrestlerIds)
+
+      const matches = (matchesData || []) as Match[]
+
+      // Calculate stats for each wrestler from matches
+      setWrestlers(wrestlersData.map((w: any) => {
+        const wMatches = matches.filter(m => m.wrestler_id === w.id)
+        const wins = wMatches.filter(m => m.result === 'win').length
+        const losses = wMatches.filter(m => m.result === 'loss').length
+        const pins = wMatches.filter(m =>
+          m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+        ).length
+        const techFalls = wMatches.filter(m =>
+          m.result === 'win' && (m.win_type === 'tech_fall' || m.win_type === 'Tech Fall' || m.win_type === 'TF')
+        ).length
+        const majors = wMatches.filter(m =>
+          m.result === 'win' && (m.win_type === 'major' || m.win_type === 'Major Decision' || m.win_type === 'MD')
+        ).length
+        const takedowns = wMatches.reduce((sum, m) => sum + (m.takedowns_for || 0), 0)
+        const escapes = wMatches.reduce((sum, m) => sum + (m.escapes_for || 0), 0)
+        const reversals = wMatches.reduce((sum, m) => sum + (m.reversals_for || 0), 0)
+
+        return {
           id: w.id,
           first_name: w.first_name || '',
           last_name: w.last_name || '',
           grade: w.grade,
           weight_class: w.weight_class,
-          wins: w.wins || 0,
-          losses: w.losses || 0,
-          pins: w.pins || 0,
-          tech_falls: w.tech_falls || 0,
-          takedowns: w.takedowns || 0,
-          escapes: w.escapes || 0,
-          reversals: w.reversals || 0
-        })))
-      }
+          wins,
+          losses,
+          pins,
+          tech_falls: techFalls,
+          majors,
+          takedowns,
+          escapes,
+          reversals
+        }
+      }))
     } catch (error) {
       console.error('Error loading wrestlers:', error)
     }
@@ -106,15 +156,18 @@ export default function WrestlersPage() {
 
   const weightClasses = [106, 113, 120, 126, 132, 138, 144, 150, 157, 165, 175, 190, 215, 285]
 
-  // Calculate team stats
+  // Calculate team stats (now from calculated wrestler stats)
+  const totalWins = wrestlers.reduce((sum, w) => sum + w.wins, 0)
+  const totalLosses = wrestlers.reduce((sum, w) => sum + w.losses, 0)
   const teamStats = {
     totalWrestlers: wrestlers.length,
-    totalWins: wrestlers.reduce((sum, w) => sum + w.wins, 0),
-    totalLosses: wrestlers.reduce((sum, w) => sum + w.losses, 0),
+    totalWins,
+    totalLosses,
     totalPins: wrestlers.reduce((sum, w) => sum + w.pins, 0),
     totalTechFalls: wrestlers.reduce((sum, w) => sum + w.tech_falls, 0),
-    winPercentage: wrestlers.reduce((sum, w) => sum + w.wins, 0) + wrestlers.reduce((sum, w) => sum + w.losses, 0) > 0
-      ? ((wrestlers.reduce((sum, w) => sum + w.wins, 0) / (wrestlers.reduce((sum, w) => sum + w.wins, 0) + wrestlers.reduce((sum, w) => sum + w.losses, 0))) * 100).toFixed(1)
+    totalMajors: wrestlers.reduce((sum, w) => sum + w.majors, 0),
+    winPercentage: totalWins + totalLosses > 0
+      ? ((totalWins / (totalWins + totalLosses)) * 100).toFixed(1)
       : '0.0'
   }
 
@@ -304,19 +357,29 @@ export default function WrestlersPage() {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Record</span>
                         <span className="text-white font-semibold">
-                          {wrestler.wins}-{wrestler.losses}
+                          <span className="text-green-400">{wrestler.wins}</span>
+                          <span className="text-gray-500">-</span>
+                          <span className="text-red-400">{wrestler.losses}</span>
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400 text-sm">Pins / Tech Falls</span>
+                        <span className="text-gray-400 text-sm">Pin / TF / Maj</span>
                         <span className="text-white font-semibold">
-                          {wrestler.pins} / {wrestler.tech_falls}
+                          <span className="text-[#D4AF38]">{wrestler.pins}</span>
+                          <span className="text-gray-500"> / </span>
+                          <span className="text-purple-400">{wrestler.tech_falls}</span>
+                          <span className="text-gray-500"> / </span>
+                          <span className="text-blue-400">{wrestler.majors}</span>
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">TD / Esc / Rev</span>
                         <span className="text-white font-semibold">
-                          {wrestler.takedowns} / {wrestler.escapes} / {wrestler.reversals}
+                          <span className="text-[#D4AF38]">{wrestler.takedowns}</span>
+                          <span className="text-gray-500"> / </span>
+                          <span className="text-blue-400">{wrestler.escapes}</span>
+                          <span className="text-gray-500"> / </span>
+                          <span className="text-green-400">{wrestler.reversals}</span>
                         </span>
                       </div>
                     </div>
