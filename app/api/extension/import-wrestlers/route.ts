@@ -236,13 +236,19 @@ export async function PUT(request: Request) {
           first_name: firstName,
           last_name: lastName,
           weight_class: wrestler.weightClass || null,
-          season_wins: 0,
-          season_losses: 0,
-          career_wins: 0,
-          career_losses: 0,
+          wins: 0,
+          losses: 0,
           pins: 0,
           tech_falls: 0,
-          major_decisions: 0
+          major_decisions: 0,
+          decisions: 0,
+          takedowns: 0,
+          escapes: 0,
+          reversals: 0,
+          near_fall_2: 0,
+          near_fall_3: 0,
+          near_fall_4: 0,
+          team_points: 0
         })
         .select()
         .single()
