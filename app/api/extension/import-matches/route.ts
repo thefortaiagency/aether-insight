@@ -227,6 +227,7 @@ interface MatchInput {
   weightClass: number
   round?: string
   date?: string
+  matchDate?: string // Alias for date (from extension)
   // Stats
   takedowns?: number
   takedownsAgainst?: number
@@ -287,7 +288,7 @@ export async function PUT(request: Request) {
           win_type: outcomeType,
           final_score_for: match.wrestlerScore || 0,
           final_score_against: match.opponentScore || 0,
-          match_date: match.date || new Date().toISOString().split('T')[0],
+          match_date: match.matchDate || match.date || new Date().toISOString().split('T')[0],
           round: truncate(match.round, 50),
           // Stats
           takedowns_for: match.takedowns || 0,
@@ -343,7 +344,7 @@ export async function PUT(request: Request) {
             win_type: outcomeType,
             final_score_for: match.wrestlerScore || 0,
             final_score_against: match.opponentScore || 0,
-            match_date: match.date || new Date().toISOString().split('T')[0],
+            match_date: match.matchDate || match.date || new Date().toISOString().split('T')[0],
             round: truncate(match.round, 50),
             // Stats
             takedowns_for: match.takedowns || 0,

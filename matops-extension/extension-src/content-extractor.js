@@ -7,6 +7,7 @@ console.log('[Mat Ops] Content extractor loaded on USABracketing');
 const detailedMatches = new Map(); // matchId -> detailed stats
 let pendingMatchId = null;
 let modalObserver = null;
+let shouldPauseCapture = false; // Flag to pause auto-capture
 
 // Listen for messages from side panel
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -50,9 +51,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'auto_capture') {
+    shouldPauseCapture = false; // Reset pause flag when starting
     autoCaptureAllMatches()
       .then(result => sendResponse({ success: true, ...result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (request.action === 'pause_capture') {
+    shouldPauseCapture = true;
+    console.log('[Mat Ops] Pause capture requested');
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === 'get_event_date') {
+    try {
+      const eventDate = extractEventDate();
+      sendResponse({ success: true, eventDate });
+    } catch (error) {
+      console.error('[Mat Ops] Error extracting event date:', error);
+      sendResponse({ success: false, error: error.message });
+    }
     return true;
   }
 });
@@ -258,31 +278,36 @@ function parseMatchLine(text, li, wrestlerName) {
     }
   }
 
-  // Extract Win Type and Score
-  const decMatch = text.match(/Dec\s+([\d-]+)/i);
+  // Extract Win Type and Score - handle various formats like "Dec 8-4", "Dec. 8-4", "(Dec 8-4)"
+  const decMatch = text.match(/Dec\.?\s*(\d+)\s*[-–]\s*(\d+)/i);
   const fallMatch = text.match(/Fall\s+([\d:]+)/i);
-  const techMatch = text.match(/Tech\s+Fall\s+([\d-]+)/i);
-  const majMatch = text.match(/Maj\s+([\d-]+)/i);
-  const forMatch = text.match(/For\./i);
+  const techMatch = text.match(/Tech\.?\s*(?:Fall)?\s*(\d+)\s*[-–]\s*(\d+)/i);
+  const majMatch = text.match(/Maj\.?\s*(\d+)\s*[-–]\s*(\d+)/i);
+  const forMatch = text.match(/For(?:f|feit)?\.?/i);
 
   if (decMatch) {
     match.winType = 'Decision';
-    match.score = `Dec ${decMatch[1]}`;
-    parseScore(decMatch[1], match);
+    match.score = `Dec ${decMatch[1]}-${decMatch[2]}`;
+    parseScoreFromCaptures(decMatch[1], decMatch[2], match);
   } else if (techMatch) {
     match.winType = 'Tech Fall';
-    match.score = `Tech Fall ${techMatch[1]}`;
-    parseScore(techMatch[1], match);
+    match.score = `Tech Fall ${techMatch[1]}-${techMatch[2]}`;
+    parseScoreFromCaptures(techMatch[1], techMatch[2], match);
   } else if (majMatch) {
     match.winType = 'Major Decision';
-    match.score = `Maj ${majMatch[1]}`;
-    parseScore(majMatch[1], match);
+    match.score = `Maj ${majMatch[1]}-${majMatch[2]}`;
+    parseScoreFromCaptures(majMatch[1], majMatch[2], match);
   } else if (fallMatch) {
     match.winType = 'Fall';
     match.score = `Fall ${fallMatch[1]}`;
   } else if (forMatch) {
     match.winType = 'Forfeit';
     match.score = 'Forfeit';
+  }
+
+  // Debug log the extracted score
+  if (match.score) {
+    console.log(`[Mat Ops] Extracted score for ${wrestlerName || 'unknown'}: ${match.score} (${match.wrestlerScore}-${match.opponentScore})`);
   }
 
   // Extract match ID from score link
@@ -315,6 +340,31 @@ function parseScore(scoreText, match) {
       match.opponentScore = parseInt(scores[0]);
     }
   }
+}
+
+// Parse score from regex capture groups (more reliable)
+function parseScoreFromCaptures(score1Str, score2Str, match) {
+  const score1 = parseInt(score1Str);
+  const score2 = parseInt(score2Str);
+
+  if (isNaN(score1) || isNaN(score2)) {
+    console.warn('[Mat Ops] Failed to parse scores:', score1Str, score2Str);
+    return;
+  }
+
+  // Winner's score is always higher
+  const higherScore = Math.max(score1, score2);
+  const lowerScore = Math.min(score1, score2);
+
+  if (match.result === 'Win') {
+    match.wrestlerScore = higherScore;
+    match.opponentScore = lowerScore;
+  } else {
+    match.wrestlerScore = lowerScore;
+    match.opponentScore = higherScore;
+  }
+
+  console.log(`[Mat Ops] Parsed scores: ${match.wrestlerScore}-${match.opponentScore} (result: ${match.result})`);
 }
 
 // ========== DETAILED MATCH STATS FUNCTIONS ==========
@@ -654,6 +704,17 @@ async function autoCaptureAllMatches() {
   let skipped = 0;
 
   for (let i = 0; i < scoreLinks.length; i++) {
+    // Check for pause
+    if (shouldPauseCapture) {
+      console.log(`[Mat Ops] ⏸️ Capture paused at ${i}/${scoreLinks.length}`);
+      return {
+        total: scoreLinks.length,
+        captured: captured,
+        skipped: skipped,
+        paused: true
+      };
+    }
+
     const link = scoreLinks[i];
     const href = link.getAttribute('href');
     const matchIdMatch = href.match(/fetchScoreSummary\('([^']+)'\)/);
@@ -906,4 +967,104 @@ function startModalWatch() {
       pendingMatchId = null;
     }
   }, 10000);
+}
+
+// Extract event date from page
+function extractEventDate() {
+  console.log('[Mat Ops] Extracting event date from page...');
+
+  // Try multiple selectors to find the event date
+  // USABracketing typically shows event info in headers or page title
+
+  // Method 1: Look for date in page title or breadcrumb
+  const pageTitle = document.title || '';
+  const dateMatch = pageTitle.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})|(\w+\s+\d{1,2},?\s+\d{4})|(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch) {
+    console.log('[Mat Ops] Found date in title:', dateMatch[0]);
+    return parseEventDate(dateMatch[0]);
+  }
+
+  // Method 2: Look for event header or event details section
+  const eventSelectors = [
+    'h1', 'h2', '.event-name', '.event-title', '.tournament-name',
+    '.event-header', '.breadcrumb', '[class*="event"]', '[class*="tournament"]'
+  ];
+
+  for (const selector of eventSelectors) {
+    const elements = document.querySelectorAll(selector);
+    for (const el of elements) {
+      const text = el.textContent || '';
+      // Look for date patterns in the text
+      const patterns = [
+        /(\d{1,2}\/\d{1,2}\/\d{2,4})/,           // 11/21/2025 or 11/21/25
+        /(\w+\s+\d{1,2},?\s+\d{4})/,             // November 21, 2025
+        /(\d{4}-\d{2}-\d{2})/,                   // 2025-11-21
+        /(\d{1,2}-\d{1,2}-\d{2,4})/              // 11-21-2025
+      ];
+
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+          console.log('[Mat Ops] Found date in element:', match[0], 'from', selector);
+          return parseEventDate(match[0]);
+        }
+      }
+    }
+  }
+
+  // Method 3: Check for date in URL
+  const urlDateMatch = window.location.href.match(/(\d{4}-\d{2}-\d{2})|(\d{4}\/\d{2}\/\d{2})/);
+  if (urlDateMatch) {
+    console.log('[Mat Ops] Found date in URL:', urlDateMatch[0]);
+    return parseEventDate(urlDateMatch[0]);
+  }
+
+  console.log('[Mat Ops] No event date found on page');
+  return null;
+}
+
+// Parse various date formats to YYYY-MM-DD
+function parseEventDate(dateStr) {
+  if (!dateStr) return null;
+
+  // Already in YYYY-MM-DD format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+
+  // Handle MM/DD/YYYY or MM/DD/YY
+  const slashMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (slashMatch) {
+    let [, month, day, year] = slashMatch;
+    if (year.length === 2) {
+      year = year > '50' ? '19' + year : '20' + year;
+    }
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // Handle MM-DD-YYYY or MM-DD-YY
+  const dashMatch = dateStr.match(/(\d{1,2})-(\d{1,2})-(\d{2,4})/);
+  if (dashMatch) {
+    let [, month, day, year] = dashMatch;
+    if (year.length === 2) {
+      year = year > '50' ? '19' + year : '20' + year;
+    }
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // Handle "Month DD, YYYY" format
+  const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+                      'july', 'august', 'september', 'october', 'november', 'december'];
+  const namedMatch = dateStr.toLowerCase().match(/(\w+)\s+(\d{1,2}),?\s+(\d{4})/);
+  if (namedMatch) {
+    const [, monthName, day, year] = namedMatch;
+    const monthIndex = monthNames.indexOf(monthName.toLowerCase());
+    if (monthIndex !== -1) {
+      return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+  }
+
+  // If we can't parse it, return the original string
+  console.log('[Mat Ops] Could not parse date:', dateStr);
+  return null;
 }

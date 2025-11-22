@@ -6,6 +6,7 @@ let conversationHistory = [];
 let currentMode = 'usa-bracketing'; // Default mode
 let targetTabId = null; // Store the tab we're working with
 let isAutoCapturing = false; // Track if auto-capture is in progress
+let shouldPauseCapture = false; // Flag to pause auto-capture
 
 // Mat Ops AI specific state
 let matOpsConversationHistory = [];
@@ -99,6 +100,18 @@ function setupEventListeners() {
   const confirmMatchImportBtn = document.getElementById('confirmMatchImportBtn');
   if (confirmMatchImportBtn) {
     confirmMatchImportBtn.addEventListener('click', confirmMatchImport);
+  }
+
+  // Detect date button
+  const detectDateBtn = document.getElementById('detectDateBtn');
+  if (detectDateBtn) {
+    detectDateBtn.addEventListener('click', detectEventDate);
+  }
+
+  // Pause & Import button
+  const pauseImportBtn = document.getElementById('pauseImportBtn');
+  if (pauseImportBtn) {
+    pauseImportBtn.addEventListener('click', pauseAndImport);
   }
 
   // Select all new matches checkbox
@@ -595,6 +608,47 @@ async function expandAllWeightClasses() {
   }
 }
 
+// Pause auto-capture and open import modal
+async function pauseAndImport() {
+  shouldPauseCapture = true;
+  updateStatus('⏸️ Pausing capture...');
+
+  // Update UI immediately
+  const progressText = document.getElementById('progressText');
+  if (progressText) {
+    progressText.innerHTML = `<div style="font-weight: 700; color: #f59e0b;">⏸️ Paused - Opening import...</div>`;
+  }
+
+  // Send pause message to content script
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    await chrome.tabs.sendMessage(tab.id, { action: 'pause_capture' });
+  } catch (e) {
+    console.log('[Mat Ops] Could not send pause message:', e);
+  }
+
+  // Small delay to let the capture loop notice the pause
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Hide progress and open import modal
+  const autoCaptureProgress = document.getElementById('autoCaptureProgress');
+  if (autoCaptureProgress) {
+    autoCaptureProgress.style.display = 'none';
+  }
+
+  // Re-enable buttons
+  isAutoCapturing = false;
+  autoCaptureButton.disabled = false;
+  const importBtn = document.getElementById('importMatchesBtn');
+  if (importBtn) importBtn.disabled = false;
+
+  // Open the import modal with current data
+  await openMatchImportModal();
+
+  // Reset pause flag
+  shouldPauseCapture = false;
+}
+
 // Auto-capture all matches
 async function autoCaptureAllMatches() {
   if (!extractedData) {
@@ -604,6 +658,7 @@ async function autoCaptureAllMatches() {
 
   updateStatus('🤖 Starting auto-capture...');
   isAutoCapturing = true;
+  shouldPauseCapture = false; // Reset pause flag
   autoCaptureButton.disabled = true;
   // Disable import button while capturing
   const importBtn = document.getElementById('importMatchesBtn');
@@ -1565,6 +1620,35 @@ async function confirmImport() {
 // ========== MATCH IMPORT FUNCTIONS ==========
 
 let matchImportResults = null;
+let detectedEventDate = null;
+
+// Detect event date from page
+async function detectEventDate() {
+  const eventDateInput = document.getElementById('eventDateInput');
+  const eventDateStatus = document.getElementById('eventDateStatus');
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: 'get_event_date'
+    });
+
+    if (response && response.success && response.eventDate) {
+      detectedEventDate = response.eventDate;
+      eventDateInput.value = response.eventDate;
+      eventDateStatus.textContent = `✅ Date detected from page: ${response.eventDate}`;
+      eventDateStatus.style.color = '#34d399';
+      console.log('[Mat Ops Import] Detected event date:', response.eventDate);
+    } else {
+      eventDateStatus.textContent = '⚠️ Could not detect date - please enter manually';
+      eventDateStatus.style.color = '#fbbf24';
+    }
+  } catch (error) {
+    console.error('[Mat Ops Import] Error detecting date:', error);
+    eventDateStatus.textContent = '⚠️ Could not detect date - please enter manually';
+    eventDateStatus.style.color = '#fbbf24';
+  }
+}
 
 // Open match import modal
 async function openMatchImportModal() {
@@ -1584,6 +1668,18 @@ async function openMatchImportModal() {
   document.getElementById('matchImportLoading').style.display = 'block';
   document.getElementById('matchImportResults').style.display = 'none';
   document.getElementById('matchImportError').style.display = 'none';
+
+  // Reset date input
+  const eventDateInput = document.getElementById('eventDateInput');
+  const eventDateStatus = document.getElementById('eventDateStatus');
+  if (eventDateInput) {
+    eventDateInput.value = '';
+    detectedEventDate = null;
+  }
+  if (eventDateStatus) {
+    eventDateStatus.textContent = 'Detecting event date...';
+    eventDateStatus.style.color = '#6b7280';
+  }
 
   try {
     const teamId = await getTeamId();
@@ -1640,21 +1736,29 @@ async function openMatchImportModal() {
           let wrestlerScore = match.wrestlerScore;
           let opponentScore = match.opponentScore;
 
-          if ((wrestlerScore === null || wrestlerScore === undefined) && match.score) {
+          // Always try to parse from score string if available (in case wrestlerScore is 0 or NaN)
+          if (match.score) {
             // Try to extract score from score string like "Dec 8-4" or "Maj 12-3"
             const scoreMatch = match.score.match(/(\d+)-(\d+)/);
             if (scoreMatch) {
               const score1 = parseInt(scoreMatch[1]);
               const score2 = parseInt(scoreMatch[2]);
-              if (match.result === 'Win' || match.result === 'win') {
-                wrestlerScore = Math.max(score1, score2);
-                opponentScore = Math.min(score1, score2);
-              } else {
-                wrestlerScore = Math.min(score1, score2);
-                opponentScore = Math.max(score1, score2);
+              if (!isNaN(score1) && !isNaN(score2)) {
+                if (match.result === 'Win' || match.result === 'win') {
+                  wrestlerScore = Math.max(score1, score2);
+                  opponentScore = Math.min(score1, score2);
+                } else {
+                  wrestlerScore = Math.min(score1, score2);
+                  opponentScore = Math.max(score1, score2);
+                }
+                console.log(`[Mat Ops Import] Parsed score from "${match.score}": ${wrestlerScore}-${opponentScore}`);
               }
             }
           }
+
+          // Ensure we have valid numbers
+          wrestlerScore = Number.isFinite(wrestlerScore) ? wrestlerScore : 0;
+          opponentScore = Number.isFinite(opponentScore) ? opponentScore : 0;
 
           matches.push({
             wrestlerName: wrestler.name,
@@ -1710,6 +1814,9 @@ async function openMatchImportModal() {
     console.log('[Mat Ops Import] Match results:', matchImportResults);
 
     renderMatchImportResults(matchImportResults);
+
+    // Auto-detect event date from page
+    await detectEventDate();
 
   } catch (err) {
     console.error('[Mat Ops Import] Error:', err);
@@ -1805,6 +1912,11 @@ async function confirmMatchImport() {
     const matchesToAdd = [];
     const matchesToUpdate = [];
 
+    // Get the event date from input (user may have edited it)
+    const eventDateInput = document.getElementById('eventDateInput');
+    const eventDate = eventDateInput?.value || detectedEventDate || null;
+    console.log('[Mat Ops Import] Using event date:', eventDate);
+
     // Helper to build match object
     const buildMatchObject = (r, existingMatchId = null) => ({
       existingMatchId, // For updates
@@ -1818,6 +1930,7 @@ async function confirmMatchImport() {
       opponentScore: r.imported.opponentScore,
       weightClass: r.imported.weightClass,
       round: r.imported.round,
+      matchDate: eventDate, // Include event date
       // Stats for wrestler
       takedowns: r.imported.takedowns,
       escapes: r.imported.escapes,
