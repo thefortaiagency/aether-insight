@@ -9,7 +9,7 @@ import {
   Send, Bot, User, Sparkles, Zap, Brain, Trophy,
   Users, TrendingUp, Calendar, Dumbbell, Target, Loader2,
   Plug, PlugZap, Lightbulb, MessageSquare, CheckCircle, XCircle,
-  AlertTriangle, Wrench, PlusCircle, Scale
+  AlertTriangle, Wrench, PlusCircle, Scale, MessageSquarePlus
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
 import { supabase } from '@/lib/supabase'
@@ -135,12 +135,99 @@ export default function MatOpsAIPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingConversation, setLoadingConversation] = useState(true)
   const [extensionConnected, setExtensionConnected] = useState(false)
   const [teamData, setTeamData] = useState<any>(null)
   const [teamId, setTeamId] = useState<string | null>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Load conversation from database
+  const loadConversation = async (tId: string) => {
+    try {
+      const response = await fetch(`/api/ai/conversations?teamId=${tId}`)
+      const data = await response.json()
+
+      if (data.conversation) {
+        setConversationId(data.conversation.id)
+      }
+
+      if (data.messages && data.messages.length > 0) {
+        // Convert database messages to local format
+        const loadedMessages: Message[] = data.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.created_at),
+          actionResult: m.action_result ? {
+            success: m.action_success,
+            message: m.action_result.message,
+            data: m.action_result.data,
+          } : undefined,
+        }))
+        setMessages(loadedMessages)
+      }
+    } catch (error) {
+      console.error('Failed to load conversation:', error)
+    }
+    setLoadingConversation(false)
+  }
+
+  // Save message to database
+  const saveMessage = async (message: Message, actionName?: string, actionParams?: any) => {
+    if (!teamId) return
+
+    try {
+      await fetch('/api/ai/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId,
+          conversationId,
+          message: {
+            role: message.role,
+            content: message.content,
+            actionName,
+            actionParams,
+            actionResult: message.actionResult,
+          }
+        })
+      })
+    } catch (error) {
+      console.error('Failed to save message:', error)
+    }
+  }
+
+  // Start a new conversation
+  const startNewConversation = async () => {
+    if (!teamId) return
+
+    try {
+      // Archive current conversation
+      await fetch(`/api/ai/conversations?teamId=${teamId}`, { method: 'DELETE' })
+
+      // Clear local state
+      setMessages([])
+      setConversationId(null)
+      setPendingAction(null)
+
+      // Load new conversation (will create one)
+      await loadConversation(teamId)
+    } catch (error) {
+      console.error('Failed to start new conversation:', error)
+    }
+  }
+
+  // Load conversation when teamId is set
+  useEffect(() => {
+    if (teamId) {
+      loadConversation(teamId)
+    } else {
+      setLoadingConversation(false)
+    }
+  }, [teamId])
 
   // Check for extension connection
   useEffect(() => {
@@ -308,9 +395,9 @@ export default function MatOpsAIPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Welcome message
+  // Welcome message - only show if no messages loaded from database
   useEffect(() => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && !loadingConversation) {
       const agenticInfo = teamId
         ? `
 **AGENTIC MODE ACTIVE** - I can take actions for you:
@@ -339,7 +426,7 @@ What can I help you with today?`,
         timestamp: new Date(),
       }])
     }
-  }, [teamData, teamId])
+  }, [teamData, teamId, loadingConversation])
 
   const sendMessage = async (content: string) => {
     if (!content.trim()) return
@@ -354,6 +441,9 @@ What can I help you with today?`,
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setLoading(true)
+
+    // Save user message to database
+    saveMessage(userMessage)
 
     try {
       // Build DETAILED context with team data
@@ -446,6 +536,8 @@ When answering questions about specific wrestlers, reference their actual stats.
           pendingAction: data.pendingAction,
         }
         setMessages(prev => [...prev, assistantMessage])
+        // Save assistant message (pending action)
+        saveMessage(assistantMessage, data.pendingAction.name, data.pendingAction.params)
       } else {
         // Regular response (possibly with action result)
         const assistantMessage: Message = {
@@ -456,6 +548,8 @@ When answering questions about specific wrestlers, reference their actual stats.
           actionResult: data.actionResult,
         }
         setMessages(prev => [...prev, assistantMessage])
+        // Save assistant message to database
+        saveMessage(assistantMessage)
 
         // Only reload for write actions (mutations), not read-only queries
         if (data.actionResult?.success && data.actionResult?.mutated) {
@@ -565,6 +659,17 @@ When answering questions about specific wrestlers, reference their actual stats.
             <p className="text-gray-400 text-sm">Your wrestling coaching assistant</p>
           </div>
           <div className="flex items-center gap-2">
+            {teamId && messages.length > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startNewConversation}
+                className="border-gold/30 text-gold hover:bg-gold/10"
+              >
+                <MessageSquarePlus className="w-4 h-4 mr-1" />
+                New Chat
+              </Button>
+            )}
             {teamId && (
               <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 flex items-center gap-1">
                 <Wrench className="w-3 h-3" />
