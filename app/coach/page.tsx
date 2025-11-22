@@ -54,27 +54,117 @@ const CATEGORY_COLORS: Record<string, string> = {
   cooldown: 'bg-green-500/20 text-green-400 border-green-500/30',
 }
 
-const PRACTICE_TEMPLATES: PracticePlan[] = [
+// Periodization phase type
+type PeriodizationPhase = 'off-season' | 'pre-season' | 'in-season' | 'championship'
+
+interface PracticePlanWithPhase extends PracticePlan {
+  phase?: PeriodizationPhase
+  phaseDescription?: string
+}
+
+const PRACTICE_TEMPLATES: PracticePlanWithPhase[] = [
+  // IN-SEASON TEMPLATES
   {
     id: 'template-1',
-    name: 'Standard 2-Hour Practice',
+    name: 'In-Season: Standard Practice',
+    phase: 'in-season',
+    phaseDescription: 'Maintenance & competition focus',
     drills: [
-      { id: 't1-1', name: 'Jogging/Dynamic Stretching', duration: 10, category: 'warmup' },
-      { id: 't1-2', name: 'Stance & Motion', duration: 5, category: 'warmup' },
-      { id: 't1-3', name: 'Shot Drill', duration: 15, category: 'technique' },
-      { id: 't1-4', name: 'Takedown Chain', duration: 20, category: 'technique' },
-      { id: 't1-5', name: 'Escape Drill', duration: 15, category: 'technique' },
-      { id: 't1-6', name: 'Situation Wrestling', duration: 20, category: 'live' },
-      { id: 't1-7', name: 'Live Wrestling', duration: 25, category: 'live' },
-      { id: 't1-8', name: 'Conditioning', duration: 10, category: 'conditioning' },
-      { id: 't1-9', name: 'Cool Down', duration: 10, category: 'cooldown' },
+      { id: 't1-1', name: 'Dynamic Warmup', duration: 12, category: 'warmup', description: 'Total-body flexibility, strength, and endurance' },
+      { id: 't1-2', name: 'Stance & Motion', duration: 5, category: 'warmup', description: 'Circle drill, level changes' },
+      { id: 't1-3', name: 'High-Rep Drill Work', duration: 12, category: 'technique', description: 'Core techniques from all positions' },
+      { id: 't1-4', name: 'Scout/Technique', duration: 12, category: 'technique', description: 'Moves specific to upcoming opponents' },
+      { id: 't1-5', name: 'Situational Wrestling', duration: 25, category: 'live', description: '30 sec left down by 1, etc.' },
+      { id: 't1-6', name: 'Live Wrestling', duration: 30, category: 'live', description: 'Full matches, group rotations' },
+      { id: 't1-7', name: 'Conditioning Finish', duration: 12, category: 'conditioning', description: 'Snappy, high-intensity exercises' },
+      { id: 't1-8', name: 'Cool Down', duration: 8, category: 'cooldown' },
     ],
-    totalDuration: 130,
+    totalDuration: 116,
+    isTemplate: true,
+  },
+  // CHAMPIONSHIP/TAPER TEMPLATES
+  {
+    id: 'template-taper-1',
+    name: 'Championship Taper: Day 1 (60%)',
+    phase: 'championship',
+    phaseDescription: 'Volume reduced, intensity high',
+    drills: [
+      { id: 'tp1-1', name: 'Light Dynamic Warmup', duration: 10, category: 'warmup' },
+      { id: 'tp1-2', name: 'High-Intensity Drills', duration: 15, category: 'technique', description: 'Short, crisp reps' },
+      { id: 'tp1-3', name: 'Short Live Goes', duration: 20, category: 'live', description: '60% volume, 100% intensity' },
+      { id: 'tp1-4', name: 'Match-Specific Situations', duration: 10, category: 'live' },
+      { id: 'tp1-5', name: 'Visualization & Stretch', duration: 10, category: 'cooldown', description: 'Mental rehearsal' },
+    ],
+    totalDuration: 65,
     isTemplate: true,
   },
   {
+    id: 'template-taper-2',
+    name: 'Championship Taper: Day 2 (50%)',
+    phase: 'championship',
+    phaseDescription: 'Feeling sharp and confident',
+    drills: [
+      { id: 'tp2-1', name: 'Light Jog & Stretch', duration: 10, category: 'warmup' },
+      { id: 'tp2-2', name: 'Technique Sharpening', duration: 15, category: 'technique', description: 'Light drilling, no hard live' },
+      { id: 'tp2-3', name: 'Light Situation Work', duration: 10, category: 'live', description: '50% volume' },
+      { id: 'tp2-4', name: 'Mental Prep & Visualization', duration: 15, category: 'cooldown' },
+    ],
+    totalDuration: 50,
+    isTemplate: true,
+  },
+  {
+    id: 'template-taper-3',
+    name: 'Championship Taper: Pre-Comp Shakeout',
+    phase: 'championship',
+    phaseDescription: 'Day before competition',
+    drills: [
+      { id: 'tp3-1', name: 'Very Light Movement', duration: 10, category: 'warmup', description: 'Break a light sweat' },
+      { id: 'tp3-2', name: 'Feel-Good Technique', duration: 10, category: 'technique', description: 'Confidence moves only' },
+      { id: 'tp3-3', name: 'Visualization & Mental Prep', duration: 15, category: 'cooldown', description: 'Control the controllables' },
+    ],
+    totalDuration: 35,
+    isTemplate: true,
+  },
+  // PRE-SEASON TEMPLATES
+  {
+    id: 'template-preseason',
+    name: 'Pre-Season: Power Conversion',
+    phase: 'pre-season',
+    phaseDescription: 'Strength-to-power transition',
+    drills: [
+      { id: 'ps-1', name: 'Dynamic Warmup', duration: 12, category: 'warmup' },
+      { id: 'ps-2', name: 'Explosive Drills', duration: 15, category: 'technique', description: 'Speed emphasis on shots' },
+      { id: 'ps-3', name: 'Chain Wrestling', duration: 20, category: 'technique', description: 'Setup to finish sequences' },
+      { id: 'ps-4', name: 'High-Intensity Situational', duration: 25, category: 'live' },
+      { id: 'ps-5', name: 'Live Matches', duration: 25, category: 'live' },
+      { id: 'ps-6', name: 'Interval Conditioning', duration: 15, category: 'conditioning', description: 'Hill sprints or tempo runs' },
+      { id: 'ps-7', name: 'Cool Down', duration: 10, category: 'cooldown' },
+    ],
+    totalDuration: 122,
+    isTemplate: true,
+  },
+  // OFF-SEASON TEMPLATE
+  {
+    id: 'template-offseason',
+    name: 'Off-Season: Foundation Building',
+    phase: 'off-season',
+    phaseDescription: 'Build base strength and skills',
+    drills: [
+      { id: 'os-1', name: 'Extended Warmup', duration: 15, category: 'warmup', description: 'LSD cardio component' },
+      { id: 'os-2', name: 'Fundamental Drills', duration: 20, category: 'technique', description: 'Position, hand fighting, defense' },
+      { id: 'os-3', name: 'New Skill Acquisition', duration: 25, category: 'technique', description: 'Learn new techniques' },
+      { id: 'os-4', name: 'Controlled Live', duration: 20, category: 'live', description: 'Focus on technique over winning' },
+      { id: 'os-5', name: 'Strength/Conditioning', duration: 20, category: 'conditioning', description: 'Higher volume work' },
+      { id: 'os-6', name: 'Flexibility & Core', duration: 15, category: 'cooldown' },
+    ],
+    totalDuration: 115,
+    isTemplate: true,
+  },
+  // ORIGINAL TEMPLATES
+  {
     id: 'template-2',
     name: 'Competition Week - Light',
+    phase: 'in-season',
     drills: [
       { id: 't2-1', name: 'Light Jog & Stretch', duration: 10, category: 'warmup' },
       { id: 't2-2', name: 'Technical Review', duration: 20, category: 'technique' },
@@ -88,6 +178,7 @@ const PRACTICE_TEMPLATES: PracticePlan[] = [
   {
     id: 'template-3',
     name: 'Conditioning Focus',
+    phase: 'pre-season',
     drills: [
       { id: 't3-1', name: 'Dynamic Warmup', duration: 10, category: 'warmup' },
       { id: 't3-2', name: 'Sprint Intervals', duration: 15, category: 'conditioning' },
@@ -100,6 +191,13 @@ const PRACTICE_TEMPLATES: PracticePlan[] = [
     isTemplate: true,
   },
 ]
+
+const PHASE_COLORS: Record<PeriodizationPhase, string> = {
+  'off-season': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  'pre-season': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  'in-season': 'bg-green-500/20 text-green-400 border-green-500/30',
+  'championship': 'bg-gold/20 text-gold border-gold/30',
+}
 
 export default function CoachCornerPage() {
   const [plans, setPlans] = useState<PracticePlan[]>([])
@@ -448,21 +546,41 @@ export default function CoachCornerPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Templates */}
+                    {/* Templates by Phase */}
                     <div>
                       <h3 className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
                         <BookOpen className="w-4 h-4" />
-                        Templates
+                        Practice Templates by Training Phase
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+                      {/* Phase Legend */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {(['championship', 'in-season', 'pre-season', 'off-season'] as PeriodizationPhase[]).map(phase => (
+                          <Badge key={phase} className={`${PHASE_COLORS[phase]} text-xs`}>
+                            {phase.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Badge>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {PRACTICE_TEMPLATES.map(template => (
                           <Card
                             key={template.id}
-                            className="bg-black/40 border-gold/20 cursor-pointer hover:border-gold/50 transition-all"
+                            className={`bg-black/40 cursor-pointer hover:border-gold/50 transition-all ${
+                              template.phase ? PHASE_COLORS[template.phase].replace('text-', 'border-').split(' ')[2] : 'border-gold/20'
+                            }`}
                             onClick={() => loadTemplate(template)}
                           >
                             <CardContent className="p-4">
+                              {template.phase && (
+                                <Badge className={`${PHASE_COLORS[template.phase]} text-xs mb-2`}>
+                                  {template.phase.replace('-', ' ')}
+                                </Badge>
+                              )}
                               <h4 className="font-medium text-white text-sm">{template.name}</h4>
+                              {template.phaseDescription && (
+                                <p className="text-xs text-gray-500 mt-1">{template.phaseDescription}</p>
+                              )}
                               <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                                 <Clock className="w-3 h-3" />
                                 {template.totalDuration} min
@@ -554,6 +672,40 @@ export default function CoachCornerPage() {
                   className="bg-black/50 border-gold/30 text-white min-h-[200px]"
                 />
                 <p className="text-xs text-gray-500 mt-2">Auto-saved locally</p>
+              </CardContent>
+            </Card>
+
+            {/* Periodization Guide */}
+            <Card className="bg-black/60 border-gold/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-gold text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Periodization Guide
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div>
+                  <Badge className={`${PHASE_COLORS['off-season']} text-xs`}>Off-Season</Badge>
+                  <div className="text-gray-400 text-xs mt-1">4-6 months: Build strength, aerobic base, learn new skills</div>
+                </div>
+                <div>
+                  <Badge className={`${PHASE_COLORS['pre-season']} text-xs`}>Pre-Season</Badge>
+                  <div className="text-gray-400 text-xs mt-1">6-8 weeks: Convert strength to power, anaerobic work</div>
+                </div>
+                <div>
+                  <Badge className={`${PHASE_COLORS['in-season']} text-xs`}>In-Season</Badge>
+                  <div className="text-gray-400 text-xs mt-1">10-12 weeks: Maintain fitness, sharpen skills, compete</div>
+                </div>
+                <div>
+                  <Badge className={`${PHASE_COLORS['championship']} text-xs`}>Championship</Badge>
+                  <div className="text-gray-400 text-xs mt-1">2-3 weeks: Taper volume 40-60%, keep intensity, peak!</div>
+                </div>
+                <div className="pt-2 border-t border-gold/10">
+                  <div className="font-medium text-gold text-xs">Taper Science</div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    Reduce volume progressively. Maintain intensity. 8-14 day taper is optimal.
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
