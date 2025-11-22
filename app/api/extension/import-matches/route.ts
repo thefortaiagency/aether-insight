@@ -231,11 +231,21 @@ export async function PUT(request: Request) {
         weightClass: number
         round?: string
         date?: string
+        // Stats
         takedowns?: number
+        takedownsAgainst?: number
         escapes?: number
+        escapesAgainst?: number
         reversals?: number
+        reversalsAgainst?: number
         nearfall2?: number
+        nearfall2Against?: number
         nearfall3?: number
+        nearfall3Against?: number
+        nearfall4?: number
+        nearfall4Against?: number
+        penalties?: number
+        penaltiesAgainst?: number
       }>
     }
 
@@ -266,7 +276,22 @@ export async function PUT(request: Request) {
           final_score_for: match.wrestlerScore || 0,
           final_score_against: match.opponentScore || 0,
           match_date: match.date || new Date().toISOString().split('T')[0],
-          round: match.round
+          round: match.round,
+          // Stats
+          takedowns_for: match.takedowns || 0,
+          takedowns_against: match.takedownsAgainst || 0,
+          escapes_for: match.escapes || 0,
+          escapes_against: match.escapesAgainst || 0,
+          reversals_for: match.reversals || 0,
+          reversals_against: match.reversalsAgainst || 0,
+          nearfall_2_for: match.nearfall2 || 0,
+          nearfall_2_against: match.nearfall2Against || 0,
+          nearfall_3_for: match.nearfall3 || 0,
+          nearfall_3_against: match.nearfall3Against || 0,
+          nearfall_4_for: match.nearfall4 || 0,
+          nearfall_4_against: match.nearfall4Against || 0,
+          penalties_for: match.penalties || 0,
+          penalties_against: match.penaltiesAgainst || 0
         })
         .select()
         .single()

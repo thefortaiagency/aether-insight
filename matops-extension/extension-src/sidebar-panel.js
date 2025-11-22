@@ -1632,11 +1632,22 @@ async function openMatchImportModal() {
             opponentScore: opponentScore || 0,
             weightClass: wc.weight,
             round: match.round || '',
+            // Stats for wrestler
             takedowns: detailedStats?.takedowns || 0,
             escapes: detailedStats?.escapes || 0,
             reversals: detailedStats?.reversals || 0,
             nearfall2: detailedStats?.nearfall2 || 0,
-            nearfall3: detailedStats?.nearfall3 || 0
+            nearfall3: detailedStats?.nearfall3 || 0,
+            nearfall4: detailedStats?.nearfall4 || 0,
+            penalties: (detailedStats?.penalty1 || 0) + (detailedStats?.penalty2 || 0),
+            // Stats against (opponent's moves)
+            takedownsAgainst: detailedStats?.takedownsOpp || 0,
+            escapesAgainst: detailedStats?.escapesOpp || 0,
+            reversalsAgainst: detailedStats?.reversalsOpp || 0,
+            nearfall2Against: detailedStats?.nearfall2Opp || 0,
+            nearfall3Against: detailedStats?.nearfall3Opp || 0,
+            nearfall4Against: detailedStats?.nearfall4Opp || 0,
+            penaltiesAgainst: (detailedStats?.penalty1Opp || 0) + (detailedStats?.penalty2Opp || 0)
           });
         });
       });
@@ -1773,11 +1784,22 @@ async function confirmMatchImport() {
           opponentScore: r.imported.opponentScore,
           weightClass: r.imported.weightClass,
           round: r.imported.round,
+          // Stats for wrestler
           takedowns: r.imported.takedowns,
           escapes: r.imported.escapes,
           reversals: r.imported.reversals,
           nearfall2: r.imported.nearfall2,
-          nearfall3: r.imported.nearfall3
+          nearfall3: r.imported.nearfall3,
+          nearfall4: r.imported.nearfall4,
+          penalties: r.imported.penalties,
+          // Stats against
+          takedownsAgainst: r.imported.takedownsAgainst,
+          escapesAgainst: r.imported.escapesAgainst,
+          reversalsAgainst: r.imported.reversalsAgainst,
+          nearfall2Against: r.imported.nearfall2Against,
+          nearfall3Against: r.imported.nearfall3Against,
+          nearfall4Against: r.imported.nearfall4Against,
+          penaltiesAgainst: r.imported.penaltiesAgainst
         });
       }
     });
