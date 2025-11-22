@@ -12,9 +12,10 @@ import {
   Calendar as CalendarIcon, Plus, Trophy, Users, Clock, MapPin,
   ChevronLeft, ChevronRight, Download, Upload, Settings,
   AlertCircle, CheckCircle, Edit, Trash2, Copy, Star,
-  Target, Dumbbell, Bus, FileText, X, ChevronDown
+  Target, Dumbbell, Bus, FileText, X, ChevronDown, Loader2
 } from 'lucide-react'
 import WrestlingStatsBackground from '@/components/wrestling-stats-background'
+import { supabase } from '@/lib/supabase'
 
 interface Event {
   id: string
@@ -51,43 +52,89 @@ const eventIcons = {
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Dual Meet vs Central',
-      type: 'match',
-      date: '2025-01-15',
-      time: '18:00',
-      location: 'Home Gym',
-      isHome: true,
-      opponent: 'Central High School',
-      color: eventColors.match
-    },
-    {
-      id: '2',
-      title: 'Regional Tournament',
-      type: 'tournament',
-      date: '2025-01-20',
-      time: '08:00',
-      location: 'Regional Sports Complex',
-      description: '16 team tournament',
-      color: eventColors.tournament
-    },
-    {
-      id: '3',
-      title: 'Team Practice',
-      type: 'practice',
-      date: '2025-01-16',
-      time: '15:30',
-      location: 'Wrestling Room',
-      notes: 'Focus on takedowns',
-      color: eventColors.practice
-    }
-  ])
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
+  const [teamId, setTeamId] = useState<string | null>(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [showSeasonSetup, setShowSeasonSetup] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month')
+
+  // Get team ID from session
+  useEffect(() => {
+    const session = localStorage.getItem('aether-session')
+    if (session) {
+      try {
+        const parsed = JSON.parse(session)
+        if (parsed.team?.id) {
+          setTeamId(parsed.team.id)
+        }
+      } catch (e) {
+        console.error('Failed to parse session')
+      }
+    }
+  }, [])
+
+  // Load events and practices from database
+  useEffect(() => {
+    if (!teamId) return
+
+    const loadCalendarData = async () => {
+      setLoading(true)
+      const calendarEvents: Event[] = []
+
+      // Load events from events table
+      const { data: dbEvents } = await supabase
+        .from('events')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('date')
+
+      if (dbEvents) {
+        for (const e of dbEvents) {
+          calendarEvents.push({
+            id: e.id,
+            title: e.name,
+            type: e.type === 'dual' ? 'match' : e.type as Event['type'],
+            date: e.date,
+            time: e.start_time || '18:00',
+            location: e.location || '',
+            description: e.notes,
+            isHome: e.home_away === 'home',
+            opponent: e.opponent_team,
+            color: e.type === 'dual' ? eventColors.match : eventColors.tournament
+          })
+        }
+      }
+
+      // Load practices from practices table
+      const { data: practices } = await supabase
+        .from('practices')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('date')
+
+      if (practices) {
+        for (const p of practices) {
+          calendarEvents.push({
+            id: p.id,
+            title: `${p.type === 'regular' ? 'Team' : p.type.charAt(0).toUpperCase() + p.type.slice(1)} Practice`,
+            type: 'practice',
+            date: p.date,
+            time: p.start_time || '15:30',
+            location: p.location || 'Wrestling Room',
+            notes: p.focus_areas?.join(', ') || p.notes,
+            color: eventColors.practice
+          })
+        }
+      }
+
+      setEvents(calendarEvents)
+      setLoading(false)
+    }
+
+    loadCalendarData()
+  }, [teamId])
   
   // Form state for new events
   const [newEvent, setNewEvent] = useState<Partial<Event>>({

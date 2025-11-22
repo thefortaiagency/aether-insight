@@ -346,21 +346,29 @@ async function recordEventResults(teamId: string, params: any): Promise<ActionRe
 async function addPractice(teamId: string, params: any): Promise<ActionResult> {
   const { date, start_time, end_time, type, location, focus_areas } = params
 
+  if (!date) {
+    return { success: false, message: 'Date is required for scheduling a practice.' }
+  }
+
   // Check if practice already exists on this date
   const existing = await findPractice(teamId, date)
   if (existing) {
     return { success: false, message: `A practice is already scheduled for ${date}.` }
   }
 
+  // Default times if not provided
+  const practiceStartTime = start_time || '15:30'
+  const practiceEndTime = end_time || '17:30'
+
   const { data, error } = await supabase
     .from('practices')
     .insert({
       team_id: teamId,
       date,
-      start_time,
-      end_time,
+      start_time: practiceStartTime,
+      end_time: practiceEndTime,
       type: type || 'regular',
-      location: location || null,
+      location: location || 'Wrestling Room',
       focus_areas: focus_areas ? (Array.isArray(focus_areas) ? focus_areas : [focus_areas]) : null,
     })
     .select()
