@@ -5,6 +5,7 @@ let extractedData = null;
 let conversationHistory = [];
 let currentMode = 'usa-bracketing'; // Default mode
 let targetTabId = null; // Store the tab we're working with
+let isAutoCapturing = false; // Track if auto-capture is in progress
 
 // Mat Ops AI specific state
 let matOpsConversationHistory = [];
@@ -602,7 +603,11 @@ async function autoCaptureAllMatches() {
   }
 
   updateStatus('🤖 Starting auto-capture...');
+  isAutoCapturing = true;
   autoCaptureButton.disabled = true;
+  // Disable import button while capturing
+  const importBtn = document.getElementById('importMatchesBtn');
+  if (importBtn) importBtn.disabled = true;
   autoCaptureProgress.style.display = 'block';
   progressText.innerHTML = '<div style="font-weight: 600;">🤖 Initializing auto-capture...</div>';
   progressBar.style.width = '0%';
@@ -711,7 +716,11 @@ async function autoCaptureAllMatches() {
     }
     autoCaptureProgress.style.display = 'none';
   } finally {
+    isAutoCapturing = false;
     autoCaptureButton.disabled = false;
+    // Re-enable import button
+    const importBtn = document.getElementById('importMatchesBtn');
+    if (importBtn) importBtn.disabled = false;
   }
 }
 
@@ -1561,6 +1570,12 @@ let matchImportResults = null;
 async function openMatchImportModal() {
   if (!extractedData || extractedData.length === 0) {
     updateStatus('No data to import');
+    return;
+  }
+
+  // Check if auto-capture is still in progress
+  if (isAutoCapturing) {
+    updateStatus('⏳ Please wait for auto-capture to complete before importing');
     return;
   }
 
