@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// GET - Fetch wrestlers for a team
+// GET - Fetch wrestlers for a team with calculated stats from matches
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -17,15 +17,68 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'teamId required' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    // Get wrestlers
+    const { data: wrestlers, error } = await supabase
       .from('wrestlers')
       .select('*')
       .eq('team_id', teamId)
       .order('weight_class', { ascending: true })
 
     if (error) throw error
+    if (!wrestlers || wrestlers.length === 0) {
+      return NextResponse.json({ wrestlers: [] })
+    }
 
-    return NextResponse.json({ wrestlers: data })
+    // Get all matches for these wrestlers to calculate real stats
+    const wrestlerIds = wrestlers.map((w: any) => w.id)
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('wrestler_id, result, win_type, takedowns_for, escapes_for, reversals_for, nearfall_2_for, nearfall_3_for, nearfall_4_for')
+      .in('wrestler_id', wrestlerIds)
+
+    const matchList = matches || []
+
+    // Calculate stats for each wrestler from matches
+    const wrestlersWithStats = wrestlers.map((w: any) => {
+      const wMatches = matchList.filter((m: any) => m.wrestler_id === w.id)
+      const wins = wMatches.filter((m: any) => m.result === 'win').length
+      const losses = wMatches.filter((m: any) => m.result === 'loss').length
+      const pins = wMatches.filter((m: any) =>
+        m.result === 'win' && (m.win_type === 'pin' || m.win_type === 'fall' || m.win_type === 'Pin' || m.win_type === 'Fall')
+      ).length
+      const techFalls = wMatches.filter((m: any) =>
+        m.result === 'win' && (m.win_type === 'tech_fall' || m.win_type === 'Tech Fall' || m.win_type === 'TF')
+      ).length
+      const majors = wMatches.filter((m: any) =>
+        m.result === 'win' && (m.win_type === 'major' || m.win_type === 'Major Decision' || m.win_type === 'MD')
+      ).length
+      const decisions = wMatches.filter((m: any) =>
+        m.result === 'win' && (m.win_type === 'decision' || m.win_type === 'Decision' || !m.win_type)
+      ).length
+      const takedowns = wMatches.reduce((sum: number, m: any) => sum + (m.takedowns_for || 0), 0)
+      const escapes = wMatches.reduce((sum: number, m: any) => sum + (m.escapes_for || 0), 0)
+      const reversals = wMatches.reduce((sum: number, m: any) => sum + (m.reversals_for || 0), 0)
+      const nearfalls = wMatches.reduce((sum: number, m: any) =>
+        sum + (m.nearfall_2_for || 0) + (m.nearfall_3_for || 0) + (m.nearfall_4_for || 0), 0)
+
+      return {
+        ...w,
+        // Override with calculated stats
+        wins,
+        losses,
+        pins,
+        tech_falls: techFalls,
+        major_decisions: majors,
+        decisions,
+        takedowns,
+        escapes,
+        reversals,
+        nearfalls,
+        matchCount: wMatches.length
+      }
+    })
+
+    return NextResponse.json({ wrestlers: wrestlersWithStats })
   } catch (error) {
     console.error('Error fetching wrestlers:', error)
     return NextResponse.json({ error: 'Failed to fetch wrestlers' }, { status: 500 })
