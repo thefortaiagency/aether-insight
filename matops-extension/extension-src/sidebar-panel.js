@@ -1838,6 +1838,11 @@ async function openMatchImportModal() {
             opponentPen = (detailedStats?.penalty1Opp || 0) + (detailedStats?.penalty2Opp || 0);
           }
 
+          // Log winType for debugging
+          if (match.winType === 'Fall' || match.score?.includes('Fall')) {
+            console.log(`[Mat Ops Import] 🔥 FALL DETECTED: ${wrestler.name} vs ${match.opponent}, winType: "${match.winType}", score: "${match.score}"`);
+          }
+
           matches.push({
             wrestlerName: wrestler.name,
             opponent: match.opponent || 'Unknown',

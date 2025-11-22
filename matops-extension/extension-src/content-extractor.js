@@ -303,13 +303,18 @@ function parseMatchLine(text, li, wrestlerName) {
   const majMatch = text.match(/(?:Maj(?:or)?\.?|MD)\s*(\d+)\s*[-–]\s*(\d+)/i);
   // Fall/Pin: Multiple formats - "Fall 2:34", "Fall", "Pin 1:23", "F 2:34", "FL 2:34", "(F 2:45)"
   const fallMatch = text.match(/\b(?:Fall|Pin|FL)\b\s*([\d:]*)/i) ||
-                    text.match(/\(\s*F\s+(\d+:\d+)\s*\)/i) ||      // "(F 2:45)" format from USA Bracketing
-                    text.match(/\bF\s+(\d+:\d+)/i) ||              // "F 2:34" without parens
+                    text.match(/\(\s*F\s*(\d+:\d+)/i) ||           // "(F 2:45" or "(F2:45" format from USA Bracketing
+                    text.match(/\bF\s*(\d+:\d+)/i) ||              // "F 2:34" or "F2:34" without parens
                     text.match(/\(\s*(\d+:\d+)\s*\)(?!\s*\d)/);    // Just time in parens "(2:34)"
   // Decision: "Dec 8-4", "D 8-4", "SV-1 8-6" (sudden victory)
   const decMatch = text.match(/(?:Dec\.?|SV-?\d?)\s*(\d+)\s*[-–]\s*(\d+)/i);
   // Forfeit: "For", "Forfeit", "FF", "F.F."
   const forMatch = text.match(/(?:Forf(?:eit)?|FF|F\.F\.)/i);
+
+  // Debug: Log fall detection
+  if (text.includes('(F ') || text.includes('(F') || text.toLowerCase().includes('fall') || text.toLowerCase().includes('pin')) {
+    console.log(`[Mat Ops] Fall detection check - fallMatch:`, fallMatch, 'forMatch:', forMatch, 'text snippet:', text.substring(0, 150));
+  }
   // Default decision: Just score like "8-4" without type prefix
   const defaultScoreMatch = text.match(/\b(\d+)\s*[-–]\s*(\d+)\b/);
 
@@ -327,7 +332,7 @@ function parseMatchLine(text, li, wrestlerName) {
     // Make sure it's Fall not Forfeit
     match.winType = 'Fall';
     match.score = fallMatch[1] ? `Fall ${fallMatch[1]}` : 'Fall';
-    console.log(`[Mat Ops] ✓ Detected FALL/PIN: ${match.score}`);
+    console.log(`[Mat Ops] ✓✓✓ FALL/PIN DETECTED! winType: ${match.winType}, score: ${match.score}, time: ${fallMatch[1] || 'no time'}`);
   } else if (forMatch) {
     match.winType = 'Forfeit';
     match.score = 'Forfeit';
