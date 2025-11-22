@@ -1787,6 +1787,57 @@ async function openMatchImportModal() {
           wrestlerScore = Number.isFinite(wrestlerScore) ? wrestlerScore : 0;
           opponentScore = Number.isFinite(opponentScore) ? opponentScore : 0;
 
+          // USA Bracketing modal shows: green = WINNER, red = LOSER
+          // So when wrestler LOST, we need to swap stats (green was opponent's moves)
+          const isLoss = match.result === 'Loss' || match.result === 'loss';
+
+          // Get stats - swap if loss
+          let wrestlerTD, wrestlerEsc, wrestlerRev, wrestlerNF2, wrestlerNF3, wrestlerNF4, wrestlerPen;
+          let opponentTD, opponentEsc, opponentRev, opponentNF2, opponentNF3, opponentNF4, opponentPen;
+
+          if (isLoss && detailedStats) {
+            // Swap: opponent's stats become wrestler's and vice versa
+            wrestlerTD = detailedStats.takedownsOpp || 0;
+            wrestlerEsc = detailedStats.escapesOpp || 0;
+            wrestlerRev = detailedStats.reversalsOpp || 0;
+            wrestlerNF2 = detailedStats.nearfall2Opp || 0;
+            wrestlerNF3 = detailedStats.nearfall3Opp || 0;
+            wrestlerNF4 = detailedStats.nearfall4Opp || 0;
+            wrestlerPen = (detailedStats.penalty1Opp || 0) + (detailedStats.penalty2Opp || 0);
+
+            opponentTD = detailedStats.takedowns || 0;
+            opponentEsc = detailedStats.escapes || 0;
+            opponentRev = detailedStats.reversals || 0;
+            opponentNF2 = detailedStats.nearfall2 || 0;
+            opponentNF3 = detailedStats.nearfall3 || 0;
+            opponentNF4 = detailedStats.nearfall4 || 0;
+            opponentPen = (detailedStats.penalty1 || 0) + (detailedStats.penalty2 || 0);
+
+            // Also swap scores
+            const tempScore = wrestlerScore;
+            wrestlerScore = opponentScore;
+            opponentScore = tempScore;
+
+            console.log(`[Mat Ops Import] LOSS detected - swapped stats for ${wrestler.name} vs ${match.opponent}`);
+          } else {
+            // Win or no detailed stats - use as-is
+            wrestlerTD = detailedStats?.takedowns || 0;
+            wrestlerEsc = detailedStats?.escapes || 0;
+            wrestlerRev = detailedStats?.reversals || 0;
+            wrestlerNF2 = detailedStats?.nearfall2 || 0;
+            wrestlerNF3 = detailedStats?.nearfall3 || 0;
+            wrestlerNF4 = detailedStats?.nearfall4 || 0;
+            wrestlerPen = (detailedStats?.penalty1 || 0) + (detailedStats?.penalty2 || 0);
+
+            opponentTD = detailedStats?.takedownsOpp || 0;
+            opponentEsc = detailedStats?.escapesOpp || 0;
+            opponentRev = detailedStats?.reversalsOpp || 0;
+            opponentNF2 = detailedStats?.nearfall2Opp || 0;
+            opponentNF3 = detailedStats?.nearfall3Opp || 0;
+            opponentNF4 = detailedStats?.nearfall4Opp || 0;
+            opponentPen = (detailedStats?.penalty1Opp || 0) + (detailedStats?.penalty2Opp || 0);
+          }
+
           matches.push({
             wrestlerName: wrestler.name,
             opponent: match.opponent || 'Unknown',
@@ -1799,21 +1850,21 @@ async function openMatchImportModal() {
             weightClass: wc.weight,
             round: match.round || '',
             // Stats for wrestler
-            takedowns: detailedStats?.takedowns || 0,
-            escapes: detailedStats?.escapes || 0,
-            reversals: detailedStats?.reversals || 0,
-            nearfall2: detailedStats?.nearfall2 || 0,
-            nearfall3: detailedStats?.nearfall3 || 0,
-            nearfall4: detailedStats?.nearfall4 || 0,
-            penalties: (detailedStats?.penalty1 || 0) + (detailedStats?.penalty2 || 0),
+            takedowns: wrestlerTD,
+            escapes: wrestlerEsc,
+            reversals: wrestlerRev,
+            nearfall2: wrestlerNF2,
+            nearfall3: wrestlerNF3,
+            nearfall4: wrestlerNF4,
+            penalties: wrestlerPen,
             // Stats against (opponent's moves)
-            takedownsAgainst: detailedStats?.takedownsOpp || 0,
-            escapesAgainst: detailedStats?.escapesOpp || 0,
-            reversalsAgainst: detailedStats?.reversalsOpp || 0,
-            nearfall2Against: detailedStats?.nearfall2Opp || 0,
-            nearfall3Against: detailedStats?.nearfall3Opp || 0,
-            nearfall4Against: detailedStats?.nearfall4Opp || 0,
-            penaltiesAgainst: (detailedStats?.penalty1Opp || 0) + (detailedStats?.penalty2Opp || 0)
+            takedownsAgainst: opponentTD,
+            escapesAgainst: opponentEsc,
+            reversalsAgainst: opponentRev,
+            nearfall2Against: opponentNF2,
+            nearfall3Against: opponentNF3,
+            nearfall4Against: opponentNF4,
+            penaltiesAgainst: opponentPen
           });
         });
       });
