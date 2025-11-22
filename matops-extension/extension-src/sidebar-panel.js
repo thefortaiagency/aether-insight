@@ -742,7 +742,10 @@ async function updateCapturedCount() {
       }
     }
   } catch (error) {
-    console.error('[Mat Ops Panel] updateCapturedCount error:', error);
+    // Silently ignore connection errors - expected on non-supported pages
+    if (!error.message?.includes('Could not establish connection')) {
+      console.error('[Mat Ops Panel] updateCapturedCount error:', error);
+    }
   }
 }
 
