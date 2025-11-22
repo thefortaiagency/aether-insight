@@ -1601,6 +1601,26 @@ async function openMatchImportModal() {
             detailedStats = detailedResponse.detailedStats.find(ds => ds.id === match.matchId);
           }
 
+          // Parse scores from score string if not already parsed
+          let wrestlerScore = match.wrestlerScore;
+          let opponentScore = match.opponentScore;
+
+          if ((wrestlerScore === null || wrestlerScore === undefined) && match.score) {
+            // Try to extract score from score string like "Dec 8-4" or "Maj 12-3"
+            const scoreMatch = match.score.match(/(\d+)-(\d+)/);
+            if (scoreMatch) {
+              const score1 = parseInt(scoreMatch[1]);
+              const score2 = parseInt(scoreMatch[2]);
+              if (match.result === 'Win' || match.result === 'win') {
+                wrestlerScore = Math.max(score1, score2);
+                opponentScore = Math.min(score1, score2);
+              } else {
+                wrestlerScore = Math.min(score1, score2);
+                opponentScore = Math.max(score1, score2);
+              }
+            }
+          }
+
           matches.push({
             wrestlerName: wrestler.name,
             opponent: match.opponent || 'Unknown',
@@ -1608,8 +1628,8 @@ async function openMatchImportModal() {
             result: match.result || 'Win',
             winType: match.winType || 'Decision',
             score: match.score || '',
-            wrestlerScore: match.wrestlerScore,
-            opponentScore: match.opponentScore,
+            wrestlerScore: wrestlerScore || 0,
+            opponentScore: opponentScore || 0,
             weightClass: wc.weight,
             round: match.round || '',
             takedowns: detailedStats?.takedowns || 0,
