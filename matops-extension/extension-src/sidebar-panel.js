@@ -701,9 +701,14 @@ async function autoCaptureAllMatches() {
             statusText = `Processing ${current}/${total}`;
         }
 
+        // Calculate your team's match count from extracted data
+        const teamMatchCount = extractedData ? extractedData.reduce((sum, w) => {
+          return sum + w.weightClasses.reduce((wcSum, wc) => wcSum + wc.matches.length, 0);
+        }, 0) : 0;
+
         progressText.innerHTML = `
           <div style="font-weight: 600; margin-bottom: 4px;">${statusEmoji} ${statusText}</div>
-          <div style="font-size: 10px; color: #6b7280;">Captured: ${captured} | Skipped: ${skipped}</div>
+          <div style="font-size: 10px; color: #6b7280;">Your team: ${teamMatchCount} matches | Captured: ${captured} details</div>
         `;
 
         // Update progress bar
@@ -711,7 +716,7 @@ async function autoCaptureAllMatches() {
         progressBar.style.width = `${percentage}%`;
 
         // Update status bar too
-        updateStatus(`🤖 Auto-capturing: ${current}/${total} (${captured} captured)`);
+        updateStatus(`🤖 Scanning page: ${current}/${total} (${captured} details captured)`);
       }
     };
     chrome.runtime.onMessage.addListener(progressListener);
